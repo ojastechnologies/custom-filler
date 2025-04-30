@@ -5,12 +5,7 @@ module.exports = {
   //   "./src/components/**/*.{js,ts,jsx,tsx}",
   //   "./src/context/**/*.{js,ts,jsx,tsx}",
   // ],
-  content: [
-    "./src/app/**/*.{js,ts,jsx,tsx}",
-    "./src/components/**/*.{js,ts,jsx,tsx}",
-    "./src/context/**/*.{js,ts,jsx,tsx}",
-    "./src/hooks/**/*.{js,ts,jsx,tsx}"
-  ],
+  content: [ "./src/**/*.{js,ts,jsx,tsx}",],
   darkMode: 'class',
   theme: {
     extend: {
