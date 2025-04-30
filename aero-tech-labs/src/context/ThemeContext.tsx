@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext } from 'react';
+import useLocalStorage from '@/hooks/useLocalStorage';
 
 type Theme = 'light' | 'dark';
 
@@ -11,31 +12,25 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setTheme] = useState<Theme>('light');
+export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Use our custom hook for localStorage
+  const [theme, setTheme] = useLocalStorage<Theme>('theme', 
+    // Default to system preference if available
+    typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches 
+      ? 'dark' 
+      : 'light'
+  );
 
-  useEffect(() => {
-    // Check for saved theme preference or use system preference
-    const savedTheme = localStorage.getItem('theme') as Theme | null;
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    if (savedTheme) {
-      setTheme(savedTheme);
-    } else if (prefersDark) {
-      setTheme('dark');
+  // Apply theme class to HTML element
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const root = window.document.documentElement;
+      
+      // Remove both classes first
+      root.classList.remove('dark', 'light');
+      // Add the current theme
+      root.classList.add(theme);
     }
-  }, []);
-
-  useEffect(() => {
-    // Update the HTML class when theme changes
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    
-    // Save theme preference
-    localStorage.setItem('theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {

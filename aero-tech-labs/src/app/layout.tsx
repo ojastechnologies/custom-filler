@@ -1,7 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/context/ThemeContext";
-import { CartProvider } from "@/context/CartContext";
 
 export const metadata: Metadata = {
   title: "Aero Tech Labs",
@@ -14,12 +13,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body>
         <ThemeProvider>
-          <CartProvider>
-            {children}
-          </CartProvider>
+          {children}
         </ThemeProvider>
       </body>
     </html>
