@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { MenuProvider } from "@/context/MenuContext";
 
 export const metadata: Metadata = {
   title: "Aero Tech Labs",
@@ -16,7 +17,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <ThemeProvider>
-          {children}
+          <MenuProvider>
+            {children}
+          </MenuProvider>
         </ThemeProvider>
       </body>
     </html>

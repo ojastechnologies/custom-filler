@@ -9,6 +9,10 @@ module.exports = {
   darkMode: 'class',
   theme: {
     extend: {
+      zIndex: {
+        '55': '55',
+        '60': '60',
+      },
       colors: {
         primary: {
           50: '#f0f9ff',

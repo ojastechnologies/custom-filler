@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useMenuContext } from '@/context/MenuContext'; // We'll need to create this context
 
 const carouselItems = [
   {
@@ -32,6 +33,7 @@ const carouselItems = [
 const Hero = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const { isMenuOpen } = useMenuContext(); // Get menu state from context
 
   const nextSlide = useCallback(() => {
     if (!isTransitioning) {
@@ -43,17 +45,22 @@ const Hero = () => {
 
   // Auto-advance the carousel
   useEffect(() => {
-    const interval = setInterval(() => {
-      nextSlide();
-    }, 5000); // Change slide every 5 seconds
+    // Only auto-advance when menu is closed
+    if (!isMenuOpen) {
+      const interval = setInterval(() => {
+        nextSlide();
+      }, 5000); // Change slide every 5 seconds
 
-    return () => clearInterval(interval);
-  }, [nextSlide]);
+      return () => clearInterval(interval);
+    }
+  }, [nextSlide, isMenuOpen]);
 
   return (
-    <section className="relative">
+    <section className={`relative ${isMenuOpen ? 'z-0' : 'z-10'}`}>
       {/* Carousel */}
-      <div className="relative h-[500px] md:h-[600px] overflow-hidden bg-black dark:bg-gray-900">
+      <div className={`relative h-[500px] md:h-[600px] overflow-hidden bg-black dark:bg-gray-900 transition-opacity duration-300 ${
+        isMenuOpen ? 'opacity-30' : 'opacity-100'
+      }`}>
         <div className="h-full w-full flex transition-transform duration-500 ease-in-out" 
              style={{ transform: `translateX(-${currentSlide * 100}%)` }}>
           {carouselItems.map((item) => (
@@ -107,7 +114,9 @@ const Hero = () => {
       </div>
 
       {/* Hero content below carousel */}
-      <div className="bg-white dark:bg-gray-900 py-16">
+      <div className={`bg-white dark:bg-gray-900 py-16 transition-opacity duration-300 ${
+        isMenuOpen ? 'opacity-30' : 'opacity-100'
+      }`}>
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
             Contract Aerosol Filling and Laser Cryogen Specialists
