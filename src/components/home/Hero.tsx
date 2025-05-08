@@ -170,9 +170,9 @@ const Hero = () => {
           </motion.div>
         </AnimatePresence>
         
-        {/* Navigation Arrows */}
+        {/* Navigation Arrows - Hidden on mobile */}
         <button 
-          className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-primary-600 rounded-full p-2 shadow-lg transition-colors duration-300"
+          className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-primary-600 rounded-full p-2 shadow-lg transition-colors duration-300 hidden md:block"
           onClick={prevSlide}
           aria-label="Previous slide"
         >
@@ -182,7 +182,7 @@ const Hero = () => {
         </button>
         
         <button 
-          className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-primary-600 rounded-full p-2 shadow-lg transition-colors duration-300"
+          className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-primary-600 rounded-full p-2 shadow-lg transition-colors duration-300 hidden md:block"
           onClick={nextSlide}
           aria-label="Next slide"
         >
