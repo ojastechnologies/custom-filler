@@ -143,7 +143,7 @@ export default function ServicesPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-7xl mx-auto">
             <h1 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-4">
-              Our Products & Services
+               Products
             </h1>
             <p className="text-center text-gray-600 dark:text-gray-400 mb-8 max-w-3xl mx-auto">
               Aero Tech Labs offers a comprehensive range of aerosol filling solutions and services. 

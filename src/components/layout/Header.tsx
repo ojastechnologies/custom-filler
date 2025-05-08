@@ -74,7 +74,7 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount = 0 }) => {
                 href="/services" 
                 className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 font-medium"
               >
-                Services
+                Products
               </Link>
               <Link 
                 href="/faqs" 
@@ -187,7 +187,7 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount = 0 }) => {
                     className="text-xl text-gray-800 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 font-medium"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Services
+                    Products
                   </Link>
                   <Link 
                     href="/faqs" 
