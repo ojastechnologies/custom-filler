@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useTheme } from '@/context/ThemeContext';
 import { useMenuContext } from '@/context/MenuContext';
+import { useCart } from '@/context/CartContext';
 import Button from '@/components/ui/Button';
 
 interface HeaderProps {
@@ -14,6 +14,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ cartItemCount = 0 }) => {
   const { theme, toggleTheme } = useTheme();
   const { isMenuOpen, toggleMenu, setIsMenuOpen } = useMenuContext();
+  const { totalItems } = useCart();
   const [isScrolled, setIsScrolled] = useState(false);
   
   useEffect(() => {
@@ -54,6 +55,46 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount = 0 }) => {
               <span className="text-xl font-bold text-gray-900 dark:text-white">Aero Tech Labs</span>
             </Link>
             
+            {/* Desktop Navigation - Added this section */}
+            <nav className="hidden md:flex items-center space-x-6">
+              <Link 
+                href="/" 
+                className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 font-medium"
+              >
+                Home
+              </Link>
+              <Link 
+                href="/about-us" 
+                className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 font-medium"
+              >
+                About Us
+              </Link>
+              <Link 
+                href="/services" 
+                className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 font-medium"
+              >
+                Products
+              </Link>
+              <Link 
+                href="/faqs" 
+                className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 font-medium"
+              >
+                FAQs
+              </Link>
+              <Link 
+                href="/contact-us" 
+                className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 font-medium"
+              >
+                Contact
+              </Link>
+              <Link 
+                href="/cart" 
+                className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 font-medium"
+              >
+                Cart
+              </Link>
+            </nav>
+            
             {/* Right side actions */}
             <div className="flex items-center space-x-4">
               {/* Theme toggle */}
@@ -74,21 +115,22 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount = 0 }) => {
               </button>
               
               {/* Cart */}
-              <Link href="/checkout" className="relative p-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+              <Link href="/cart" className="relative p-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                 </svg>
-                {cartItemCount > 0 && (
+                {totalItems > 0 && (
                   <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-primary-600 rounded-full">
-                    {cartItemCount}
+                    {totalItems}
                   </span>
                 )}
               </Link>
               
-              {/* Menu toggle button (both mobile and desktop) */}
+              {/* Menu toggle button (mobile only) */}
               <button
-                className="p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 z-60"
+                className="md:hidden p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 z-60"
                 onClick={toggleMenu}
+                aria-label={isMenuOpen ? "Close menu" : "Open menu"}
               >
                 {isMenuOpen ? (
                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -110,20 +152,31 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount = 0 }) => {
         <div className="fixed inset-0 z-55 flex flex-col">
           {/* Background Image with Overlay */}
           <div className="absolute inset-0 z-0">
-            <Image 
-              src="/images/aerosol-background.jpg" 
-              alt="Aerosol Products" 
-              fill 
-              className="object-cover opacity-10 dark:opacity-5"
-              priority
-            />
+            {/* Using a div with background image instead of Next.js Image */}
+            <div 
+              className="absolute inset-0 bg-center bg-cover opacity-10 dark:opacity-5"
+              style={{ backgroundImage: "url('/images/aerosol-background.jpg')" }}
+            ></div>
             <div className="absolute inset-0 bg-white dark:bg-gray-900 opacity-95"></div>
           </div>
           
+          {/* Close button - Added dedicated close button */}
+          <div className="relative z-10 flex justify-end p-4">
+            <button
+              onClick={() => setIsMenuOpen(false)}
+              className="p-2 rounded-full bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
+              aria-label="Close menu"
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
           {/* Menu Content */}
-          <div className="relative z-10 flex-1 overflow-y-auto pt-20 px-4 container mx-auto">
+          <div className="relative z-10 flex-1 overflow-y-auto px-4 container mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-8">
-            <div>
+              <div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Navigation</h2>
                 <nav className="flex flex-col space-y-6">
                   <Link 
@@ -145,7 +198,7 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount = 0 }) => {
                     className="text-xl text-gray-800 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 font-medium"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Services
+                    Products
                   </Link>
                   <Link 
                     href="/faqs" 
@@ -161,19 +214,27 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount = 0 }) => {
                   >
                     Contact
                   </Link>
+                  <Link 
+                    href="/cart" 
+                    className="text-xl text-gray-800 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 font-medium"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Cart
+                  </Link>
                 </nav>
               </div>
               
-              <div>
+              {/* Featured Products - Hidden on mobile */}
+              <div className="hidden md:block">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Featured Products</h2>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
                     <div className="relative h-32">
-                      <Image 
+                      {/* Replace Image with img */}
+                      <img 
                         src="https://images.unsplash.com/photo-1635766054474-ebf6a6c46c30?q=80&w=400&h=300&auto=format&fit=crop" 
                         alt="Standard Aerosol Can" 
-                        fill 
-                        className="object-cover"
+                        className="w-full h-full object-cover"
                       />
                     </div>
                     <div className="p-3">
@@ -190,11 +251,11 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount = 0 }) => {
                   
                   <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
                     <div className="relative h-32">
-                      <Image 
+                      {/* Replace Image with img */}
+                      <img 
                         src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=400&h=300&auto=format&fit=crop" 
                         alt="Laser Cryogen Spray" 
-                        fill 
-                        className="object-cover"
+                        className="w-full h-full object-cover"
                       />
                     </div>
                     <div className="p-3">
@@ -252,6 +313,17 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount = 0 }) => {
               </div>
             </div>
           </div>
+          
+          {/* Added floating close button for mobile */}
+          <button
+            onClick={() => setIsMenuOpen(false)}
+            className="md:hidden fixed bottom-6 right-6 z-20 p-3 rounded-full bg-primary-600 text-white shadow-lg hover:bg-primary-700 transition-colors"
+            aria-label="Close menu"
+          >
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       )}
     </>
@@ -259,4 +331,3 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount = 0 }) => {
 };
 
 export default Header;
- 

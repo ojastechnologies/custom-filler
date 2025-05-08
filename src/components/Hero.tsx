@@ -34,7 +34,7 @@ const Hero = () => {
           <div className="flex flex-col sm:flex-row gap-4">
             <Link href="/services" passHref>
               <Button variant="primary" size="lg">
-                Our Services
+                Our Products
               </Button>
             </Link>
             <Link href="/contact-us" passHref>

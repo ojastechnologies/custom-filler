@@ -9,8 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.49.4",
     "brew": "^0.0.8",
     "classnames": "^2.5.1",
+    "framer-motion": "^12.10.3",
     "next": "15.3.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

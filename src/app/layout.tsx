@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { CartProvider } from "@/context/CartContext";
 import { MenuProvider } from "@/context/MenuContext";
 
 export const metadata: Metadata = {
@@ -17,9 +18,11 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <ThemeProvider>
-          <MenuProvider>
-            {children}
-          </MenuProvider>
+          <CartProvider>
+            <MenuProvider>
+              {children}
+            </MenuProvider>
+          </CartProvider>
         </ThemeProvider>
       </body>
     </html>

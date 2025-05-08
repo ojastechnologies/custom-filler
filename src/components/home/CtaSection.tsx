@@ -27,7 +27,7 @@ const CtaSection = () => {
                 variant="secondary" 
                 size="lg"
               >
-                Explore Our Services
+                Explore Our Products
               </Button>
             </Link>
           </div>

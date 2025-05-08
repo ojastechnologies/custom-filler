@@ -4,8 +4,10 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 interface MenuContextType {
   isMenuOpen: boolean;
-  setIsMenuOpen: (isOpen: boolean) => void;
   toggleMenu: () => void;
+  setIsMenuOpen: (isOpen: boolean) => void;
+  closeMenu: () => void;
+  openMenu: () => void;
 }
 
 const MenuContext = createContext<MenuContextType | undefined>(undefined);
@@ -17,8 +19,22 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsMenuOpen(prev => !prev);
   };
 
+  const closeMenu = () => {
+    setIsMenuOpen(false);
+  };
+
+  const openMenu = () => {
+    setIsMenuOpen(true);
+  };
+
   return (
-    <MenuContext.Provider value={{ isMenuOpen, setIsMenuOpen, toggleMenu }}>
+    <MenuContext.Provider value={{ 
+      isMenuOpen, 
+      toggleMenu, 
+      setIsMenuOpen, 
+      closeMenu, 
+      openMenu 
+    }}>
       {children}
     </MenuContext.Provider>
   );
