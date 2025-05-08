@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -10,7 +9,7 @@ const carouselItems = [
     id: 1,
     title: "Contract Aerosol Filling and Laser Cryogen",
     description: "Contract Aerosol Filling of Your Products with Non-Flammable Propellents HFC134a and HFO12342e",
-    image: "/images/carousel/aerosol-filling.jpg",
+    image: "https://customfiller.com/wp-content/uploads/2022/11/envirolase-coolant-case-top.png",
     buttonText: "Explore Services",
     buttonLink: "/services"
   },
@@ -18,7 +17,7 @@ const carouselItems = [
     id: 2,
     title: "1 Inch Opening Contract Aerosol Filling",
     description: "Found on a majority of aerosol products throughout the industry and is the standard for larger fill operations. These cans are available in a variety of shapes and sizes from 35mm all the way up to 76mm diameter.",
-    image: "/images/carousel/1-inch-filling.jpg",
+    image: "https://customfiller.com/wp-content/uploads/2022/04/1inch.png",
     buttonText: "Learn More",
     buttonLink: "/services/1-inch-filling"
   },
@@ -26,7 +25,7 @@ const carouselItems = [
     id: 3,
     title: "20 mm Opening Contract Aerosol Filling",
     description: "Usually found on small, one piece, aluminum cans. These aerosol products will hold anywhere from a few grams to several ounces of your product. Sizes range from 22mm in diameter up to 50mm with the 20mm top.",
-    image: "/images/carousel/20mm-filling.jpg",
+    image: "https://customfiller.com/wp-content/uploads/2022/04/20mm.png",
     buttonText: "View Details",
     buttonLink: "/services/20mm-filling"
   },
@@ -34,7 +33,7 @@ const carouselItems = [
     id: 4,
     title: "This Could Be Your Project",
     description: "Let us help you bring your aerosol product to market with our specialized filling services.",
-    image: "/images/carousel/custom-project.jpg",
+    image: "https://img.freepik.com/free-vector/green-cross-geometric-shape-vector_53876-168849.jpg?t=st=1746705192~exp=1746708792~hmac=1ff1e13f5f5704b17f6b06435efb43e6611507ad4ed8e08eac6e285a2ce6a317&w=1380",
     buttonText: "Get Started",
     buttonLink: "/contact-us"
   }
@@ -124,12 +123,10 @@ const Hero = () => {
                 >
                   <div className="relative w-full h-full max-h-[400px] rounded-lg overflow-hidden shadow-lg bg-white dark:bg-gray-800">
                     {carouselItems[currentSlide].image ? (
-                      <Image 
+                      <img 
                         src={carouselItems[currentSlide].image}
                         alt={carouselItems[currentSlide].title}
-                        fill
-                        className="object-cover"
-                        priority
+                        className="w-full h-full object-cover"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-primary-500 to-primary-400 text-white">
