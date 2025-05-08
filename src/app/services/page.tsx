@@ -8,6 +8,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
 import { fetchProducts } from '@/app/services/productsService';
+import Card from '@/components/ui/Card';
 
 export default function ServicesPage() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function ServicesPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   // Fetch products from API
   useEffect(() => {
@@ -86,6 +88,16 @@ export default function ServicesPage() {
     // Navigate to cart
     router.push('/cart');
   };
+
+  // Get unique categories
+  const categories = products.length > 0 
+    ? [...new Set(products.map(product => product.category || 'Uncategorized'))]
+    : [];
+
+  // Filter products by category
+  const filteredProducts = selectedCategory 
+    ? products.filter(product => (product.category || 'Uncategorized') === selectedCategory)
+    : products;
   
   if (loading) {
     return (
@@ -138,93 +150,147 @@ export default function ServicesPage() {
               Browse our offerings below or contact us for custom requirements.
             </p>
             
-            {/* Products Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {products.map(product => (
-                <div 
-                  key={product.id}
-                  className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1"
-                  onMouseEnter={() => setHoveredProduct(product.id)}
-                  onMouseLeave={() => setHoveredProduct(null)}
+            {/* Category Filter */}
+            {categories.length > 0 && (
+              <div className="flex flex-wrap justify-center gap-2 mb-8">
+                <button
+                  onClick={() => setSelectedCategory(null)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    selectedCategory === null 
+                      ? 'bg-primary-600 text-white' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
                 >
-                  <div 
-                    className="relative h-48 bg-gray-200 dark:bg-gray-700"
+                  All Products
+                </button>
+                
+                {categories.map(category => (
+                  <button
+                    key={category}
+                    onClick={() => setSelectedCategory(category)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                      selectedCategory === category
+                        ? 'bg-primary-600 text-white' 
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }`}
                   >
-                    {product.image ? (
-                      <Image 
-                        src={product.image}
-                        alt={product.name}
-                        fill
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <span className="text-gray-500 dark:text-gray-400">Product Image</span>
-                      </div>
-                    )}
-                    
+                    {category}
+                  </button>
+                ))}
+              </div>
+            )}
+            
+            {/* Products Grid */}
+            {filteredProducts.length === 0 ? (
+              <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 12H4M12 4v16" />
+                </svg>
+                <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-white">No products found</h3>
+                <p className="mt-1 text-gray-500 dark:text-gray-400">Try selecting a different category or check back later.</p>
+                {selectedCategory && (
+                  <button 
+                    onClick={() => setSelectedCategory(null)}
+                    className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
+                  >
+                    View All Products
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {filteredProducts.map(product => (
+                  <Card 
+                    key={product.id}
+                    className="h-full transition-transform duration-300 hover:shadow-lg hover:-translate-y-1"
+                  >
                     <div 
-                      className={`absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center gap-2 transition-opacity duration-300 ${
-                        hoveredProduct === product.id ? 'opacity-100' : 'opacity-0'
-                      }`}
+                      className="relative h-48 bg-gray-200 dark:bg-gray-700"
+                      onMouseEnter={() => setHoveredProduct(product.id)}
+                      onMouseLeave={() => setHoveredProduct(null)}
                     >
-                      <button
-                        onClick={() => handleAddToCart(product)}
-                        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                      >
-                        Add to Cart
-                      </button>
-                      <button
-                        onClick={() => handleBuyNow(product)}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        Buy Now
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="p-6">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                        {product.name}
-                      </h3>
-                      <span className="text-lg font-bold text-primary-600 dark:text-primary-400">
-                        ${product.price.toFixed(2)}
-                      </span>
-                    </div>
-                    
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">
-                      {product.description}
-                    </p>
-                    
-                    <div className="flex justify-between items-center">
-                      <Link 
-                        href={`/products/${product.id}`}
-                        className="inline-flex items-center text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
-                      >
-                        <span>Learn More</span>
-                        <svg className="ml-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
-                      </Link>
-                      <button
-                        onClick={() => handleBuyNow(product)}
-                        className={`px-3 py-1.5 text-sm rounded transition-colors ${
-                          addedToCart[product.id]
-                            ? 'bg-green-600 hover:bg-green-700 text-white'
-                            : 'bg-primary-600 hover:bg-primary-700 text-white'
+                      {product.image ? (
+                        <Image 
+                          src={product.image}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-gray-500 dark:text-gray-400">Product Image</span>
+                        </div>
+                      )}
+                      
+                      <div 
+                        className={`absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center gap-3 transition-opacity duration-300 ${
+                          hoveredProduct === product.id ? 'opacity-100' : 'opacity-0'
                         }`}
                       >
-                        {addedToCart[product.id] ? 'Added ✓' : 'Add to Cart'}
-                      </button>
+                        <button
+                          onClick={() => handleAddToCart(product)}
+                          className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
+                        >
+                          Add to Cart
+                        </button>
+                        <button
+                          onClick={() => handleBuyNow(product)}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                        >
+                          Buy Now
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                    
+                    <div className="p-5">
+                      {product.category && (
+                        <span className="inline-block px-2 py-1 text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded mb-2">
+                          {product.category}
+                        </span>
+                      )}
+                      
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white line-clamp-1">
+                          {product.name}
+                        </h3>
+                        <span className="text-lg font-bold text-primary-600 dark:text-primary-400">
+                          ${product.price.toFixed(2)}
+                        </span>
+                      </div>
+                      
+                      <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-2">
+                        {product.description || "No description available."}
+                      </p>
+                      
+                      <div className="flex justify-between items-center">
+                        <Link 
+                          href={`/products/${product.id}`}
+                          className="inline-flex items-center text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium text-sm"
+                        >
+                          <span>Learn More</span>
+                          <svg className="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                          </svg>
+                        </Link>
+                        <button
+                          onClick={() => handleAddToCart(product)}
+                          className={`px-3 py-1.5 text-sm rounded transition-colors ${
+                            addedToCart[product.id]
+                              ? 'bg-green-600 hover:bg-green-700 text-white'
+                              : 'bg-primary-600 hover:bg-primary-700 text-white'
+                          }`}
+                        >
+                          {addedToCart[product.id] ? 'Added ✓' : 'Add to Cart'}
+                        </button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
             
             {/* Call to Action */}
-            <div className="mt-16 bg-blue-50 dark:bg-blue-900/20 p-8 rounded-lg text-center">
+            <div className="mt-16 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-8 rounded-lg text-center shadow-md">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                 Need a Custom Solution?
               </h2>
@@ -234,7 +300,7 @@ export default function ServicesPage() {
               </p>
               <Link 
                 href="/contact-us" 
-                className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="inline-block px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors shadow-md"
               >
                 Request a Consultation
               </Link>

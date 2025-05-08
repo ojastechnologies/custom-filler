@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Card from '@/components/ui/Card';
 import { useRouter } from 'next/navigation';
 import { fetchProducts } from '@/app/services/productsService';
+import { useCart } from '@/context/CartContext';
 
 interface Product {
   id: string;
@@ -18,10 +19,12 @@ interface Product {
 
 const ProductsSection = () => {
   const router = useRouter();
+  const { addToCart } = useCart();
   const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [addedToCart, setAddedToCart] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -41,9 +44,37 @@ const ProductsSection = () => {
     loadProducts();
   }, []);
 
+  const handleAddToCart = (product: Product) => {
+    // Add the product to cart
+    addToCart({
+      id: product.id,
+      name: product.title,
+      price: product.price,
+      image: product.image,
+      quantity: 1
+    });
+    
+    // Show "Added to Cart" feedback
+    setAddedToCart(prev => ({ ...prev, [product.id]: true }));
+    
+    // Reset after 2 seconds
+    setTimeout(() => {
+      setAddedToCart(prev => ({ ...prev, [product.id]: false }));
+    }, 2000);
+  };
+
   const handleBuyNow = (product: Product) => {
-    const productData = encodeURIComponent(JSON.stringify(product));
-    router.push(`/checkout?product=${productData}`);
+    // Add to cart first
+    addToCart({
+      id: product.id,
+      name: product.title,
+      price: product.price,
+      image: product.image,
+      quantity: 1
+    });
+    
+    // Navigate to cart
+    router.push('/cart');
   };
 
   if (loading) {
@@ -105,13 +136,19 @@ const ProductsSection = () => {
                   )}
                   
                   <div 
-                    className={`absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center transition-opacity duration-300 ${
+                    className={`absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center gap-3 transition-opacity duration-300 ${
                       hoveredProduct === product.id ? 'opacity-100' : 'opacity-0'
                     }`}
                   >
                     <button
-                      onClick={() => handleBuyNow(product)}
+                      onClick={() => handleAddToCart(product)}
                       className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                    >
+                      Add to Cart
+                    </button>
+                    <button
+                      onClick={() => handleBuyNow(product)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       Buy Now
                     </button>
@@ -140,10 +177,14 @@ const ProductsSection = () => {
                       </svg>
                     </Link>
                     <button
-                      onClick={() => handleBuyNow(product)}
-                      className="px-3 py-1.5 bg-primary-600 text-white text-sm rounded hover:bg-primary-700 transition-colors"
+                      onClick={() => handleAddToCart(product)}
+                      className={`px-3 py-1.5 text-sm rounded transition-colors ${
+                        addedToCart[product.id]
+                          ? 'bg-green-600 hover:bg-green-700 text-white'
+                          : 'bg-primary-600 hover:bg-primary-700 text-white'
+                      }`}
                     >
-                      Buy Now
+                      {addedToCart[product.id] ? 'Added ✓' : 'Add to Cart'}
                     </button>
                   </div>
                 </div>
