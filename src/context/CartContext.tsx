@@ -1,56 +1,56 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-interface Product {
+// Update the Product type to include the image property
+export interface Product {
   id: string;
   name: string;
   price: number;
+  quantity?: number;
+  image?: string;
+}
+
+interface CartItem extends Product {
   quantity: number;
 }
 
 interface CartContextType {
-  items: Product[];
-  addToCart: (product: Omit<Product, 'quantity'>, quantity?: number) => void;
+  items: CartItem[];
+  addToCart: (product: Omit<Product, "quantity">) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   totalItems: number;
-  subtotal: number;
+  totalPrice: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [items, setItems] = useLocalStorage<Product[]>('cart', []);
-  const [totalItems, setTotalItems] = useState(0);
-  const [subtotal, setSubtotal] = useState(0);
+export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [items, setItems] = useState<CartItem[]>([]);
 
-  useEffect(() => {
-    // Calculate total items and subtotal whenever items change
-    const newTotalItems = items.reduce((total, item) => total + item.quantity, 0);
-    const newSubtotal = items.reduce((total, item) => total + (item.price * item.quantity), 0);
+  const addToCart = (product: Omit<Product, "quantity">) => {
+    // Ensure name is defined
+    const productWithName = {
+      ...product,
+      name: product.name as string // Type assertion
+    };
     
-    setTotalItems(newTotalItems);
-    setSubtotal(newSubtotal);
-  }, [items]);
-
-  const addToCart = (product: Omit<Product, 'quantity'>, quantity = 1) => {
     setItems(prevItems => {
-      const existingItemIndex = prevItems.findIndex(item => item.id === product.id);
+      // Check if the product is already in the cart
+      const existingItem = prevItems.find(item => item.id === productWithName.id);
       
-      if (existingItemIndex >= 0) {
-        // If item already exists, update quantity
-        const updatedItems = [...prevItems];
-        updatedItems[existingItemIndex] = {
-          ...updatedItems[existingItemIndex],
-          quantity: updatedItems[existingItemIndex].quantity + quantity
-        };
-        return updatedItems;
+      if (existingItem) {
+        // If it exists, increase the quantity
+        return prevItems.map(item => 
+          item.id === productWithName.id 
+            ? { ...item, quantity: item.quantity + 1 } 
+            : item
+        );
       } else {
-        // If item doesn't exist, add it
-        return [...prevItems, { ...product, quantity }];
+        
+        return [...prevItems, { ...productWithName, quantity: 1 }];
       }
     });
   };
@@ -76,6 +76,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems([]);
   };
 
+  const totalItems = items.reduce((total, item) => total + item.quantity, 0);
+  
+  const totalPrice = items.reduce(
+    (total, item) => total + item.price * item.quantity, 
+    0
+  );
+
   return (
     <CartContext.Provider value={{
       items,
@@ -84,7 +91,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateQuantity,
       clearCart,
       totalItems,
-      subtotal
+      totalPrice
     }}>
       {children}
     </CartContext.Provider>
