@@ -5,6 +5,7 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 interface MenuContextType {
   isMenuOpen: boolean;
   toggleMenu: () => void;
+  setIsMenuOpen: (isOpen: boolean) => void;
   closeMenu: () => void;
   openMenu: () => void;
 }
@@ -27,7 +28,13 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <MenuContext.Provider value={{ isMenuOpen, toggleMenu, closeMenu, openMenu }}>
+    <MenuContext.Provider value={{ 
+      isMenuOpen, 
+      toggleMenu, 
+      setIsMenuOpen, 
+      closeMenu, 
+      openMenu 
+    }}>
       {children}
     </MenuContext.Provider>
   );

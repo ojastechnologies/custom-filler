@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useTheme } from '@/context/ThemeContext';
 import { useMenuContext } from '@/context/MenuContext';
+import { useCart } from '@/context/CartContext';
 import Button from '@/components/ui/Button';
 
 interface HeaderProps {
@@ -14,6 +15,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ cartItemCount = 0 }) => {
   const { theme, toggleTheme } = useTheme();
   const { isMenuOpen, toggleMenu, setIsMenuOpen } = useMenuContext();
+  const { totalItems } = useCart();
   const [isScrolled, setIsScrolled] = useState(false);
   
   useEffect(() => {
@@ -54,6 +56,46 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount = 0 }) => {
               <span className="text-xl font-bold text-gray-900 dark:text-white">Aero Tech Labs</span>
             </Link>
             
+            {/* Desktop Navigation - Added this section */}
+            <nav className="hidden md:flex items-center space-x-6">
+              <Link 
+                href="/" 
+                className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 font-medium"
+              >
+                Home
+              </Link>
+              <Link 
+                href="/about-us" 
+                className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 font-medium"
+              >
+                About Us
+              </Link>
+              <Link 
+                href="/services" 
+                className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 font-medium"
+              >
+                Services
+              </Link>
+              <Link 
+                href="/faqs" 
+                className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 font-medium"
+              >
+                FAQs
+              </Link>
+              <Link 
+                href="/contact-us" 
+                className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 font-medium"
+              >
+                Contact
+              </Link>
+              <Link 
+                href="/cart" 
+                className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 font-medium"
+              >
+                Cart
+              </Link>
+            </nav>
+            
             {/* Right side actions */}
             <div className="flex items-center space-x-4">
               {/* Theme toggle */}
@@ -74,20 +116,20 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount = 0 }) => {
               </button>
               
               {/* Cart */}
-              <Link href="/checkout" className="relative p-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+              <Link href="/cart" className="relative p-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                 </svg>
-                {cartItemCount > 0 && (
+                {totalItems > 0 && (
                   <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-primary-600 rounded-full">
-                    {cartItemCount}
+                    {totalItems}
                   </span>
                 )}
               </Link>
               
-              {/* Menu toggle button (both mobile and desktop) */}
+              {/* Menu toggle button (mobile only) */}
               <button
-                className="p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 z-60"
+                className="md:hidden p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 z-60"
                 onClick={toggleMenu}
               >
                 {isMenuOpen ? (
@@ -160,6 +202,13 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount = 0 }) => {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Contact
+                  </Link>
+                  <Link 
+                    href="/cart" 
+                    className="text-xl text-gray-800 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 font-medium"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Cart
                   </Link>
                 </nav>
               </div>
@@ -259,4 +308,3 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount = 0 }) => {
 };
 
 export default Header;
- 
