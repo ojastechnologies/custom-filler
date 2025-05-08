@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 // Update the Product type to include the image property
 export interface Product {
@@ -17,7 +17,7 @@ interface CartItem extends Product {
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (product: Omit<Product, "quantity">) => void;
+  addToCart: (product: Product) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -27,30 +27,66 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+// Use localStorage to persist cart data
+const loadCartFromStorage = (): CartItem[] => {
+  if (typeof window === 'undefined') return [];
+  
+  try {
+    const storedCart = localStorage.getItem('cart');
+    return storedCart ? JSON.parse(storedCart) : [];
+  } catch (error) {
+    console.error('Failed to load cart from localStorage:', error);
+    return [];
+  }
+};
+
+const saveCartToStorage = (items: CartItem[]) => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    localStorage.setItem('cart', JSON.stringify(items));
+  } catch (error) {
+    console.error('Failed to save cart to localStorage:', error);
+  }
+};
+
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  const addToCart = (product: Omit<Product, "quantity">) => {
-    // Ensure name is defined
-    const productWithName = {
-      ...product,
-      name: product.name as string // Type assertion
-    };
-    
+  // Load cart from localStorage on initial render
+  useEffect(() => {
+    setItems(loadCartFromStorage());
+    setIsInitialized(true);
+  }, []);
+
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    if (isInitialized) {
+      saveCartToStorage(items);
+    }
+  }, [items, isInitialized]);
+
+  const addToCart = (product: Product) => {
     setItems(prevItems => {
       // Check if the product is already in the cart
-      const existingItem = prevItems.find(item => item.id === productWithName.id);
+      const existingItemIndex = prevItems.findIndex(item => item.id === product.id);
       
-      if (existingItem) {
-        // If it exists, increase the quantity
-        return prevItems.map(item => 
-          item.id === productWithName.id 
-            ? { ...item, quantity: item.quantity + 1 } 
-            : item
-        );
+      if (existingItemIndex >= 0) {
+        // If it exists, update the quantity
+        const updatedItems = [...prevItems];
+        const newQuantity = (prevItems[existingItemIndex].quantity || 0) + (product.quantity || 1);
+        updatedItems[existingItemIndex] = {
+          ...prevItems[existingItemIndex],
+          quantity: newQuantity
+        };
+        return updatedItems;
       } else {
-        
-        return [...prevItems, { ...productWithName, quantity: 1 }];
+        // If it doesn't exist, add it to the cart
+        return [...prevItems, { 
+          ...product, 
+          quantity: product.quantity || 1 
+        }];
       }
     });
   };
