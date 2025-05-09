@@ -1,8 +1,8 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
-import { MenuProvider } from "@/context/MenuContext";
 
 export const metadata: Metadata = {
   title: "Aero Tech Labs",
@@ -17,13 +17,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ThemeProvider>
-          <CartProvider>
-            <MenuProvider>
+        <AuthProvider>
+          <ThemeProvider>
+            <CartProvider>
               {children}
-            </MenuProvider>
-          </CartProvider>
-        </ThemeProvider>
+            </CartProvider>
+          </ThemeProvider>
+        </AuthProvider>
       </body>
     </html>
   );
