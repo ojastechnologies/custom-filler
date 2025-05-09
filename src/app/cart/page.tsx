@@ -13,7 +13,7 @@ export default function CartPage() {
   const { items, removeFromCart, updateQuantity, clearCart, totalItems, totalPrice } = useCart();
   
   const handleCheckout = () => {
-    router.push('/checkout');
+    // router.push('/checkout');
   };
   
   return (

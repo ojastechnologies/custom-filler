@@ -1,63 +1,87 @@
-import React from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import Card from '../ui/Card';
+'use client';
 
-const services = [
-  {
-    id: 1,
-    title: "1 Inch Opening Contract Filling",
-    description: "Found on a majority of aerosol products throughout the industry and is the standard for larger fill operations.",
-    link: "/services/1-inch-filling"
-  },
-  {
-    id: 2,
-    title: "20 mm Opening Contract Filling",
-    description: "Found on small, one piece, aluminum cans. These cans will hold anywhere from a few grams to several ounces of product.",
-    link: "/services/20mm-filling"
-  },
-  {
-    id: 3,
-    title: "Non Flammable Propellant",
-    description: "We fill exclusively with HFC134a and HFO1234ze, a new, low GWP, non VOC propellant.",
-    link: "/services"
-  },
-  {
-    id: 4,
-    title: "Laser Cryogen",
-    description: "We are the manufacturer. Buy Envirolase Cryogen Laser Coolant 1000 gram cylinders directly from us.",
-    link: "/services/laser-cryogen"
-  }
-];
+import React from 'react';
+import Link from 'next/link';
+import ClientImage from '@/components/ui/ClientImage';
 
 const ServicesSection = () => {
+  const services = [
+    {
+      id: '1-inch-filling',
+      title: '1 Inch Filling',
+      description: 'Standard 1 inch opening found on a majority of aerosol products throughout the industry. Available in various shapes and sizes from 35mm to 76mm diameter.',
+      image: '/images/1inch.png',
+      link: '/services/1-inch-filling'
+    },
+    {
+      id: '20mm-filling',
+      title: '20mm Filling',
+      description: '20mm opening usually found on small, one piece, aluminum cans. These aerosol products will hold anywhere from a few grams to around three ounces.',
+      image: '/images/20mm.png',
+      link: '/services/20mm-filling'
+    },
+    {
+      id: 'laser-cryogen',
+      title: 'Laser Cryogen',
+      description: 'High Purity Grade 1,1,1,3-Tetrafluoropropene, the next generation of safe, non-flammable, non-toxic, non-ozone depleting fluorocarbon gas for medical devices.',
+      image: '/images/laser_cryogen.png',
+      link: '/services/laser-cryogen'
+    }
+  ];
+
   return (
-    <section className="py-16 bg-gray-50 dark:bg-gray-800">
+    <section className="py-16 bg-white dark:bg-gray-800">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {services.map((service, index) => (
-            <Card key={service.id} className="h-full flex flex-col">
-              <div className="relative h-48 w-full mb-4 bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-xl font-bold rounded-t-lg">
-                {service.title}
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Our Services</h2>
+          <p className="mt-4 text-xl text-gray-600 dark:text-gray-400">
+            Specialized aerosol filling solutions for your unique needs
+          </p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {services.map(service => (
+            <div 
+              key={service.id} 
+              className="bg-gray-50 dark:bg-gray-900 rounded-lg shadow-md overflow-hidden transition-transform hover:-translate-y-1 duration-300"
+            >
+              <div className="relative h-48">
+                <ClientImage 
+                  src={service.image} 
+                  alt={service.title} 
+                  fill
+                  className="object-cover"
+                  // Remove the onError handler
+                />
               </div>
-              <div className="p-4 flex-grow">
+              <div className="p-6">
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                   {service.title}
                 </h3>
-                <p className="text-gray-700 dark:text-gray-300 mb-4">
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
                   {service.description}
                 </p>
-              </div>
-              <div className="p-4 pt-0 mt-auto">
                 <Link 
                   href={service.link}
-                  className="inline-block px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
                 >
-                  Read More
+                  <span>Learn More</span>
+                  <svg className="ml-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
                 </Link>
               </div>
-            </Card>
+            </div>
           ))}
+        </div>
+        
+        <div className="mt-12 text-center">
+          <Link 
+            href="/contact-us" 
+            className="inline-block px-6 py-3 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 transition-colors"
+          >
+            Request a Consultation
+          </Link>
         </div>
       </div>
     </section>
