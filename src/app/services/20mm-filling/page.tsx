@@ -70,19 +70,28 @@ const TwentyMMFillingPage = () => {
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                   Mouth Options
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                   {canMouths.map(mouth => (
-                    <div key={mouth.id} className="bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                      <div className="relative h-48">
+                    <div 
+                      key={mouth.id} 
+                      className="bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 border border-gray-200 dark:border-gray-600"
+                    >
+                      <div className="relative h-56 overflow-hidden">
                         <Image 
                           src={mouth.image} 
                           alt={mouth.name} 
                           fill
-                          className="object-cover"
+                          className="object-contain p-2 transition-transform duration-300 hover:scale-105"
+                          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
                         />
                       </div>
-                      <div className="p-3 text-center">
-                        <h4 className="font-medium text-gray-900 dark:text-white">{mouth.name}</h4>
+                      <div className="p-4 text-center bg-white dark:bg-gray-800">
+                        <h4 className="font-medium text-gray-900 dark:text-white text-lg">{mouth.name}</h4>
+                        <div className="mt-2 flex justify-center">
+                          <span className="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs px-3 py-1 rounded-full">
+                            Mouth Option
+                          </span>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -93,19 +102,28 @@ const TwentyMMFillingPage = () => {
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                   Neck And Shoulder Profiles
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                   {neckProfiles.map(profile => (
-                    <div key={profile.id} className="bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                      <div className="relative h-48">
+                    <div 
+                      key={profile.id} 
+                      className="bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 border border-gray-200 dark:border-gray-600"
+                    >
+                      <div className="relative h-56 overflow-hidden">
                         <Image 
                           src={profile.image} 
                           alt={profile.name} 
                           fill
-                          className="object-cover"
+                          className="object-contain p-2 transition-transform duration-300 hover:scale-105"
+                          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
                         />
                       </div>
-                      <div className="p-3 text-center">
-                        <h4 className="font-medium text-gray-900 dark:text-white">{profile.name}</h4>
+                      <div className="p-4 text-center bg-white dark:bg-gray-800">
+                        <h4 className="font-medium text-gray-900 dark:text-white text-lg">{profile.name}</h4>
+                        <div className="mt-2 flex justify-center">
+                          <span className="inline-block bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs px-3 py-1 rounded-full">
+                            Neck Profile
+                          </span>
+                        </div>
                       </div>
                     </div>
                   ))}
