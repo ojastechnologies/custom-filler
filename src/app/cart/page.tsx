@@ -75,7 +75,7 @@ export default function CartPage() {
                       <li key={item.id} className="p-4">
                         <div className="flex items-center space-x-4">
                           <div className="flex-shrink-0 relative w-16 h-16 rounded overflow-hidden">
-                            {item.image ? (
+                            {item.image && item.image !== "/placeholder-product.jpg" ? (
                               <Image
                                 src={item.image}
                                 alt={item.name}
@@ -84,7 +84,7 @@ export default function CartPage() {
                               />
                             ) : (
                               <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                                <span className="text-xs text-gray-500 dark:text-gray-400">No image</span>
+                                {/* <span className="text-xs text-gray-500 dark:text-gray-400">Product Image</span> */}
                               </div>
                             )}
                           </div>

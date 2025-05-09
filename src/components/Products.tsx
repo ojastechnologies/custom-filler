@@ -114,7 +114,7 @@ const Products = () => {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
-                      <span>Product Image</span>
+                      {/* <span>Product Image</span> */}
                     </div>
                   )}
                 </div>
