@@ -78,6 +78,12 @@ const ProductsSection = () => {
     router.push("/cart");
   };
 
+  const handleShareOnWhatsApp = (product: Product) => {
+    const message = `Check out this product: ${product.title} - ${window.location.origin}${product.about_url}`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   if (loading) {
     return (
       <section className="py-16 bg-gray-50 dark:bg-gray-900">
