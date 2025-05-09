@@ -1,16 +1,16 @@
-import './globals.css';
 import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { MenuProvider } from '@/context/MenuContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
 import WhatsAppChat from '@/components/WhatsAppChat';
+import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'Custom Filler - Aerosol Filling Services',
-  description: 'Custom aerosol filling services for various industries',
+  title: 'Custom Filler',
+  description: 'Custom Aerosol Filling Services',
 };
 
 export default function RootLayout({
@@ -18,12 +18,9 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-
-  const whatsappNumber = "+9779843650962"; 
-  
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={inter.className} suppressHydrationWarning>
         <ThemeProvider>
           <MenuProvider>
             <AuthProvider>

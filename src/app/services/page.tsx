@@ -150,36 +150,6 @@ export default function ServicesPage() {
               Browse our offerings below or contact us for custom requirements.
             </p>
             
-            {/* Category Filter */}
-            {categories.length > 0 && (
-              <div className="flex flex-wrap justify-center gap-2 mb-8">
-                <button
-                  onClick={() => setSelectedCategory(null)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                    selectedCategory === null 
-                      ? 'bg-primary-600 text-white' 
-                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  All Products
-                </button>
-                
-                {categories.map(category => (
-                  <button
-                    key={category}
-                    onClick={() => setSelectedCategory(category)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                      selectedCategory === category
-                        ? 'bg-primary-600 text-white' 
-                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                    }`}
-                  >
-                    {category}
-                  </button>
-                ))}
-              </div>
-            )}
-            
             {/* Products Grid */}
             {filteredProducts.length === 0 ? (
               <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-md">
@@ -187,15 +157,7 @@ export default function ServicesPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 12H4M12 4v16" />
                 </svg>
                 <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-white">No products found</h3>
-                <p className="mt-1 text-gray-500 dark:text-gray-400">Try selecting a different category or check back later.</p>
-                {selectedCategory && (
-                  <button 
-                    onClick={() => setSelectedCategory(null)}
-                    className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
-                  >
-                    View All Products
-                  </button>
-                )}
+                <p className="mt-1 text-gray-500 dark:text-gray-400">Check back later for our product listings.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -209,18 +171,17 @@ export default function ServicesPage() {
                       onMouseEnter={() => setHoveredProduct(product.id)}
                       onMouseLeave={() => setHoveredProduct(null)}
                     >
-                      {product.image ? (
-                        <Image 
-                          src={product.image}
-                          alt={product.name}
-                          fill
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <span className="text-gray-500 dark:text-gray-400">Product Image</span>
-                        </div>
-                      )}
+                      <Image 
+                        src={product.image || "/images/placeholder-product.jpg"}
+                        alt={product.name}
+                        fill
+                        className="object-cover"
+                        onError={(e) => {
+                          // Set fallback image on error
+                          const target = e.target as HTMLImageElement;
+                          target.src = "/images/placeholder-product.jpg";
+                        }}
+                      />
                       
                       <div 
                         className={`absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center gap-3 transition-opacity duration-300 ${
@@ -243,12 +204,6 @@ export default function ServicesPage() {
                     </div>
                     
                     <div className="p-5">
-                      {product.category && (
-                        <span className="inline-block px-2 py-1 text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded mb-2">
-                          {product.category}
-                        </span>
-                      )}
-                      
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white line-clamp-1">
                           {product.name}
