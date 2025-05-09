@@ -13,6 +13,7 @@ export interface Product {
   quantity?: number;
   image?: string;
   description?: string;
+  about_url?:string;
 }
 
 const Products = () => {
@@ -108,12 +109,12 @@ const Products = () => {
                   {product.image ? (
                     <img 
                       src={product.image} 
-                      alt={product.name} 
+                      alt={product.title} 
                       className="w-full h-full object-cover"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
-                      <span>Product Image</span>
+                      {/* <span>Product Image</span> */}
                     </div>
                   )}
                 </div>

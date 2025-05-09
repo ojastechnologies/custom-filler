@@ -59,17 +59,17 @@ const Footer = () => {
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Products</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/1-inch-filling" className="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400">
+                <Link href="/services/1-inch-filling" className="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400">
                   1 Inch Filling
                 </Link>
               </li>
               <li>
-                <Link href="/20mm-filling" className="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400">
+                <Link href="/services/20mm-filling" className="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400">
                   20mm Filling
                 </Link>
               </li>
               <li>
-                <Link href="/laser-cryogen" className="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400">
+                <Link href="/services/laser-cryogen" className="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400">
                   Laser Cryogen
                 </Link>
               </li>

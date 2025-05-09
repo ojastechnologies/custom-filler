@@ -1,12 +1,16 @@
-import "./globals.css";
-import type { Metadata } from "next";
-import { ThemeProvider } from "@/context/ThemeContext";
-import { AuthProvider } from "@/context/AuthContext";
-import { CartProvider } from "@/context/CartContext";
+import { Inter } from 'next/font/google';
+import { ThemeProvider } from '@/context/ThemeContext';
+import { MenuProvider } from '@/context/MenuContext';
+import { AuthProvider } from '@/context/AuthContext';
+import { CartProvider } from '@/context/CartContext';
+import WhatsAppChat from '@/components/WhatsAppChat';
+import './globals.css';
 
-export const metadata: Metadata = {
-  title: "Aero Tech Labs",
-  description: "Contract Aerosol Filling and Laser Cryogen Specialists",
+const inter = Inter({ subsets: ['latin'] });
+
+export const metadata = {
+  title: 'Custom Filler',
+  description: 'Custom Aerosol Filling Services',
 };
 
 export default function RootLayout({
@@ -15,15 +19,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>
-        <AuthProvider>
-          <ThemeProvider>
-            <CartProvider>
-              {children}
-            </CartProvider>
-          </ThemeProvider>
-        </AuthProvider>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className} suppressHydrationWarning>
+        <ThemeProvider>
+          <MenuProvider>
+            <AuthProvider>
+              <CartProvider>
+                {children}
+                <WhatsAppChat />
+              </CartProvider>
+            </AuthProvider>
+          </MenuProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

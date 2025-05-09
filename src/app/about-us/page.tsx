@@ -25,10 +25,13 @@ export default function AboutUs() {
             
             <div className="flex flex-col md:flex-row items-center gap-8 mb-16">
               {/* Left Image */}
-              <div className="w-full md:w-1/2 h-64 md:h-96 bg-gray-200 dark:bg-gray-700 rounded-lg relative">
-                <div className="absolute inset-0 flex items-center justify-center text-gray-500 dark:text-gray-400 text-xl font-semibold">
-                  Aerosol Filling Facility Image
-                </div>
+              <div className="w-full md:w-1/2 h-64 md:h-96 relative rounded-lg overflow-hidden">
+                <Image 
+                  src="/images/about1.jpg"
+                  alt="Aerosol Filling Facility"
+                  fill
+                  className="object-cover"
+                />
               </div>
               
               {/* Right Text */}
@@ -48,10 +51,13 @@ export default function AboutUs() {
             {/* Second Description with Right Image */}
             <div className="flex flex-col md:flex-row-reverse items-center gap-8">
               {/* Right Image */}
-              <div className="w-full md:w-1/2 h-64 md:h-96 bg-gray-200 dark:bg-gray-700 rounded-lg relative">
-                <div className="absolute inset-0 flex items-center justify-center text-gray-500 dark:text-gray-400 text-xl font-semibold">
-                  Aerosol Products Image
-                </div>
+              <div className="w-full md:w-1/2 h-64 md:h-96 relative rounded-lg overflow-hidden">
+                <Image 
+                  src="/images/about2.png"
+                  alt="Aerosol Products"
+                  fill
+                  className="object-cover"
+                />
               </div>
               
               {/* Left Text */}
