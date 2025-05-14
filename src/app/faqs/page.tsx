@@ -3,6 +3,34 @@ import Card from '@/components/ui/Card';
 
 const faqs = [
   {
+    question: "Are there minimum orders for contract fills?",
+    answer: "Yes! In this industry 30,000 to 50,000 is what we call the “magic number”. We can't order less than 30,000 cans from our suppliers whether they're printed or unprinted. Aerosol valves are sold in minimum quantities of 50,000 as well. The components for aerosol packaging are NOT “off the shelf” items and are built by the manufacturer to your specific need at time of order. Aerosol cans, whether aluminum or steel, come in a variety of sizes & shapes, and each configuration is what makes your product unique. In order for these companies to change their tooling for your configurations they demand a minimum component run of 30-50K."
+  },
+  {
+    question: "What can ATL do for me?",
+    answer: "OOnce given the “go ahead” on your project with a purchase order, Aero Tech Labs will source your can, valve, box, actuator and other components to build your specific “turn key” product. After we become familiar with production and specification, ATL will be your one-stop-shop to keep your product manufactured and on the shelf. We are committed to the finest care for your long term filling needs."
+  },
+  {
+    question: "Are there lead times?",
+    answer: "You bet there are! We can source caps, valves, actuators, and custom printed cartons in a matter of 4 weeks, give or take some time. The main limiting factor is acquiring aerosol cans! Custom cans, and all cans are custom made at time of order as there is no inventory, now have lead times with a minimum of 12 weeks, and these lead times are capable of increasing without notice. Cans, whether they have your lithograph or plain white, are produced to your specifications only when they are requested by purchase order as dictated by ISO. Therefore, acquiring the can is a limiting factor."
+  },
+  {
+    question: "Are aerosols hazardous?",
+    answer: "According to the U.S. Department of Transportation (DOT) all aerosol products are designated with the minimum hazardous classification of ORM-D (other regulated material: Class D) and must be labeled as such on all exterior packaging and shipping documents/Bill of Lading (BOL). When aerosol products move in transit, it is the law that they be accompanied by a Material Safety Data Sheet (MSDS). So much for the bad news. Because aerosols maintain such a low order (ORM-D) of hazardous classification, generally most ground shipments will NOT require extra \"Hazardous Goods Declarations\" and will ship with just an MSDS. This makes the shipment of your end product by the case or box so much easier and simpler and a carrier like UPS or FedEx will do so for your firm once you have signed on with them as a hazardous shipper. The bottom line is that aerosol products ship under a lower hazardous designation and you can ship cases via \"Ground Parcel Carriers\" with more ease than you could any other chemical products."
+  },
+  {
+    question: "Material Safety Data Sheet: MSDS",
+    answer: "If you read \"Are Aerosols Hazardous\" above, then you must know that an MSDS is the law and must accompany your product in transit domestically & internationally. Aero Tech Labs, Inc. will not write your MSDS for you but we work with consultants who will author and validate your product's MSDS in a legally updated, validated and professional manner. The charge is very nominal and it takes a few days to acquire. We will assist you every way possible so that your finished product leaves our facility correctly saving you headaches and liability."
+  },
+  {
+    question: "Liability of end product",
+    answer: "Except in cases where the end product is 100% propellant, your formula must be submitted and validated by a chemist, consulting firm, and/or ingredient supplier that will take responsibility for their formula. Aero Tech Labs generally will not formulate your product without the help of a consultant firm that will sign off on the efficacy and stability of your end product; no exceptions. We work with a variety of formulation consultants who are exceptional in their field and will generate all the requisite data for your product. Before your product goes to market, you want to be sure that your product remains effective and stable on the store shelves. Aero Tech Labs Inc maintains a minimum amount of product liability and our insurance company dictates that \"when your label goes on the product, it is your liability and responsibility\"; no exceptions. It then becomes a requisite for the marketer to maintain their own liability insurance for their end product for this very reason. This is also why Aero Tech Labs Inc. requests that your formula be (1) formulated and signed off by an industry consultant, (2) have stability testing done on the end product, and (3) maintain liability and responsibility for their end use and marketing claims. Our insurance will only cover for our mistakes in the production of your product. All of these requirements are very small hurdles that can be handled by a consultant that will handle the formula, stability test, and MSDS and can be accomplished way before manufacturing time."
+  },
+  {
+    question: "Toll Free Emergency Response Number",
+    answer: "When your aerosol product moves in transit, the MSDS must have a Toll Free Emergency Response Number for contact by law. Aero Tech Labs does offer this service to its clientele for the cost of $ 200.00 per year per product. Your product will be registered with a hazardous materials clearing house that will answer the phone 24/7 so you won't have to."
+  },
+  {
     question: "What types of aerosol products can you fill?",
     answer: "We specialize in filling a wide range of aerosol products, including but not limited to personal care products, household cleaners, industrial solutions, and medical-grade products like laser cryogen. Our facility is equipped to handle both water-based and solvent-based formulations."
   },
@@ -69,7 +97,7 @@ export default function FAQsPage() {
             
             <div className="mt-12 text-center">
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Don&apos;t see your question here? Contact us directly and we&apos;ll be happy to help.
+                Don't see your question here? Contact us directly and we'll be happy to help.
               </p>
               <a 
                 href="/contact-us" 

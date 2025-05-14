@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
+import Image from 'next/image';
+
 
 const Header = () => {
   const { theme, toggleTheme } = useTheme();
@@ -40,7 +42,13 @@ const Header = () => {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <span className="text-xl font-bold text-gray-900 dark:text-white">Aero Tech Labs</span>
+            <Image 
+              src="/img/logo_nav_bar.png" 
+              alt="Aero Tech Labs" 
+              width={180} 
+              height={40} 
+              className="dark:invert"
+            />
           </Link>
           
           {/* Desktop Navigation */}
