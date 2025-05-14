@@ -8,6 +8,8 @@ import Footer from '@/components/layout/Footer';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { getProductById, updateProduct, Product } from '@/app/services/adminProductsService';
+import NextImage from 'next/image';
+import { ProductType } from '@/types/product';
 
 export default function EditProductPage({ 
   params 
@@ -17,7 +19,8 @@ export default function EditProductPage({
   const { user, loading, isAdmin, isSuperAdmin } = useAuth();
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ProductType>({
+    id: '',
     title: '',
     description: '',
     price: 0,
@@ -28,6 +31,7 @@ export default function EditProductPage({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     // Redirect if not logged in or not super admin
@@ -47,6 +51,7 @@ export default function EditProductPage({
       const data = await getProductById(params.id);
       setProduct(data);
       setFormData({
+        id: data.id || '',
         title: data.title,
         description: data.description,
         price: data.price,
@@ -231,13 +236,12 @@ export default function EditProductPage({
                     <div className="mt-2">
                       <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Image Preview:</p>
                       <div className="h-40 w-40 bg-gray-200 dark:bg-gray-700 rounded-md overflow-hidden">
-                        <img
-                          src={formData.image}
+                        <NextImage 
+                          src={imagePreview || '/placeholder-product.jpg'} 
                           alt="Product preview"
-                          className="h-full w-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Invalid+Image';
-                          }}
+                          width={200}
+                          height={200}
+                          className="w-full h-full object-cover"
                         />
                       </div>
                     </div>

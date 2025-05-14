@@ -10,6 +10,16 @@ import { useCart } from '@/context/CartContext';
 import { fetchProducts } from '@/app/services/productsService';
 import Card from '@/components/ui/Card';
 
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  description?: string;
+  image?: string;
+  category?: string;
+  quantity?: number;
+}
+
 export default function ServicesPage() {
   const router = useRouter();
   const { addToCart } = useCart();

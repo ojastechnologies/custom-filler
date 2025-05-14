@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
-import Button from '@/components/ui/Button';
 
 const Header = () => {
   const { theme, toggleTheme } = useTheme();

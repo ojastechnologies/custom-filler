@@ -10,7 +10,9 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 
 interface ProfileData {
-  full_name?: string;
+  id: string;
+  name?: string;
+  email?: string;
   phone?: string;
   address?: string;
   city?: string;
@@ -22,7 +24,7 @@ interface ProfileData {
 export default function ProfilePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [profile, setProfile] = useState<ProfileData>({});
+  const [profile, setProfile] = useState<ProfileData>({ id: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -168,7 +170,7 @@ export default function ProfilePage() {
                     id="full_name"
                     name="full_name"
                     type="text"
-                    value={profile.full_name || ''}
+                    value={profile.name || ''}
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-white"
                   />
@@ -286,7 +288,7 @@ export default function ProfilePage() {
                 Change Password
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
-                To change your password, click the button below. You'll receive an email with instructions.
+                We'll send you a verification email
               </p>
               <Button
                 variant="outline"

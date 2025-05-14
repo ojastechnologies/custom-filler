@@ -8,11 +8,17 @@ import Footer from '@/components/layout/Footer';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { createProduct } from '@/app/services/adminProductsService';
+import NextImage from 'next/image';
+import { ProductType } from '@/types/product';
 
 export default function AdminNewProductPage() {
   const { user, loading, isAdmin, isSuperAdmin } = useAuth();
   const router = useRouter();
-  const [formData, setFormData] = useState({
+  // Add this near your other useState declarations
+const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const [formData, setFormData] = useState<ProductType>({
+    id: '',
     title: '',
     description: '',
     price: 0,
@@ -182,13 +188,12 @@ export default function AdminNewProductPage() {
                     <div className="mt-2">
                       <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Image Preview:</p>
                       <div className="h-40 w-40 bg-gray-200 dark:bg-gray-700 rounded-md overflow-hidden">
-                        <img
-                          src={formData.image}
+                        <NextImage 
+                          src={formData.image || '/placeholder-product.jpg'} 
                           alt="Product preview"
-                          className="h-full w-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Invalid+Image';
-                          }}
+                          width={200}
+                          height={200}
+                          className="w-full h-full object-cover"
                         />
                       </div>
                     </div>

@@ -12,11 +12,13 @@ import {
   deleteProduct, 
   Product 
 } from '@/app/services/adminProductsService';
+import { ProductType } from '@/types/product';
+import NextImage from 'next/image';
 
 export default function AdminProductsPage() {
   const { user, loading, isAdmin, isSuperAdmin } = useAuth();
   const router = useRouter();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -164,10 +166,12 @@ export default function AdminProductsPage() {
                             <div className="flex items-center">
                               <div className="h-10 w-10 flex-shrink-0 bg-gray-200 dark:bg-gray-700 rounded-md overflow-hidden">
                                 {product.image ? (
-                                  <img
-                                    src={product.image}
-                                    alt={product.title}
-                                    className="h-10 w-10 object-cover"
+                                  <NextImage 
+                                    src={product.image || '/placeholder-product.jpg'} 
+                                    alt={product.title || "Product image"}
+                                    width={50}
+                                    height={50}
+                                    className="w-full h-full object-cover"
                                   />
                                 ) : (
                                   <div className="h-10 w-10 flex items-center justify-center text-gray-500 dark:text-gray-400 text-xs">

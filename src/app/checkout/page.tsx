@@ -14,7 +14,13 @@ import { useRouter } from 'next/navigation';
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [product, setProduct] = useState<any>(null);
+  interface Product {
+    id: number;
+    title: string;
+    price: number;
+    image?: string;
+  }
+  const [product, setProduct] = useState<Product | null>(null);
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('customer-details');
   const [formData, setFormData] = useState({
     email: '',

@@ -1,8 +1,20 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Session, User } from '@supabase/supabase-js';
+import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabaseClient';
+
+interface User {
+  id: string;
+  email?: string;
+  // Add other user properties
+}
+
+interface AuthState {
+  user: User | null;
+  isLoading: boolean;
+  // Add other state properties
+}
 
 interface AuthContextType {
   user: User | null;

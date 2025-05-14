@@ -9,7 +9,7 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     const handleAuthCallback = async () => {
-      const { error } = await supabase.auth.getSession();
+      const { data: authData, error: _ } = await supabase.auth.getSession();
       
       // Redirect to login page regardless of result
       router.push('/login');

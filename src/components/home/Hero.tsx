@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import * as NextImage from 'next/image';
 
 const carouselItems = [
   {
@@ -126,6 +127,8 @@ const Hero = () => {
                       <img 
                         src={carouselItems[currentSlide].image}
                         alt={carouselItems[currentSlide].title}
+                        width={600}
+                        height={400}
                         className="w-full h-full object-cover"
                       />
                     ) : (

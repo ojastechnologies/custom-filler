@@ -86,7 +86,6 @@ export default function RegisterForm() {
       setLoading(false);
     }
   };
-
   return (
     <Card className="p-8">
       <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">

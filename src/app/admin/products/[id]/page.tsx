@@ -8,11 +8,21 @@ import Footer from '@/components/layout/Footer';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { getProductById, Product } from '@/app/services/adminProductsService';
+import NextImage from 'next/image';
+import { ProductType } from '@/types/product';
 
 export default function AdminProductDetailPage({ params }: { params: { id: string } }) {
   const { user, loading, isAdmin } = useAuth();
   const router = useRouter();
-  const [product, setProduct] = useState<Product | null>(null);
+  // Add this near your other useState declarations
+const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const [product, setProduct] = useState<ProductType>({
+    id: '',
+    title: '',
+    price: 0,
+    // other defaults
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
