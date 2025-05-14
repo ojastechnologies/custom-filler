@@ -2,12 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import { Suspense } from 'react';
 
-export default function LoginForm() {
+import { useSearchParams } from 'next/navigation';
+
+function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
@@ -154,5 +157,13 @@ export default function LoginForm() {
         </p>
       </div>
     </Card>
+  );
+}
+
+export default function LoginForm() {
+  return (
+    <Suspense fallback={<Card className="p-8"><div className="text-center">Loading login form...</div></Card>}>
+      <LoginFormContent />
+    </Suspense>
   );
 }

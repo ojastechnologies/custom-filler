@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Header from '@/components/layout/Header';
@@ -9,8 +8,12 @@ import Footer from '@/components/layout/Footer';
 
 type CheckoutStep = 'customer-details' | 'delivery-method' | 'payment' | 'review';
 
-export default function Checkout() {
+import { useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+
+function CheckoutContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [product, setProduct] = useState<any>(null);
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('customer-details');
   const [formData, setFormData] = useState({
@@ -796,5 +799,21 @@ export default function Checkout() {
       </main>
       <Footer />
     </>
+  );
+}
+
+export default function Checkout() {
+  return (
+    <Suspense fallback={
+      <>
+        <Header />
+        <div className="container mx-auto px-4 py-20 text-center">
+          <h1 className="text-2xl font-bold mb-4">Loading checkout...</h1>
+        </div>
+        <Footer />
+      </>
+    }>
+      <CheckoutContent />
+    </Suspense>
   );
 }
