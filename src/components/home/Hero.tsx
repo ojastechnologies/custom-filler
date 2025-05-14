@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const carouselItems = [
@@ -9,7 +10,7 @@ const carouselItems = [
     id: 1,
     title: "Contract Aerosol Filling and Laser Cryogen",
     description: "Contract Aerosol Filling of Your Products with Non-Flammable Propellents HFC134a and HFO12342e",
-    image: "https://customfiller.com/wp-content/uploads/2022/11/envirolase-coolant-case-top.png",
+    image: "/img/1.png",
     buttonText: "Explore Services",
     buttonLink: "/services"
   },
@@ -17,7 +18,7 @@ const carouselItems = [
     id: 2,
     title: "1 Inch Opening Contract Aerosol Filling",
     description: "Found on a majority of aerosol products throughout the industry and is the standard for larger fill operations. These cans are available in a variety of shapes and sizes from 35mm all the way up to 76mm diameter.",
-    image: "https://customfiller.com/wp-content/uploads/2022/04/1inch.png",
+    image: "https://customfiller.com/wp-content/uploads/2022/04/carousel2.png",
     buttonText: "Learn More",
     buttonLink: "/services/1-inch-filling"
   },
@@ -25,7 +26,7 @@ const carouselItems = [
     id: 3,
     title: "20 mm Opening Contract Aerosol Filling",
     description: "Usually found on small, one piece, aluminum cans. These aerosol products will hold anywhere from a few grams to several ounces of your product. Sizes range from 22mm in diameter up to 50mm with the 20mm top.",
-    image: "https://customfiller.com/wp-content/uploads/2022/04/20mm.png",
+    image: "/img/20mm.png",
     buttonText: "View Details",
     buttonLink: "/services/20mm-filling"
   },
@@ -33,7 +34,7 @@ const carouselItems = [
     id: 4,
     title: "This Could Be Your Project",
     description: "Let us help you bring your aerosol product to market with our specialized filling services.",
-    image: "https://img.freepik.com/free-vector/green-cross-geometric-shape-vector_53876-168849.jpg?t=st=1746705192~exp=1746708792~hmac=1ff1e13f5f5704b17f6b06435efb43e6611507ad4ed8e08eac6e285a2ce6a317&w=1380",
+    image: "https://customfiller.com/wp-content/uploads/2022/04/carousel-5.mp4",
     buttonText: "Get Started",
     buttonLink: "/contact-us"
   }
@@ -44,6 +45,7 @@ const Hero = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const nextSlide = useCallback(() => {
     if (!isTransitioning) {
@@ -82,18 +84,29 @@ const Hero = () => {
     }
   };
 
-  // Auto-advance the carousel
+  
   useEffect(() => {
     const interval = setInterval(() => {
       nextSlide();
-    }, 6000); // Change slide every 6 seconds
+    }, 6000); 
 
     return () => clearInterval(interval);
   }, [nextSlide]);
 
+  useEffect(() => {
+    if (currentSlide === 3 && videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(err => console.log('Video play error:', err));
+    }
+  }, [currentSlide]);
+
+
+  const isVideoSlide = (index: number) => {
+    return carouselItems[index].id === 4;
+  };
+
   return (
     <section className="relative">
-      {/* Carousel with blue gradient background */}
       <div 
         className="relative h-[600px] md:h-[500px] lg:h-[600px] overflow-hidden bg-gradient-to-br from-primary-700 via-primary-600 to-primary-800 dark:from-primary-900 dark:via-primary-800 dark:to-primary-900"
         onTouchStart={handleTouchStart}
@@ -114,7 +127,7 @@ const Hero = () => {
           >
             <div className="h-full container mx-auto px-4">
               <div className="h-full flex flex-col md:flex-row items-center">
-                {/* Image Side */}
+                {/* Image/Video Side */}
                 <motion.div 
                   className="w-full md:w-1/2 h-64 md:h-full p-4 flex items-center justify-center"
                   initial={{ x: -50, opacity: 0 }}
@@ -123,13 +136,26 @@ const Hero = () => {
                 >
                   <div className="relative w-full h-full max-h-[400px] rounded-lg overflow-hidden shadow-lg bg-white dark:bg-gray-800">
                     {carouselItems[currentSlide].image ? (
-                      <img 
-                        src={carouselItems[currentSlide].image}
-                        alt={carouselItems[currentSlide].title}
-                        width={600}
-                        height={400}
-                        className="w-full h-full object-cover"
-                      />
+                      isVideoSlide(currentSlide) ? (
+                        // Video content for slide with id 4
+                        <video
+                          ref={videoRef}
+                          src={carouselItems[currentSlide].image}
+                          className="w-full h-full"
+                          muted
+                          loop
+                          playsInline
+                        />
+                      ) : (
+                        // Image content for other slides
+                        <Image 
+                          src={carouselItems[currentSlide].image}
+                          alt={carouselItems[currentSlide].title}
+                          fill
+                          className="w-full h-full"
+                          priority={currentSlide === 0} // Prioritize loading the first slide image
+                        />
+                      )
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-primary-500 to-primary-400 text-white">
                         <div className="text-center p-4">
@@ -242,26 +268,23 @@ const Hero = () => {
               
               <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
                 <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-8 h-8 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">Non-Flammable Propellants</h3>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">Quality Assurance</h3>
                 <p className="text-gray-700 dark:text-gray-300">
-                  Our specialty is aerosol filling with non-flammable propellant systems, ensuring safety and performance.
+                  We maintain strict quality control standards to ensure your products meet all specifications and regulatory requirements.
                 </p>
               </div>
             </div>
             
             <div className="mt-12">
               <Link 
-                href="/services" 
-                className="inline-flex items-center text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
+                href="/contact-us" 
+                className="inline-block bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-8 rounded-md transition-colors shadow-md"
               >
-                <span>View All Our Products</span>
-                <svg className="ml-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
+                Request a Quote
               </Link>
             </div>
           </div>
