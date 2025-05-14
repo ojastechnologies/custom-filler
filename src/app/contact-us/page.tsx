@@ -131,7 +131,7 @@ export default function ContactUs() {
                       </svg>
                       <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Thank You!</h2>
                       <p className="text-gray-600 dark:text-gray-400">
-                        Your message has been sent successfully. We'll get back to you soon.
+                        Your message has been sent successfully. We&apos;ll get back to you soon.
                       </p>
                       <Button 
                         variant="primary" 

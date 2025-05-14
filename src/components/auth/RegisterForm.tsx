@@ -7,6 +7,12 @@ import { supabase } from '@/lib/supabaseClient';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 
+// Define a proper error type
+interface AuthError {
+  message: string;
+  status?: number;
+}
+
 export default function RegisterForm() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -80,13 +86,14 @@ export default function RegisterForm() {
         router.push('/login?registered=true');
       }, 3000);
       
-    } catch (err: any) {
-      setError(err.message || 'Failed to create account');
+    } catch (err: unknown) {
+      // Use type assertion with our custom error type
+      const authError = err as AuthError;
+      setError(authError.message || 'Failed to create account');
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <Card className="p-8">
       <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">

@@ -69,7 +69,7 @@ export default function FAQsPage() {
             
             <div className="mt-12 text-center">
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Don't see your question here? Contact us directly and we'll be happy to help.
+                Don&apos;t see your question here? Contact us directly and we&apos;ll be happy to help.
               </p>
               <a 
                 href="/contact-us" 

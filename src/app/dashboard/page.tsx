@@ -121,9 +121,9 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Member Since</p>
-                    <p className="text-gray-900 dark:text-white">
+                    {/* <p className="text-gray-900 dark:text-white">
                       {new Date(user.created_at).toLocaleDateString()}
-                    </p>
+                    </p> */}
                   </div>
                 </div>
                 <div className="mt-6 text-right">

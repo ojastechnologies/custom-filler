@@ -1,8 +1,20 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Session, User } from '@supabase/supabase-js';
+import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabaseClient';
+
+interface User {
+  id: string;
+  email?: string;
+  // Add other user properties
+}
+
+// Define a proper error type for auth operations
+interface AuthError {
+  message: string;
+  status?: number;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -10,8 +22,8 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
 }
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image'; // Import the Image component from next/image
 import Card from './ui/Card';
 import Button from './ui/Button';
 import { useCart } from '@/context/CartContext';
@@ -105,12 +106,13 @@ const Products = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {products.map((product) => (
               <Card key={product.id} className="h-full">
-                <div className="h-48 bg-gray-200 dark:bg-gray-700">
+                <div className="h-48 bg-gray-200 dark:bg-gray-700 relative">
                   {product.image ? (
-                    <img 
+                    <Image 
                       src={product.image} 
                       alt={product.title} 
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">

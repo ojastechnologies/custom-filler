@@ -10,6 +10,12 @@ import { Suspense } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
+// Define a proper error type
+interface AuthError {
+  message: string;
+  status?: number;
+}
+
 function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -32,7 +38,7 @@ function LoginFormContent() {
     setLoading(true);
     
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      const {  error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -42,8 +48,10 @@ function LoginFormContent() {
       // Redirect to dashboard on successful login
       router.push('/dashboard');
       router.refresh(); // Refresh to update auth state
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign in');
+    } catch (err: unknown) {
+      // Use type assertion with our custom error type
+      const authError = err as AuthError;
+      setError(authError.message || 'Failed to sign in');
     } finally {
       setLoading(false);
     }
@@ -70,8 +78,10 @@ function LoginFormContent() {
 
       setSuccessMessage('Password reset email sent. Please check your inbox.');
       
-    } catch (err: any) {
-      setError(err.message || 'Failed to send reset password email');
+    } catch (err: unknown) {
+      // Use type assertion with our custom error type
+      const authError = err as AuthError;
+      setError(authError.message || 'Failed to send reset password email');
     } finally {
       setLoading(false);
     }
@@ -147,7 +157,7 @@ function LoginFormContent() {
       
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Don't have an account?{' '}
+          Don&apos;t have an account?{' '}
           <Link 
             href="/register" 
             className="text-primary-600 hover:text-primary-500 dark:text-primary-400 font-medium"

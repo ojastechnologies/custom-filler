@@ -9,12 +9,16 @@ import Footer from '@/components/layout/Footer';
 type CheckoutStep = 'customer-details' | 'delivery-method' | 'payment' | 'review';
 
 import { useSearchParams } from 'next/navigation';
-import { useRouter } from 'next/navigation';
 
 function CheckoutContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const [product, setProduct] = useState<any>(null);
+  interface Product {
+    id: number;
+    title: string;
+    price: number;
+    image?: string;
+  }
+  const [product, setProduct] = useState<Product | null>(null);
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('customer-details');
   const [formData, setFormData] = useState({
     email: '',
@@ -652,7 +656,7 @@ function CheckoutContent() {
                       
                       <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-6">
                         <p className="text-gray-700 dark:text-gray-300 mb-4">
-                          Review your details above and continue when you're ready.
+                          Review your details above and continue when you&apos;re ready.
                         </p>
                         
                         <button

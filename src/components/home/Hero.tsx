@@ -126,6 +126,8 @@ const Hero = () => {
                       <img 
                         src={carouselItems[currentSlide].image}
                         alt={carouselItems[currentSlide].title}
+                        width={600}
+                        height={400}
                         className="w-full h-full object-cover"
                       />
                     ) : (
