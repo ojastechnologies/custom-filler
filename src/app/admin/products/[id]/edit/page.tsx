@@ -9,7 +9,11 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { getProductById, updateProduct, Product } from '@/app/services/adminProductsService';
 
-export default function AdminProductEditPage({ params }: { params: { id: string } }) {
+export default function EditProductPage({ 
+  params 
+}: { 
+  params: { id: string } 
+}) {
   const { user, loading, isAdmin, isSuperAdmin } = useAuth();
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
