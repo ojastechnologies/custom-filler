@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import * as NextImage from 'next/image';
 
 const carouselItems = [
   {

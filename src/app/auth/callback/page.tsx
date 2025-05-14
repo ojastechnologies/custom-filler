@@ -9,7 +9,12 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     const handleAuthCallback = async () => {
-      const { data: authData, error: _ } = await supabase.auth.getSession();
+      // Fix: Remove unused variables by not destructuring them
+      // Instead of:
+      // const { data: authData, error: _ } = await supabase.auth.getSession();
+      
+      // Just call the method without storing the result:
+      await supabase.auth.getSession();
       
       // Redirect to login page regardless of result
       router.push('/login');

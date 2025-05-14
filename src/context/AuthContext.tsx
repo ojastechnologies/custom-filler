@@ -10,10 +10,10 @@ interface User {
   // Add other user properties
 }
 
-interface AuthState {
-  user: User | null;
-  isLoading: boolean;
-  // Add other state properties
+// Define a proper error type for auth operations
+interface AuthError {
+  message: string;
+  status?: number;
 }
 
 interface AuthContextType {
@@ -22,8 +22,8 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
 }
 

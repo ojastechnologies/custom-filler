@@ -54,10 +54,10 @@ const TwentyMMFillingPage = () => {
             
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
               <p className="text-gray-700 dark:text-gray-300 mb-4">
-                We have had years of filling the 20 mm can and we can pass on our experience to you and facilitate the launch of your product. We have partnered with can companies that are capable of making aerosol cans that can take the pressure and won't leak.
+                We have had years of filling the 20 mm can and we can pass on our experience to you and facilitate the launch of your product. We have partnered with can companies that are capable of making aerosol cans that can take the pressure and won&apos;t leak.
               </p>
               <p className="text-gray-700 dark:text-gray-300 mb-4">
-                We have a "knowledge base" of suppliers for components, that we have worked with in the past, who are reliable, and can supply your needs your 20 mm product will require. Aero Tech Labs takes pride in filling "small" in a big way.
+                We have a &quot;knowledge base&quot; of suppliers for components, that we have worked with in the past, who are reliable, and can supply your needs your 20 mm product will require. Aero Tech Labs takes pride in filling &quot;small&quot; in a big way.
               </p>
             </div>
             

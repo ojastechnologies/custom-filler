@@ -65,7 +65,7 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [key, storedValue]); // Add storedValue to dependency array
+  }, [key, storedValue, initialValue]); // Added initialValue to dependency array
 
   return [storedValue, setValue];
 }

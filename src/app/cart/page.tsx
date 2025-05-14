@@ -3,16 +3,17 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
 
 export default function CartPage() {
-  const router = useRouter();
+  // Fix: Remove the unused router variable or use it in handleCheckout
+  // const router = useRouter();
   const { items, removeFromCart, updateQuantity, clearCart, totalItems, totalPrice } = useCart();
   
   const handleCheckout = () => {
+    // Uncomment this to use the router
     // router.push('/checkout');
   };
   
@@ -46,7 +47,7 @@ export default function CartPage() {
                   Your cart is empty
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Looks like you haven't added any products to your cart yet.
+                  Looks like you haven&apos;t added any products to your cart yet.
                 </p>
                 <Link 
                   href="/services" 

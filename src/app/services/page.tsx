@@ -10,7 +10,19 @@ import { useCart } from '@/context/CartContext';
 import { fetchProducts } from '@/app/services/productsService';
 import Card from '@/components/ui/Card';
 
-interface Product {
+// Remove unused Product interface or use it
+// interface Product {
+//   id: string;
+//   name: string;
+//   price: number;
+//   description?: string;
+//   image?: string;
+//   category?: string;
+//   quantity?: number;
+// }
+
+// Define a proper type for products
+interface ProductType {
   id: string;
   name: string;
   price: number;
@@ -26,7 +38,7 @@ export default function ServicesPage() {
   const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
   const [addedToCart, setAddedToCart] = useState<Record<string, boolean>>({});
   const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<ProductType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -41,7 +53,7 @@ export default function ServicesPage() {
         
         // Initialize quantities for each product
         const initialQuantities: Record<string, number> = {};
-        data.forEach((product: any) => {
+        data.forEach((product: ProductType) => {
           initialQuantities[product.id] = 1;
         });
         setQuantities(initialQuantities);
@@ -58,15 +70,7 @@ export default function ServicesPage() {
     loadProducts();
   }, []);
   
-  const handleQuantityChange = (productId: string, newQuantity: number) => {
-    if (newQuantity < 1) return;
-    setQuantities(prev => ({
-      ...prev,
-      [productId]: newQuantity
-    }));
-  };
-  
-  const handleAddToCart = (product: any) => {
+  const handleAddToCart = (product: ProductType) => {
     // Add the product to cart with the selected quantity
     addToCart({
       id: product.id,
@@ -85,7 +89,7 @@ export default function ServicesPage() {
     }, 2000);
   };
   
-  const handleBuyNow = (product: any) => {
+  const handleBuyNow = (product: ProductType) => {
     // Add to cart first with the selected quantity
     addToCart({
       id: product.id,
@@ -159,6 +163,36 @@ export default function ServicesPage() {
               Aero Tech Labs offers a comprehensive range of aerosol filling solutions and services. 
               Browse our offerings below or contact us for custom requirements.
             </p>
+            
+            {/* Category Filter */}
+            {categories.length > 0 && (
+              <div className="flex flex-wrap justify-center gap-2 mb-8">
+                <button
+                  onClick={() => setSelectedCategory(null)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    selectedCategory === null 
+                      ? 'bg-primary-600 text-white' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  All Products
+                </button>
+                
+                {categories.map(category => (
+                  <button
+                    key={category}
+                    onClick={() => setSelectedCategory(category)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                      selectedCategory === category
+                        ? 'bg-primary-600 text-white' 
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+            )}
             
             {/* Products Grid */}
             {filteredProducts.length === 0 ? (

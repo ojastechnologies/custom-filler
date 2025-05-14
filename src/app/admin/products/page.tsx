@@ -9,11 +9,16 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { 
   fetchAllProducts, 
-  deleteProduct, 
-  Product 
+  deleteProduct
 } from '@/app/services/adminProductsService';
 import { ProductType } from '@/types/product';
 import NextImage from 'next/image';
+
+// Define a proper error type
+interface ApiError {
+  message: string;
+  status?: number;
+}
 
 export default function AdminProductsPage() {
   const { user, loading, isAdmin, isSuperAdmin } = useAuth();
@@ -42,9 +47,11 @@ export default function AdminProductsPage() {
       const data = await fetchAllProducts();
       setProducts(data);
       setError(null);
-    } catch (err: any) {
-      console.error('Error fetching products:', err);
-      setError(err.message || 'Failed to load products');
+    } catch (err) {
+      // Use type assertion instead of any
+      const error = err as ApiError;
+      console.error('Error fetching products:', error);
+      setError(error.message || 'Failed to load products');
     } finally {
       setIsLoading(false);
     }
@@ -66,9 +73,11 @@ export default function AdminProductsPage() {
       setTimeout(() => {
         setSuccessMessage(null);
       }, 3000);
-    } catch (err: any) {
-      console.error('Error deleting product:', err);
-      setError(err.message || 'Failed to delete product');
+    } catch (err) {
+      // Use type assertion instead of any
+      const error = err as ApiError;
+      console.error('Error deleting product:', error);
+      setError(error.message || 'Failed to delete product');
     }
   };
 
@@ -199,9 +208,9 @@ export default function AdminProductsPage() {
                               {product.category || 'Uncategorized'}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                             {new Date(product.created_at || '').toLocaleDateString()}
-                          </td>
+                          </td> */}
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <div className="flex justify-end space-x-2">
                               <Button
@@ -215,7 +224,7 @@ export default function AdminProductsPage() {
                               {isSuperAdmin && (
                                 <>
                                   <Button
-                                    variant={deleteConfirm === product.id ? "danger" : "outline"}
+                                   
                                     size="sm"
                                     onClick={() => handleDelete(product.id)}
                                   >

@@ -39,13 +39,14 @@ export default function AboutUs() {
                 <p className="text-gray-700 dark:text-gray-300 text-lg leading-relaxed">
                   Aero Tech Labs is a small, dedicated, and ambitious aerosol custom filling facility located in South Florida. 
                   Strategically located in the Southern U.S., we can be an important link to produce aerosol products in that region. 
-                  Our forte is the filling of HFC 134a, a non-flammable propellant which is used in "ozone safe" refrigerant systems, 
+                  Our forte is the filling of HFC 134a, a non-flammable propellant which is used in &quot;ozone safe&quot; refrigerant systems, 
                   when there is an imperative need for non-flammable necessary end use products are a requisite, we use HFC 134a. 
                   If you need a different non-flammable propellant with a low global warming potential (GWP), then let us suggest 
                   HFO 1234ze. This new propellant is an exciting addition especially to high end cosmetic formulations where 
                   flammability may be considered a high liability.
                 </p>
               </div>
+
             </div>
             
             {/* Second Description with Right Image */}

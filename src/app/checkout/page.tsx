@@ -9,11 +9,9 @@ import Footer from '@/components/layout/Footer';
 type CheckoutStep = 'customer-details' | 'delivery-method' | 'payment' | 'review';
 
 import { useSearchParams } from 'next/navigation';
-import { useRouter } from 'next/navigation';
 
 function CheckoutContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   interface Product {
     id: number;
     title: string;
@@ -658,7 +656,7 @@ function CheckoutContent() {
                       
                       <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-6">
                         <p className="text-gray-700 dark:text-gray-300 mb-4">
-                          Review your details above and continue when you're ready.
+                          Review your details above and continue when you&apos;re ready.
                         </p>
                         
                         <button

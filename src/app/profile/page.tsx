@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
@@ -21,6 +21,12 @@ interface ProfileData {
   country?: string;
 }
 
+// Define a proper error type
+interface ApiError {
+  message: string;
+  status?: number;
+}
+
 export default function ProfilePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -29,19 +35,8 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Redirect if not logged in
-    if (!loading && !user) {
-      router.push('/login');
-    }
-    
-    // Fetch profile data
-    if (user) {
-      fetchProfile();
-    }
-  }, [user, loading, router]);
-
-  const fetchProfile = async () => {
+  // Use useCallback to memoize fetchProfile to avoid dependency issues
+  const fetchProfile = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -57,7 +52,19 @@ export default function ProfilePage() {
     } catch (err) {
       console.error('Error fetching profile:', err);
     }
-  };
+  }, [user?.id]); // Add user?.id as a dependency
+
+  useEffect(() => {
+    // Redirect if not logged in
+    if (!loading && !user) {
+      router.push('/login');
+    }
+    
+    // Fetch profile data
+    if (user) {
+      fetchProfile();
+    }
+  }, [user, loading, router, fetchProfile]); // Add fetchProfile to the dependency array
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -96,9 +103,11 @@ export default function ProfilePage() {
       }
       
       setSuccess('Profile updated successfully');
-    } catch (err: any) {
-      console.error('Error updating profile:', err);
-      setError(err.message || 'Failed to update profile');
+    } catch (err: unknown) {
+      // Use type assertion with our custom error type
+      const apiError = err as ApiError;
+      console.error('Error updating profile:', apiError);
+      setError(apiError.message || 'Failed to update profile');
     } finally {
       setSaving(false);
     }
@@ -288,7 +297,7 @@ export default function ProfilePage() {
                 Change Password
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
-                We'll send you a verification email
+                We&apos;ll send you a verification email
               </p>
               <Button
                 variant="outline"
@@ -304,8 +313,10 @@ export default function ProfilePage() {
                     if (error) throw error;
                     
                     setSuccess('Password reset email sent. Please check your inbox.');
-                  } catch (err: any) {
-                    setError(err.message || 'Failed to send reset email');
+                  } catch (err: unknown) {
+                    // Use type assertion with our custom error type
+                    const apiError = err as ApiError;
+                    setError(apiError.message || 'Failed to send reset email');
                   }
                 }}
               >
