@@ -152,7 +152,7 @@ const Hero = () => {
                           src={carouselItems[currentSlide].image}
                           alt={carouselItems[currentSlide].title}
                           fill
-                          className="w-full h-full"
+                          className="w-full h-full object-contain"
                           priority={currentSlide === 0} // Prioritize loading the first slide image
                         />
                       )

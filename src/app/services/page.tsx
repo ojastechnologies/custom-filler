@@ -41,7 +41,7 @@ export default function ServicesPage() {
   const [products, setProducts] = useState<ProductType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategory] = useState<string | null>(null);
 
   // Fetch products from API
   useEffect(() => {
@@ -104,9 +104,6 @@ export default function ServicesPage() {
   };
 
   // Get unique categories
-  const categories = products.length > 0 
-    ? [...new Set(products.map(product => product.category || 'Uncategorized'))]
-    : [];
 
   // Filter products by category
   const filteredProducts = selectedCategory 
