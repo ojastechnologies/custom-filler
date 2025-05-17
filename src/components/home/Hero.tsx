@@ -186,12 +186,12 @@ const Hero = () => {
                     {carouselItems[currentSlide].description}
                   </p>
                   
-                  <Link 
+                  {/* <Link 
                     href={carouselItems[currentSlide].buttonLink}
                     className="inline-block bg-white hover:bg-gray-100 text-primary-700 font-medium py-2 px-6 rounded-md transition-colors shadow-md"
                   >
                     {carouselItems[currentSlide].buttonText}
-                  </Link>
+                  </Link> */}
                 </motion.div>
               </div>
             </div>
