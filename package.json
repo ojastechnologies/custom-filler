@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next lint && next dev",
-    "build": "next build && next-on-pages",
-    "deploy": "npx wrangler deploy",
+    "build": "next build && npx @cloudflare/next-on-pages",
+    "deploy": "npx wrangler pages deploy .vercel/output/static --project-name=custom-filler",
     "start": "next start",
     "lint": "next lint"
   },
@@ -19,6 +19,7 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@cloudflare/next-on-pages": "^1.13.12",
     "@eslint/eslintrc": "^3",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -26,7 +27,6 @@
     "autoprefixer": "^10.4.14",
     "eslint": "^9",
     "eslint-config-next": "^15.3.1",
-    "next-on-pages": "^0.1.6",
     "postcss": "^8.4.23",
     "tailwindcss": "^3.3.0",
     "typescript": "^5"

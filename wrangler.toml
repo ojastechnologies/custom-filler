@@ -1,11 +1,5 @@
 name = "custom-filler"
-compatibility_date = "2025-05-17"
+compatibility_date = "2024-05-01"
 
 [build]
 command = "npm run build"
-
-[[routes]]
-pattern = "/*"
-
-[site]
-bucket = ".vercel/output/static"
