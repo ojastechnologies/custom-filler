@@ -8,16 +8,16 @@ const ServicesSection = () => {
   const services = [
     {
       id: '1-inch-filling',
-      title: '1 Inch Filling',
+      title: '1 Inch Opening Contract  Filling',
       description: 'Standard 1 inch opening found on a majority of aerosol products throughout the industry. Available in various shapes and sizes from 35mm to 76mm diameter.',
-      image: '/images/1inch.png',
+      image: '/img/1inch.png',
       link: '/services/1-inch-filling'
     },
     {
       id: '20mm-filling',
       title: '20mm Filling',
       description: '20mm opening usually found on small, one piece, aluminum cans. These aerosol products will hold anywhere from a few grams to around three ounces.',
-      image: '/images/20mm.png',
+      image: '/img/20mm.png',
       link: '/services/20mm-filling'
     },
     {
@@ -45,7 +45,7 @@ const ServicesSection = () => {
               key={service.id} 
               className="bg-gray-50 dark:bg-gray-900 rounded-lg shadow-md overflow-hidden transition-transform hover:-translate-y-1 duration-300"
             >
-              <div className="relative h-48">
+              <div className="relative h-96">
                 <ClientImage 
                   src={service.image} 
                   alt={service.title} 

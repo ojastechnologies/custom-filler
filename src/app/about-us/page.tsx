@@ -27,10 +27,10 @@ export default function AboutUs() {
               {/* Left Image */}
               <div className="w-full md:w-1/2 h-64 md:h-96 relative rounded-lg overflow-hidden">
                 <Image 
-                  src="/images/about1.jpg"
+                  src="/img/about1.jpg"
                   alt="Aerosol Filling Facility"
                   fill
-                  className="object-cover"
+                  className="object-contain"
                 />
               </div>
               
@@ -54,10 +54,10 @@ export default function AboutUs() {
               {/* Right Image */}
               <div className="w-full md:w-1/2 h-64 md:h-96 relative rounded-lg overflow-hidden">
                 <Image 
-                  src="/images/about2.png"
+                  src="/img/about2.png"
                   alt="Aerosol Products"
                   fill
-                  className="object-cover"
+                  className="object-contain"
                 />
               </div>
               
