@@ -84,7 +84,6 @@ const Hero = () => {
     }
   };
 
-  
   useEffect(() => {
     const interval = setInterval(() => {
       nextSlide();
@@ -100,21 +99,21 @@ const Hero = () => {
     }
   }, [currentSlide]);
 
-
   const isVideoSlide = (index: number) => {
     return carouselItems[index].id === 4;
   };
 
   return (
     <section className="relative">
+      {/* Hero Carousel Section */}
       <div 
-        className="relative h-[600px] md:h-[500px] lg:h-[600px] overflow-hidden bg-gradient-to-br from-primary-700 via-primary-600 to-primary-800 dark:from-primary-900 dark:via-primary-800 dark:to-primary-900"
+        className="relative h-[600px] overflow-hidden bg-gradient-to-br from-primary-800 via-primary-700 to-primary-900 dark:from-primary-900 dark:via-primary-800 dark:to-black"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
         {/* Subtle pattern overlay */}
-        <div className="absolute inset-0 opacity-10 bg-[url('/images/pattern.png')]"></div>
+        <div className="absolute inset-0 opacity-5 bg-[url('/images/pattern.png')]"></div>
         
         <AnimatePresence mode="wait">
           <motion.div
@@ -122,87 +121,90 @@ const Hero = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.7 }}
             className="h-full w-full"
           >
             <div className="h-full flex flex-col md:flex-row">
-              {/* Image/Video Side - Full height, starting from left edge */}
+              {/* Image Side - Full height, starting from left edge */}
               <motion.div 
                 className="w-full md:w-1/2 h-1/2 md:h-full relative"
                 initial={{ x: -50, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
+                transition={{ duration: 0.7, delay: 0.2 }}
               >
-                <div className="absolute inset-0 bg-white dark:bg-gray-800 flex items-center justify-center">
-                  {carouselItems[currentSlide].image ? (
-                    isVideoSlide(currentSlide) ? (
-                      // Video content for slide with id 4
-                      <video
-                        ref={videoRef}
-                        src={carouselItems[currentSlide].image}
-                        className="w-full h-full object-contain"
-                        muted
-                        loop
-                        playsInline
-                      />
-                    ) : (
-                      // Image content for other slides
-                      <div className="relative w-full h-full">
-                        <Image 
-                          src={carouselItems[currentSlide].image}
-                          alt={carouselItems[currentSlide].title}
-                          fill
-                          className="w-full h-full object-contain"
-                          priority={currentSlide === 0} // Prioritize loading the first slide image
-                        />
-                      </div>
-                    )
+                {carouselItems[currentSlide].image ? (
+                  isVideoSlide(currentSlide) ? (
+                    // Video content for slide with id 4
+                    <video
+                      ref={videoRef}
+                      src={carouselItems[currentSlide].image}
+                      className="w-full h-full object-cover"
+                      muted
+                      loop
+                      playsInline
+                    />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-primary-500 to-primary-400 text-white">
-                      <div className="text-center p-4">
-                        <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
-                        <span className="text-xl font-semibold">
-                          {carouselItems[currentSlide].id === 4 ? "Your Project Here" : `Aerosol ${carouselItems[currentSlide].id === 1 ? "Filling" : carouselItems[currentSlide].id === 2 ? "1 Inch" : "20mm"}`}
-                        </span>
-                      </div>
+                    // Image content for other slides
+                    <div className="relative w-full h-full">
+                      <Image 
+                        src={carouselItems[currentSlide].image}
+                        alt={carouselItems[currentSlide].title}
+                        fill
+                        className="w-full h-full object-contain bg-white/5"
+                        priority={currentSlide === 0}
+                      />
                     </div>
-                  )}
-                </div>
+                  )
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-primary-600 to-primary-500 text-white">
+                    <div className="text-center p-4">
+                      <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                      <span className="text-xl font-semibold">
+                        {carouselItems[currentSlide].id === 4 ? "Your Project Here" : `Aerosol ${carouselItems[currentSlide].id === 1 ? "Filling" : carouselItems[currentSlide].id === 2 ? "1 Inch" : "20mm"}`}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </motion.div>
               
-              {/* Content Side - Starting immediately after image */}
+              {/* Content Side */}
               <motion.div 
-                className="w-full md:w-1/2 h-1/2 md:h-full flex items-center"
+                className="w-full md:w-1/2 h-1/2 md:h-full flex items-center bg-primary-800/50"
                 initial={{ x: 50, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
+                transition={{ duration: 0.7, delay: 0.4 }}
               >
-                <div className="p-4 md:p-8">
-                  <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-4 leading-tight">
+                <div className="p-8 md:p-12">
+                  <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 leading-tight">
                     {carouselItems[currentSlide].title}
                   </h1>
                   
-                  <p className="text-base md:text-lg text-white text-opacity-90 mb-6">
+                  <div className="w-16 h-1 bg-primary-400 mb-6"></div>
+                  
+                  <p className="text-lg text-white/80 mb-8 leading-relaxed">
                     {carouselItems[currentSlide].description}
                   </p>
                   
-                  {/* <Link 
+                  <Link 
                     href={carouselItems[currentSlide].buttonLink}
-                    className="inline-block bg-white hover:bg-gray-100 text-primary-700 font-medium py-2 px-6 rounded-md transition-colors shadow-md"
+                    className="inline-flex items-center px-6 py-3 bg-white hover:bg-primary-50 text-primary-700 font-medium rounded-lg transition-colors"
                   >
                     {carouselItems[currentSlide].buttonText}
-                  </Link> */}
+                    <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </Link>
                 </div>
               </motion.div>
             </div>
           </motion.div>
         </AnimatePresence>
         
-        {/* Navigation Arrows - Hidden on mobile */}
+        {/* Navigation Arrows */}
         <button 
-          className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-primary-600 rounded-full p-2 shadow-lg transition-colors duration-300 hidden md:block"
+          className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 bg-white/10 hover:bg-white/20 text-white rounded-full p-3 transition-all duration-300"
           onClick={prevSlide}
           aria-label="Previous slide"
         >
@@ -212,7 +214,7 @@ const Hero = () => {
         </button>
         
         <button 
-          className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-primary-600 rounded-full p-2 shadow-lg transition-colors duration-300 hidden md:block"
+          className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 bg-white/10 hover:bg-white/20 text-white rounded-full p-3 transition-all duration-300"
           onClick={nextSlide}
           aria-label="Next slide"
         >
@@ -222,7 +224,7 @@ const Hero = () => {
         </button>
         
         {/* Indicator Dots */}
-        <div className="absolute bottom-4 left-0 right-0 z-10 flex justify-center space-x-2">
+        <div className="absolute bottom-6 left-0 right-0 z-10 flex justify-center space-x-3">
           {carouselItems.map((_, index) => (
             <button
               key={index}
@@ -233,10 +235,10 @@ const Hero = () => {
                   setTimeout(() => setIsTransitioning(false), 500);
                 }
               }}
-              className={`h-2 rounded-full transition-all duration-300 ${
+              className={`h-2.5 rounded-full transition-all duration-300 ${
                 index === currentSlide 
-                  ? 'bg-white w-8' 
-                  : 'bg-white/50 w-2 hover:bg-white/80'
+                  ? 'bg-white w-10' 
+                  : 'bg-white/30 w-2.5 hover:bg-white/50'
               }`}
               aria-label={`Go to slide ${index + 1}`}
             />
@@ -244,7 +246,7 @@ const Hero = () => {
         </div>
       </div>
 
-      {/* Hero content below carousel - also with blue gradient */}
+      {/* Hero content below carousel */}
       <div className="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/30 py-16">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
@@ -269,9 +271,9 @@ const Hero = () => {
               </div>
               
               <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-                <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">Quality Assurance</h3>
