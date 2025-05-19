@@ -42,13 +42,33 @@ const Header = () => {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <Image 
-              src="/img/logo_nav_bar.png" 
-              alt="Aero Tech Labs" 
-              width={180} 
-              height={40} 
-              className="dark:invert"
-            />
+            {/* For server-side rendering, use a default that will be replaced on client */}
+            {!mounted ? (
+              <Image 
+                src="/img/logo_nav_customfiller.png" 
+                alt="Aero Tech Labs" 
+                width={180} 
+                height={40}
+                className="invert brightness-0" // Default to dark version for SSR
+              />
+            ) : theme === 'dark' ? (
+              // White logo for dark mode
+              <Image 
+                src="/img/logo_nav_customfiller.png" 
+                alt="Aero Tech Labs" 
+                width={180} 
+                height={40}
+              />
+            ) : (
+              // Black logo for light mode
+              <Image 
+                src="/img/logo_nav_customfiller.png" 
+                alt="Aero Tech Labs" 
+                width={180} 
+                height={40}
+                className="brightness-0"
+              />
+            )}
           </Link>
           
           {/* Desktop Navigation */}
@@ -236,7 +256,7 @@ const Header = () => {
                 Contact
               </Link>
               
-              {/* Auth links for mobile */}
+              {/* Auth links for mobile - Only show user info if logged in */}
               {user ? (
                 <>
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
@@ -277,24 +297,7 @@ const Header = () => {
                     Sign Out
                   </button>
                 </>
-              ) : (
-                <>
-                  <Link 
-                    href="/login" 
-                    className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Sign In
-                  </Link>
-                  <Link 
-                    href="/register" 
-                    className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Create Account
-                  </Link>
-                </>
-              )}
+              ) : null}
             </nav>
           </div>
         )}
