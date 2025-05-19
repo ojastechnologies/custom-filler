@@ -42,13 +42,33 @@ const Header = () => {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <Image 
-              src="/img/logo_nav_bar.png" 
-              alt="Aero Tech Labs" 
-              width={180} 
-              height={40} 
-              className="dark:invert"
-            />
+            {/* For server-side rendering, use a default that will be replaced on client */}
+            {!mounted ? (
+              <Image 
+                src="/img/logo_nav_customfiller.png" 
+                alt="Aero Tech Labs" 
+                width={180} 
+                height={40}
+                className="invert brightness-0" // Default to dark version for SSR
+              />
+            ) : theme === 'dark' ? (
+              // White logo for dark mode
+              <Image 
+                src="/img/logo_nav_customfiller.png" 
+                alt="Aero Tech Labs" 
+                width={180} 
+                height={40}
+              />
+            ) : (
+              // Black logo for light mode
+              <Image 
+                src="/img/logo_nav_customfiller.png" 
+                alt="Aero Tech Labs" 
+                width={180} 
+                height={40}
+                className="brightness-0"
+              />
+            )}
           </Link>
           
           {/* Desktop Navigation */}
@@ -108,7 +128,7 @@ const Header = () => {
               )}
             </Link>
             
-            {/* User menu (if logged in) */}
+            {/* User menu (if logged in) or Sign In button (if not) */}
             {user ? (
               <div className="relative">
                 <button
@@ -168,7 +188,15 @@ const Header = () => {
                   </div>
                 )}
               </div>
-            ) : null}
+            ) : (
+              <div className="hidden md:block">
+                {/* <Link href="/login" passHref>
+                  <Button variant="primary" size="sm">
+                    Sign In
+                  </Button>
+                </Link> */}
+              </div>
+            )}
             
             {/* Mobile menu button */}
             <button
