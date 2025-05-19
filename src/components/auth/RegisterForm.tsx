@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 
 export default function RegisterForm() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -15,10 +17,13 @@ export default function RegisterForm() {
     e.preventDefault();
     
     try {
+      // Validate passwords match
+      if (password !== confirmPassword) {
+        throw new Error('Passwords do not match');
+      }
+      
       setLoading(true);
       setError(null);
-      
-      console.log("Attempting to register with:", { email });
       
       // Register the user with Supabase Auth
       const { data, error: signUpError } = await supabase.auth.signUp({
@@ -31,27 +36,25 @@ export default function RegisterForm() {
       
       if (signUpError) throw signUpError;
       
-      // Manually insert the user into the users table
       if (data.user) {
+        // Create a record in the users table with default role
         const { error: insertError } = await supabase
           .from('users')
           .insert([
             { 
-              id: data.user.id, 
+              id: data.user.id,
               email: data.user.email,
-              role: 'customer' 
+              role: 'customer' // Default role
             }
           ]);
           
         if (insertError) {
-          console.error("Error inserting user data:", insertError);
+          console.error('Error creating user record:', insertError);
           // Continue anyway, as the auth user was created
         }
       }
       
-      console.log("Registration successful:", data);
-      
-      // Redirect to login page
+      // Redirect to login page with success message
       router.push('/login?registered=true');
     } catch (err: any) {
       console.error('Registration error:', err);
@@ -88,7 +91,7 @@ export default function RegisterForm() {
           />
         </div>
         
-        <div className="mb-6">
+        <div className="mb-4">
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Password
           </label>
@@ -106,6 +109,20 @@ export default function RegisterForm() {
           </p>
         </div>
         
+        <div className="mb-6">
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Confirm Password
+          </label>
+          <input
+            id="confirmPassword"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+            required
+          />
+        </div>
+        
         <button
           type="submit"
           disabled={loading}
@@ -114,6 +131,15 @@ export default function RegisterForm() {
           {loading ? 'Creating Account...' : 'Create Account'}
         </button>
       </form>
+      
+      <div className="mt-6 text-center">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Already have an account?{' '}
+          <Link href="/login" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
+            Sign in
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

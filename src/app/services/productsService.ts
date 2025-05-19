@@ -14,9 +14,8 @@ export const fetchProducts = async () => {
     }
     
     const transformedData = data.map(item => {
-      console.log('Transforming item:', item);
       return {
-        id: item.asid || item.id,
+        id: item.id,
         title: item.name,
         name: item.name,
         price: item.unit_price || 0,
@@ -25,11 +24,83 @@ export const fetchProducts = async () => {
       };
     });
     
-    console.log('Transformed products data:', transformedData);
-    
     return transformedData;
   } catch (err) {
     console.error('Error in fetchProducts:', err);
+    throw err;
+  }
+};
+
+// Admin functions
+
+export const createProduct = async (product: {
+  name: string;
+  description?: string;
+  unit_price: number;
+  thumbnail_url?: string;
+}) => {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .insert([product])
+      .select();
+
+    if (error) throw error;
+    return data[0];
+  } catch (err) {
+    console.error('Error creating product:', err);
+    throw err;
+  }
+};
+
+export const updateProduct = async (id: string, updates: {
+  name?: string;
+  description?: string;
+  unit_price?: number;
+  thumbnail_url?: string;
+}) => {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .update(updates)
+      .eq('id', id)
+      .select();
+
+    if (error) throw error;
+    return data[0];
+  } catch (err) {
+    console.error('Error updating product:', err);
+    throw err;
+  }
+};
+
+export const deleteProduct = async (id: string) => {
+  try {
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.error('Error deleting product:', err);
+    throw err;
+  }
+};
+
+export const getProductById = async (id: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error('Error fetching product:', err);
     throw err;
   }
 };

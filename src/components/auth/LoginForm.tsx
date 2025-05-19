@@ -4,11 +4,13 @@ import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '@/context/AuthContext';
 
 export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirectTo') || '/';
+  const { checkUserRole } = useAuth();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -40,6 +42,9 @@ export default function LoginForm() {
         }
         throw error;
       }
+      
+      // Check user role after successful login
+      await checkUserRole();
       
       // Redirect after successful login
       router.push(redirectTo);
@@ -140,6 +145,14 @@ export default function LoginForm() {
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
             required
           />
+          <div className="mt-1 flex justify-end">
+            <Link 
+              href="/forgot-password" 
+              className="text-sm text-primary-600 hover:text-primary-500 dark:text-primary-400"
+            >
+              Forgot password?
+            </Link>
+          </div>
         </div>
         
         <button
