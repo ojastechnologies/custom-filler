@@ -108,7 +108,7 @@ const Header = () => {
               )}
             </Link>
             
-            {/* User menu (if logged in) or Sign In button (if not) */}
+            {/* User menu (if logged in) */}
             {user ? (
               <div className="relative">
                 <button
@@ -168,15 +168,7 @@ const Header = () => {
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="hidden md:block">
-                {/* <Link href="/login" passHref>
-                  <Button variant="primary" size="sm">
-                    Sign In
-                  </Button>
-                </Link> */}
-              </div>
-            )}
+            ) : null}
             
             {/* Mobile menu button */}
             <button
@@ -236,7 +228,7 @@ const Header = () => {
                 Contact
               </Link>
               
-              {/* Auth links for mobile */}
+              {/* Auth links for mobile - Only show user info if logged in */}
               {user ? (
                 <>
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
@@ -277,24 +269,7 @@ const Header = () => {
                     Sign Out
                   </button>
                 </>
-              ) : (
-                <>
-                  <Link 
-                    href="/login" 
-                    className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Sign In
-                  </Link>
-                  <Link 
-                    href="/register" 
-                    className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Create Account
-                  </Link>
-                </>
-              )}
+              ) : null}
             </nav>
           </div>
         )}
