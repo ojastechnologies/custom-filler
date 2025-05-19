@@ -123,7 +123,7 @@ const ProductsSection = () => {
             {products.map((product) => (
               <Card
                 key={product.id}
-                className="overflow-hidden h-full transition-transform duration-300 hover:shadow-lg hover:-translate-y-1"
+                className="overflow-hidden flex flex-col h-full transition-transform duration-300 hover:shadow-lg hover:-translate-y-1"
               >
                 <div
                   className="relative h-48 bg-gray-200 dark:bg-gray-700"
@@ -167,7 +167,7 @@ const ProductsSection = () => {
                     </button>
                   </div>
                 </div>
-                <div className="p-6">
+                <div className="p-6 flex-grow flex flex-col">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                       {product.title}
@@ -176,13 +176,15 @@ const ProductsSection = () => {
                       ${product.price.toFixed(2)}
                     </span>
                   </div>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  <p className="text-gray-600 dark:text-gray-400 mb-4 flex-grow">
                     {product.description}
                   </p>
-                  <div className="flex justify-between items-center">
+                  
+                  {/* Buttons at the bottom of the card */}
+                  <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-2 justify-between items-center">
                     <Link
                       href={`${product?.about_url}`}
-                      className="inline-flex items-center text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
+                      className="w-full sm:w-auto inline-flex items-center justify-center text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
                     >
                       <span>Learn More</span>
                       <svg
@@ -201,7 +203,7 @@ const ProductsSection = () => {
                     </Link>
                     <button
                       onClick={() => handleAddToCart(product)}
-                      className={`px-3 py-1.5 text-sm rounded transition-colors ${
+                      className={`w-full sm:w-auto px-4 py-2 text-sm rounded transition-colors ${
                         addedToCart[product.id]
                           ? "bg-green-600 hover:bg-green-700 text-white"
                           : "bg-primary-600 hover:bg-primary-700 text-white"
