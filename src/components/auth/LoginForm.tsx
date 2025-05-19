@@ -1,112 +1,120 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
-import Card from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
-import { Suspense } from 'react';
 
-import { useSearchParams } from 'next/navigation';
-
-// Define a proper error type
-interface AuthError {
-  message: string;
-  status?: number;
-}
-
-function LoginFormContent() {
+export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirectTo') || '/';
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  // Check for registered=true query param to show success message
-  useEffect(() => {
-    if (searchParams?.get('registered') === 'true') {
-      setSuccessMessage('Registration successful! Please sign in with your credentials.');
-    }
-  }, [searchParams]);
+  const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
+  const [showSuccessMessage] = useState(searchParams.get('registered') === 'true');
+  const [resendingEmail, setResendingEmail] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
     
     try {
-      const {  error: signInError } = await supabase.auth.signInWithPassword({
+      setLoading(true);
+      setError(null);
+      setEmailNotConfirmed(false);
+      setResendSuccess(false);
+      
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
-      if (signInError) throw signInError;
+      if (error) {
+        if (error.message.includes('Email not confirmed')) {
+          setEmailNotConfirmed(true);
+          throw new Error('Please check your email and confirm your account before logging in.');
+        }
+        throw error;
+      }
       
-      // Redirect to dashboard on successful login
-      router.push('/dashboard');
-      router.refresh(); // Refresh to update auth state
-    } catch (err: unknown) {
-      // Use type assertion with our custom error type
-      const authError = err as AuthError;
-      setError(authError.message || 'Failed to sign in');
+      // Redirect after successful login
+      router.push(redirectTo);
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.message || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleResetPassword = async () => {
-    if (!email) {
-      setError('Please enter your email address to reset your password');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
+  const handleResendConfirmation = async () => {
     try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-        email,
-        {
-          redirectTo: `${window.location.origin}/reset-password`,
-        }
-      );
-
-      if (resetError) throw resetError;
-
-      setSuccessMessage('Password reset email sent. Please check your inbox.');
+      setResendingEmail(true);
+      setResendSuccess(false);
+      setError(null);
       
-    } catch (err: unknown) {
-      // Use type assertion with our custom error type
-      const authError = err as AuthError;
-      setError(authError.message || 'Failed to send reset password email');
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/login`,
+        },
+      });
+      
+      if (error) throw error;
+      
+      setResendSuccess(true);
+    } catch (err: any) {
+      console.error('Error resending confirmation email:', err);
+      setError(err.message || 'Failed to resend confirmation email');
     } finally {
-      setLoading(false);
+      setResendingEmail(false);
     }
   };
 
   return (
-    <Card className="p-8">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
+    <div className="max-w-md w-full mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      <h2 className="text-2xl font-bold text-center mb-6 text-gray-900 dark:text-white">
         Sign In to Your Account
       </h2>
       
+      {showSuccessMessage && (
+        <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+          Account created successfully! Please check your email to confirm your account before signing in.
+        </div>
+      )}
+      
       {error && (
-        <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm">
+        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
           {error}
         </div>
       )}
       
-      {successMessage && (
-        <div className="mb-4 p-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-md text-sm">
-          {successMessage}
+      {emailNotConfirmed && (
+        <div className="mb-4 p-3 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded">
+          <p className="mb-2">Your email address has not been confirmed yet.</p>
+          <button
+            onClick={handleResendConfirmation}
+            disabled={resendingEmail}
+            className="text-blue-600 hover:text-blue-800 underline focus:outline-none"
+          >
+            {resendingEmail ? 'Sending...' : 'Resend confirmation email'}
+          </button>
         </div>
       )}
       
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
+      {resendSuccess && (
+        <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+          Confirmation email sent! Please check your inbox.
+        </div>
+      )}
+      
+      <form onSubmit={handleSubmit}>
+        <div className="mb-4">
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Email Address
           </label>
@@ -115,65 +123,42 @@ function LoginFormContent() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
             required
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-white"
-            placeholder="your@email.com"
           />
         </div>
         
-        <div>
-          <div className="flex justify-between items-center mb-1">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Password
-            </label>
-            <button 
-              type="button"
-              onClick={handleResetPassword}
-              className="text-sm text-primary-600 hover:text-primary-500 dark:text-primary-400"
-            >
-              Forgot password?
-            </button>
-          </div>
+        <div className="mb-6">
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Password
+          </label>
           <input
             id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
             required
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-white"
-            placeholder="••••••••"
           />
         </div>
         
-        <Button
+        <button
           type="submit"
-          variant="primary"
-          className="w-full"
           disabled={loading}
+          className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-300 disabled:opacity-50"
         >
-          {loading ? 'Signing in...' : 'Sign In'}
-        </Button>
+          {loading ? 'Signing In...' : 'Sign In'}
+        </button>
       </form>
       
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Don&apos;t have an account?{' '}
-          <Link 
-            href="/register" 
-            className="text-primary-600 hover:text-primary-500 dark:text-primary-400 font-medium"
-          >
-            Create an account
+          Don't have an account?{' '}
+          <Link href="/register" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
+            Create one now
           </Link>
         </p>
       </div>
-    </Card>
-  );
-}
-
-export default function LoginForm() {
-  return (
-    <Suspense fallback={<Card className="p-8"><div className="text-center">Loading login form...</div></Card>}>
-      <LoginFormContent />
-    </Suspense>
+    </div>
   );
 }
