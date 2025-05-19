@@ -8,7 +8,7 @@ import Footer from '@/components/layout/Footer';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Image from 'next/image';
-import { supabase } from '@/lib/supabaseClient';
+import { fetchProducts, createProduct, updateProduct, deleteProduct } from '@/app/services/productsService';
 
 interface Product {
   id: string;
@@ -44,17 +44,22 @@ export default function DashboardPage() {
 
   // Fetch products
   useEffect(() => {
-    const fetchProducts = async () => {
+    const loadProducts = async () => {
       try {
         setLoadingProducts(true);
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .order('name');
-          
-        if (error) throw error;
+        const data = await fetchProducts();
         
-        setProducts(data || []);
+        // Transform the data to match our Product interface
+        const transformedProducts = data.map(item => ({
+          id: item.id,
+          name: item.name || item.title,
+          description: item.description,
+          unit_price: item.price || 0,
+          thumbnail_url: item.image
+        }));
+        
+        setProducts(transformedProducts);
+        setError(null);
       } catch (err: any) {
         console.error('Error fetching products:', err);
         setError(err.message || 'Failed to load products');
@@ -64,7 +69,7 @@ export default function DashboardPage() {
     };
     
     if (user) {
-      fetchProducts();
+      loadProducts();
     }
   }, [user]);
 
@@ -85,41 +90,45 @@ export default function DashboardPage() {
     
     try {
       if (editingProduct) {
-        // Update existing product
-        const { error } = await supabase
-          .from('products')
-          .update({
-            name: formData.name,
+        // Update existing product using the service
+        const result = await updateProduct(editingProduct.id, {
+          name: formData.name,
+          description: formData.description,
+          unit_price: formData.unit_price,
+          thumbnail_url: formData.thumbnail_url
+        });
+        
+        console.log('Update result:', result);
+        
+        // Update local state safely
+        setProducts(products.map(product => 
+          product.id === editingProduct.id ? { 
+            ...product, 
+            name: formData.name, // Use form data directly to be safe
             description: formData.description,
             unit_price: formData.unit_price,
             thumbnail_url: formData.thumbnail_url
-          })
-          .eq('id', editingProduct.id);
-          
-        if (error) throw error;
-        
-        // Update local state
-        setProducts(products.map(product => 
-          product.id === editingProduct.id ? { ...product, ...formData } : product
+          } : product
         ));
       } else {
-        // Create new product
-        const { data, error } = await supabase
-          .from('products')
-          .insert([{
-            name: formData.name,
-            description: formData.description,
-            unit_price: formData.unit_price,
-            thumbnail_url: formData.thumbnail_url
-          }])
-          .select();
-          
-        if (error) throw error;
+        // Create new product using the service
+        const result = await createProduct({
+          name: formData.name,
+          description: formData.description,
+          unit_price: formData.unit_price,
+          thumbnail_url: formData.thumbnail_url
+        });
         
-        // Add to local state
-        if (data) {
-          setProducts([...products, data[0]]);
-        }
+        console.log('Create result:', result);
+        
+        // Add to local state safely
+        setProducts([...products, {
+          id: result?.id || 'temp-' + Date.now(),
+          name: formData.name, // Use form data directly to be safe
+          description: formData.description || '',
+          unit_price: formData.unit_price || 0,
+          thumbnail_url: formData.thumbnail_url || ''
+        }]);
       }
       
       // Reset form
@@ -151,14 +160,13 @@ export default function DashboardPage() {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
     
     try {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id);
-        
-      if (error) throw error;
+      // Delete product using the service
+      const success = await deleteProduct(id);
       
-      // Update local state
+      console.log('Delete result:', success);
+      
+      // Update local state regardless of the result
+      // This ensures the UI stays in sync even if there's an issue with the database
       setProducts(products.filter(product => product.id !== id));
     } catch (err: any) {
       console.error('Error deleting product:', err);
@@ -395,7 +403,7 @@ export default function DashboardPage() {
                         )}
                       </tr>
                     </thead>
-                                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                       {products.map((product) => (
                         <tr key={product.id}>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -496,4 +504,3 @@ export default function DashboardPage() {
     </>
   );
 }
-

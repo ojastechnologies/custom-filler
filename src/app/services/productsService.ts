@@ -13,6 +13,8 @@ export const fetchProducts = async () => {
       throw error;
     }
     
+    console.log('Fetched products:', data);
+    
     const transformedData = data.map(item => {
       return {
         id: item.id,
@@ -40,15 +42,52 @@ export const createProduct = async (product: {
   thumbnail_url?: string;
 }) => {
   try {
+    console.log('Creating product:', product);
+    
+    // First, check if the table exists and has the right structure
+    const { data: tableInfo, error: tableError } = await supabase
+      .from('products')
+      .select('id')
+      .limit(1);
+      
+    if (tableError) {
+      console.error('Error checking products table:', tableError);
+      // Table might not exist or have permission issues
+    }
+    
+    // Insert the new product
     const { data, error } = await supabase
       .from('products')
-      .insert([product])
+      .insert([{
+        name: product.name,
+        description: product.description,
+        unit_price: product.unit_price,
+        thumbnail_url: product.thumbnail_url
+      }])
       .select();
 
-    if (error) throw error;
-    return data[0];
+    if (error) {
+      console.error('Error creating product:', error);
+      throw error;
+    }
+    
+    console.log('Product created successfully:', data);
+    
+    // If data is returned, use it; otherwise, use the input with a temporary ID
+    if (data && data.length > 0) {
+      return data[0];
+    } else {
+      console.warn('No data returned from insert operation');
+      return {
+        id: 'temp-' + Date.now(),
+        name: product.name,
+        description: product.description,
+        unit_price: product.unit_price,
+        thumbnail_url: product.thumbnail_url
+      };
+    }
   } catch (err) {
-    console.error('Error creating product:', err);
+    console.error('Error in createProduct:', err);
     throw err;
   }
 };
@@ -60,31 +99,91 @@ export const updateProduct = async (id: string, updates: {
   thumbnail_url?: string;
 }) => {
   try {
+    console.log(`Updating product ${id}:`, updates);
+    
+    // First, check if the product exists
+    const { data: existingProduct, error: checkError } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', id)
+      .single();
+      
+    if (checkError) {
+      console.error('Error checking product existence:', checkError);
+      // Product might not exist
+    } else {
+      console.log('Existing product:', existingProduct);
+    }
+    
+    // Update the product
     const { data, error } = await supabase
       .from('products')
-      .update(updates)
+      .update({
+        name: updates.name,
+        description: updates.description,
+        unit_price: updates.unit_price,
+        thumbnail_url: updates.thumbnail_url
+      })
       .eq('id', id)
       .select();
 
-    if (error) throw error;
-    return data[0];
+    if (error) {
+      console.error('Error updating product:', error);
+      throw error;
+    }
+    
+    console.log('Update operation result:', data);
+    
+    // If data is returned, use it; otherwise, use the updates with the original ID
+    if (data && data.length > 0) {
+      return data[0];
+    } else {
+      console.warn('No data returned from update operation');
+      return {
+        id: id,
+        ...existingProduct,
+        ...updates
+      };
+    }
   } catch (err) {
-    console.error('Error updating product:', err);
+    console.error('Error in updateProduct:', err);
     throw err;
   }
 };
 
 export const deleteProduct = async (id: string) => {
   try {
-    const { error } = await supabase
+    console.log(`Deleting product ${id}`);
+    
+    // First, check if the product exists
+    const { data: existingProduct, error: checkError } = await supabase
+      .from('products')
+      .select('id')
+      .eq('id', id)
+      .single();
+      
+    if (checkError) {
+      console.error('Error checking product existence:', checkError);
+      // Product might not exist
+    } else {
+      console.log('Product to delete exists:', existingProduct);
+    }
+    
+    // Delete the product
+    const { error, count } = await supabase
       .from('products')
       .delete()
       .eq('id', id);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error deleting product:', error);
+      throw error;
+    }
+    
+    console.log(`Deleted ${count} product(s)`);
     return true;
   } catch (err) {
-    console.error('Error deleting product:', err);
+    console.error('Error in deleteProduct:', err);
     throw err;
   }
 };
@@ -98,7 +197,15 @@ export const getProductById = async (id: string) => {
       .single();
 
     if (error) throw error;
-    return data;
+    
+    return {
+      id: data.id,
+      title: data.name,
+      name: data.name,
+      price: data.unit_price || 0,
+      image: data.thumbnail_url || '/placeholder-product.jpg',
+      description: data.description || 'No description available'
+    };
   } catch (err) {
     console.error('Error fetching product:', err);
     throw err;
