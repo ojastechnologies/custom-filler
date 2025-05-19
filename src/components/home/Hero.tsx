@@ -51,26 +51,44 @@ const carouselItems = [
   }
 ];
 
+// Define slide durations
+const IMAGE_SLIDE_DURATION = 6000; 
+const VIDEO_SLIDE_DURATION = 20000; 
+
 const Hero = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
-  
-  // Auto-advance carousel only when video is not playing
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-    
-    if (!isVideoPlaying) {
-      timer = setTimeout(() => {
-        setCurrentSlide((prev) => (prev === carouselItems.length - 1 ? 0 : prev + 1));
-      }, 6000);
+    // Clear any existing timer
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
     }
+
+    if (isVideoPlaying) return;
+
+    // Check if current slide has video
+    const hasVideo = carouselItems[currentSlide].videoUrl !== undefined;
     
-    return () => clearTimeout(timer);
+    // Set timer with appropriate duration
+    timerRef.current = setTimeout(() => {
+      setCurrentSlide((prev) => (prev === carouselItems.length - 1 ? 0 : prev + 1));
+    }, hasVideo ? VIDEO_SLIDE_DURATION : IMAGE_SLIDE_DURATION);
+
+    // Cleanup function
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
   }, [currentSlide, isVideoPlaying]);
-  
+
   // Handle video events when slide changes
   useEffect(() => {
     const hasVideo = carouselItems[currentSlide].videoUrl !== undefined;
@@ -98,28 +116,38 @@ const Hero = () => {
       };
     }
   }, [currentSlide]);
-  
+
   // Simple next/prev functions - only work when video is not playing
   const nextSlide = () => {
     if (!isVideoPlaying) {
+      // Clear any existing timer
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
       setCurrentSlide((prev) => (prev === carouselItems.length - 1 ? 0 : prev + 1));
     }
   };
   
   const prevSlide = () => {
     if (!isVideoPlaying) {
+      // Clear any existing timer
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
       setCurrentSlide((prev) => (prev === 0 ? carouselItems.length - 1 : prev - 1));
     }
   };
-  
+
   // Basic touch handlers - only work when video is not playing
-  const handleTouchStart = (e) => {
+  const handleTouchStart = (e: React.TouchEvent) => {
     if (!isVideoPlaying) {
       setTouchStart(e.targetTouches[0].clientX);
     }
   };
   
-  const handleTouchMove = (e) => {
+  const handleTouchMove = (e: React.TouchEvent) => {
     if (!isVideoPlaying) {
       setTouchEnd(e.targetTouches[0].clientX);
     }
@@ -130,20 +158,19 @@ const Hero = () => {
       if (touchStart - touchEnd > 100) {
         nextSlide();
       }
-      
       if (touchStart - touchEnd < -100) {
         prevSlide();
       }
     }
   };
-  
+
   // Check if current slide has video
   const hasVideo = carouselItems[currentSlide].videoUrl !== undefined;
 
   return (
     <section className="relative">
       {/* Hero Carousel Section */}
-      <div 
+      <div
         className="relative overflow-hidden bg-gradient-to-br from-primary-800 via-primary-700 to-primary-900 dark:from-primary-900 dark:via-primary-800 dark:to-black"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -163,7 +190,7 @@ const Hero = () => {
           >
             <div className="flex flex-col md:flex-row md:h-[600px]">
               {/* Image/Video Side */}
-              <motion.div 
+              <motion.div
                 className="w-full md:w-1/2 h-[300px] md:h-full relative"
                 initial={{ x: -50, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
@@ -187,7 +214,7 @@ const Hero = () => {
                 ) : (
                   // Image content
                   <div className="relative w-full h-full bg-white/5">
-                    <Image 
+                    <Image
                       src={carouselItems[currentSlide].image}
                       alt={carouselItems[currentSlide].title}
                       fill
@@ -199,7 +226,7 @@ const Hero = () => {
               </motion.div>
               
               {/* Content Side */}
-              <motion.div 
+              <motion.div
                 className="w-full md:w-1/2 flex items-center bg-primary-800/50"
                 initial={{ x: 50, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
@@ -216,7 +243,7 @@ const Hero = () => {
                     {carouselItems[currentSlide].description}
                   </p>
                   
-                  <Link 
+                  <Link
                     href={carouselItems[currentSlide].buttonLink}
                     className="inline-flex items-center px-5 py-2.5 md:px-6 md:py-3 bg-white hover:bg-primary-50 text-primary-700 font-medium rounded-lg transition-colors"
                   >
@@ -234,7 +261,7 @@ const Hero = () => {
         {/* Navigation Arrows - Only show when video is not playing */}
         {!isVideoPlaying && (
           <>
-            <button 
+            <button
               className="hidden sm:block absolute left-2 md:left-4 top-1/2 transform -translate-y-1/2 z-10 bg-white/10 hover:bg-white/20 text-white rounded-full p-2 md:p-3 transition-all duration-300"
               onClick={prevSlide}
               aria-label="Previous slide"
@@ -244,7 +271,7 @@ const Hero = () => {
               </svg>
             </button>
             
-            <button 
+            <button
               className="hidden sm:block absolute right-2 md:right-4 top-1/2 transform -translate-y-1/2 z-10 bg-white/10 hover:bg-white/20 text-white rounded-full p-2 md:p-3 transition-all duration-300"
               onClick={nextSlide}
               aria-label="Next slide"
@@ -264,8 +291,8 @@ const Hero = () => {
                 key={index}
                 onClick={() => !isVideoPlaying && setCurrentSlide(index)}
                 className={`h-2 md:h-2.5 rounded-full transition-all duration-300 ${
-                  index === currentSlide 
-                    ? 'bg-white w-8 md:w-10' 
+                  index === currentSlide
+                    ? 'bg-white w-8 md:w-10'
                     : 'bg-white/30 w-2 md:w-2.5 hover:bg-white/50'
                 }`}
                 aria-label={`Go to slide ${index + 1}`}
@@ -286,11 +313,11 @@ const Hero = () => {
               COMMITTED TO THE FINEST CARE FOR YOUR LONG TERM FILLING NEEDS!
             </p>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8 mt-8 md:mt-12">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8 mt-8 md:mt-12">
               <div className="bg-white dark:bg-gray-800 p-5 md:p-6 rounded-lg shadow-md">
                 <div className="w-14 h-14 md:w-16 md:h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
                   <svg className="w-7 h-7 md:w-8 md:h-8 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
                 </div>
                 <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-2 md:mb-3">Custom Component Sourcing</h3>
