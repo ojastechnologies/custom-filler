@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Update the carousel items to use the direct MP4 video URL
+// Update the carousel items to use local video files from your public directory
 const carouselItems = [
   {
     id: 1,
@@ -35,9 +35,9 @@ const carouselItems = [
     id: 4,
     title: "This Could Be Your Project",
     description: "Let us help you bring your aerosol product to market with our specialized filling services.",
-    // Using the direct MP4 video URL
-    videoUrl: "https://customfiller.com/wp-content/uploads/2022/04/carousel-5.mp4",
-    image: "/img/video-poster.jpg", // Fallback image for when video can't be loaded
+    videoUrl: "/videos/carousel5.mp4",
+    videoUrl2: "/videos/carousel4.mp4",
+    image: "/img/video-poster.jpg",
     buttonText: "Get Started",
     buttonLink: "/contact-us"
   }
@@ -49,7 +49,9 @@ const Hero = () => {
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [activeVideo, setActiveVideo] = useState<number | null>(null);
+  const videoRef1 = useRef<HTMLVideoElement>(null);
+  const videoRef2 = useRef<HTMLVideoElement>(null);
 
   const nextSlide = useCallback(() => {
     // Only allow slide change if video is not playing
@@ -112,10 +114,16 @@ const Hero = () => {
 
   // Reset video playing state when changing slides
   useEffect(() => {
-    if (!isVideoSlide(currentSlide) && videoRef.current) {
-      // If we navigate away from video slide, pause the video
-      videoRef.current.pause();
+    if (!isVideoSlide(currentSlide)) {
+      // If we navigate away from video slide, pause both videos
+      if (videoRef1.current) {
+        videoRef1.current.pause();
+      }
+      if (videoRef2.current) {
+        videoRef2.current.pause();
+      }
       setIsVideoPlaying(false);
+      setActiveVideo(null);
     }
   }, [currentSlide]);
 
@@ -134,16 +142,47 @@ const Hero = () => {
   };
 
   // Video event handlers
-  const handleVideoPlay = () => {
+  const handleVideoPlay = (videoNum: number) => {
     setIsVideoPlaying(true);
+    setActiveVideo(videoNum);
+    
+    // Pause the other video if it's playing
+    if (videoNum === 1 && videoRef2.current) {
+      videoRef2.current.pause();
+    } else if (videoNum === 2 && videoRef1.current) {
+      videoRef1.current.pause();
+    }
   };
 
   const handleVideoPause = () => {
-    setIsVideoPlaying(false);
+    // Only set video as not playing if both videos are paused
+    const video1Paused = !videoRef1.current || videoRef1.current.paused;
+    const video2Paused = !videoRef2.current || videoRef2.current.paused;
+    
+    if (video1Paused && video2Paused) {
+      setIsVideoPlaying(false);
+      setActiveVideo(null);
+    }
   };
 
   const handleVideoEnded = () => {
-    setIsVideoPlaying(false);
+    // Only set video as not playing if both videos are ended/paused
+    const video1Paused = !videoRef1.current || videoRef1.current.paused;
+    const video2Paused = !videoRef2.current || videoRef2.current.paused;
+    
+    if (video1Paused && video2Paused) {
+      setIsVideoPlaying(false);
+      setActiveVideo(null);
+    }
+  };
+
+  // Function to play video when thumbnail is clicked
+  const playVideo = (videoNum: number) => {
+    if (videoNum === 1 && videoRef1.current) {
+      videoRef1.current.play();
+    } else if (videoNum === 2 && videoRef2.current) {
+      videoRef2.current.play();
+    }
   };
 
   return (
@@ -176,48 +215,98 @@ const Hero = () => {
                 transition={{ duration: 0.7, delay: 0.2 }}
               >
                 {isVideoSlide(currentSlide) ? (
-                  // Video content for slide with id 4 - Using HTML5 video element
+                  // Video content for slide with id 4 - Using HTML5 video elements side by side
                   <div className="relative w-full h-full bg-black">
-                    {carouselItems[3].videoUrl ? (
-                      <video
-                        ref={videoRef}
-                        className="w-full h-full object-contain"
-                        controls
-                        poster={carouselItems[3].image}
-                        onPlay={handleVideoPlay}
-                        onPause={handleVideoPause}
-                        onEnded={handleVideoEnded}
-                      >
-                        <source src={carouselItems[3].videoUrl} type="video/mp4" />
-                        Your browser does not support the video tag.
-                      </video>
-                    ) : (
-                      // Fallback if video URL is not available
-                      <div className="w-full h-full flex items-center justify-center bg-black">
-                        <Image 
-                          src={carouselItems[3].image}
-                          alt={carouselItems[3].title}
-                          fill
-                          className="object-contain"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="bg-black bg-opacity-40 rounded-full p-4">
-                            <svg 
-                              className="w-12 h-12 text-white" 
-                              fill="currentColor" 
-                              viewBox="0 0 20 20" 
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path 
-                                fillRule="evenodd" 
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" 
-                                clipRule="evenodd" 
+                    <div className="w-full h-full flex flex-col md:flex-row">
+                      {/* First Video */}
+                      <div className="w-full md:w-1/2 h-1/2 md:h-full relative group">
+                        {/* Video Thumbnail with Play Button Overlay */}
+                        {(!isVideoPlaying || activeVideo !== 1) && (
+                          <div 
+                            className="absolute inset-0 z-10 cursor-pointer"
+                            onClick={() => playVideo(1)}
+                          >
+                            <div className="relative w-full h-full">
+                              <Image 
+                                src={carouselItems[3].image}
+                                alt="Video 1 thumbnail"
+                                fill
+                                className="object-cover"
                               />
-                            </svg>
+                              <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center transition-opacity group-hover:bg-opacity-30">
+                                <div className="w-16 h-16 rounded-full bg-primary-600 bg-opacity-90 flex items-center justify-center transform transition-transform group-hover:scale-110">
+                                  <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                        </div>
+                        )}
+                        
+                        {/* Actual Video Element (Hidden until played) */}
+                        <video
+                          ref={videoRef1}
+                          className={`w-full h-full object-contain ${(!isVideoPlaying || activeVideo !== 1) ? 'invisible' : 'visible'}`}
+                          controls
+                          poster={carouselItems[3].image}
+                          onPlay={() => handleVideoPlay(1)}
+                          onPause={handleVideoPause}
+                          onEnded={handleVideoEnded}
+                        >
+                          <source src={carouselItems[3].videoUrl} type="video/mp4" />
+                          Your browser does not support the video tag.
+                        </video>
                       </div>
-                    )}
+                      
+                      {/* Second Video */}
+                      <div className="w-full md:w-1/2 h-1/2 md:h-full relative group">
+                        {/* Video Thumbnail with Play Button Overlay */}
+                        {(!isVideoPlaying || activeVideo !== 2) && (
+                          <div 
+                            className="absolute inset-0 z-10 cursor-pointer"
+                            onClick={() => playVideo(2)}
+                          >
+                            <div className="relative w-full h-full">
+                              <Image 
+                                src={carouselItems[3].image}
+                                alt="Video 2 thumbnail"
+                                fill
+                                className="object-cover"
+                              />
+                              <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center transition-opacity group-hover:bg-opacity-30">
+                                <div className="w-16 h-16 rounded-full bg-primary-600 bg-opacity-90 flex items-center justify-center transform transition-transform group-hover:scale-110">
+                                  <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Actual Video Element (Hidden until played) */}
+                        <video
+                          ref={videoRef2}
+                          className={`w-full h-full object-contain ${(!isVideoPlaying || activeVideo !== 2) ? 'invisible' : 'visible'}`}
+                          controls
+                          playsInline
+                          poster={carouselItems[3].image}
+                          onPlay={() => handleVideoPlay(2)}
+                          onPause={handleVideoPause}
+                          onEnded={handleVideoEnded}
+                          onError={(e) => {
+                            console.error("Video 2 error:", e);
+                            console.log("Video 2 error details:", e.currentTarget.error);
+                          }}
+                        >
+                          <source src={`${window.location.origin}/videos/carousel4.mp4`} type="video/mp4" />
+                          <source src="/videos/carousel4.mp4" type="video/mp4" />
+                          <source src="/videos/carousel4.mp4" type="application/octet-stream" />
+                          Your browser does not support this video format.
+                        </video>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   // Image content for other slides
@@ -235,7 +324,7 @@ const Hero = () => {
               
               {/* Content Side - Full width on mobile, half width on desktop */}
               <motion.div 
-                className="w-full md:w-1/2 flex items-center bg-primary-800/50"
+                               className="w-full md:w-1/2 flex items-center bg-primary-800/50"
                 initial={{ x: 50, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.7, delay: 0.4 }}
@@ -266,6 +355,8 @@ const Hero = () => {
           </motion.div>
         </AnimatePresence>
         
+        {/* Navigation Arrows - Hidden on small screens, visible on medium and up */}
+        {/* Only show navigation arrows if video is not playing */}
         {!isVideoPlaying && (
           <>
             <button 
@@ -310,7 +401,7 @@ const Hero = () => {
         )}
       </div>
 
-           {/* Hero content below carousel - Improved for mobile */}
+      {/* Hero content below carousel - Improved for mobile */}
       <div className="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/30 py-12 md:py-16">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
