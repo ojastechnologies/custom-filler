@@ -60,9 +60,13 @@ export default function DashboardPage() {
         
         setProducts(transformedProducts);
         setError(null);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error fetching products:', err);
-        setError(err.message || 'Failed to load products');
+        if (err instanceof Error) {
+          setError(err.message || 'Failed to load products');
+        } else {
+          setError('Failed to load products');
+        }
       } finally {
         setLoadingProducts(false);
       }
@@ -133,9 +137,13 @@ export default function DashboardPage() {
       
       // Reset form
       resetForm();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error saving product:', err);
-      setError(err.message || 'Failed to save product');
+      if (err instanceof Error) {
+        setError(err.message || 'Failed to save product');
+      } else {
+        setError('Failed to save product');
+      }
     }
   };
 
@@ -168,9 +176,13 @@ export default function DashboardPage() {
       // Update local state regardless of the result
       // This ensures the UI stays in sync even if there's an issue with the database
       setProducts(products.filter(product => product.id !== id));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting product:', err);
-      setError(err.message || 'Failed to delete product');
+      if (err instanceof Error) {
+        setError(err.message || 'Failed to delete product');
+      } else {
+        setError('Failed to delete product');
+      }
     }
   };
 

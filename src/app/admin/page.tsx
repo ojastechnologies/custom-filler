@@ -9,7 +9,7 @@ import Link from 'next/link';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
-  const { user, isAdmin, loading } = useAuth();
+  const { isAdmin, loading } = useAuth();
 
   // Redirect if not admin
   useEffect(() => {

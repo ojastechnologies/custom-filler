@@ -56,9 +56,13 @@ export default function RegisterForm() {
       
       // Redirect to login page with success message
       router.push('/login?registered=true');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Registration error:', err);
-      setError(err.message || 'An error occurred during registration');
+      if (err instanceof Error) {
+        setError(err.message || 'Registration failed');
+      } else {
+        setError('Registration failed');
+      }
     } finally {
       setLoading(false);
     }

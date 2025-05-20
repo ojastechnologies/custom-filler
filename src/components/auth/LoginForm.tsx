@@ -48,9 +48,13 @@ export default function LoginForm() {
       
       // Redirect after successful login
       router.push(redirectTo);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Login error:', err);
-      setError(err.message || 'Invalid email or password');
+      if (err instanceof Error) {
+        setError(err.message || 'Invalid email or password');
+      } else {
+        setError('Invalid email or password');
+      }
     } finally {
       setLoading(false);
     }
@@ -73,9 +77,13 @@ export default function LoginForm() {
       if (error) throw error;
       
       setResendSuccess(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error resending confirmation email:', err);
-      setError(err.message || 'Failed to resend confirmation email');
+      if (err instanceof Error) {
+        setError(err.message || 'Failed to resend confirmation email');
+      } else {
+        setError('Failed to resend confirmation email');
+      }
     } finally {
       setResendingEmail(false);
     }
@@ -166,7 +174,7 @@ export default function LoginForm() {
       
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Don't have an account?{' '}
+          Don&apos;t have an account?{' '}
           <Link href="/register" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
             Create one now
           </Link>

@@ -34,9 +34,13 @@ export default function AdminUsersPage() {
         if (error) throw error;
         
         setUsers(data || []);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error fetching users:', err);
-        setError(err.message || 'Failed to load users');
+        if (err instanceof Error) {
+          setError(err.message || 'Failed to load users');
+        } else {
+          setError('Failed to load users');
+        }
       } finally {
         setLoading(false);
       }
@@ -68,9 +72,13 @@ export default function AdminUsersPage() {
       setUsers(users.map(user => 
         user.id === userId ? { ...user, role: newRole } : user
       ));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error updating user role:', err);
-      setError(err.message || 'Failed to update user role');
+      if (err instanceof Error) {
+        setError(err.message || 'Failed to update user role');
+      } else {
+        setError('Failed to update user role');
+      }
     }
   };
 
