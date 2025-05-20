@@ -49,8 +49,12 @@ export default function ProfilePage() {
       if (data) {
         setProfile(data);
       }
-    } catch (err) {
-      console.error('Error fetching profile:', err);
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'message' in err) {
+        console.error('Error fetching profile:', (err as { message: string }).message);
+      } else {
+        console.error('Error fetching profile:', err);
+      }
     }
   }, [user?.id]); // Add user?.id as a dependency
 

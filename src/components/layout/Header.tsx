@@ -158,7 +158,7 @@ const Header = () => {
                       className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                       onClick={() => setIsUserMenuOpen(false)}
                     >
-                      Dashboard
+                      Admin Dashboard
                     </Link>
                     <Link 
                       href="/profile" 
@@ -167,15 +167,6 @@ const Header = () => {
                     >
                       Profile
                     </Link>
-                    {isAdmin && (
-                      <Link 
-                        href="/admin" 
-                        className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        Admin Dashboard
-                      </Link>
-                    )}
                     <button 
                       onClick={() => {
                         signOut();
