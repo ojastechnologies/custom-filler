@@ -6,20 +6,11 @@ export default function AboutUs() {
   return (
     <>
       <Header />
-      <main className="pt-20 pb-16">
-        {/* Hero Section */}
-        <section className="bg-gray-100 dark:bg-gray-800 py-16">
-          <div className="container mx-auto px-4">
-            <h1 className="text-4xl md:text-5xl font-bold text-center text-gray-900 dark:text-white mb-8">
-              About Us
-            </h1>
-          </div>
-        </section>
+      <main className="pb-16">
 
-        {/* What We Do Section - First Description with Left Image */}
         <section className="py-16">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8 text-center">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8 text-center pb-8">
               What Do We Do?
             </h2>
             
