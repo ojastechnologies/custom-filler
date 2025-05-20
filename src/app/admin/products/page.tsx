@@ -46,9 +46,13 @@ export default function AdminProductsPage() {
         if (error) throw error;
         
         setProducts(data || []);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error fetching products:', err);
-        setError(err.message || 'Failed to load products');
+        if (err instanceof Error) {
+          setError(err.message || 'Failed to load products');
+        } else {
+          setError('Failed to load products');
+        }
       } finally {
         setLoading(false);
       }
@@ -120,9 +124,13 @@ export default function AdminProductsPage() {
       
       // Reset form
       resetForm();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error saving product:', err);
-      setError(err.message || 'Failed to save product');
+      if (err instanceof Error) {
+        setError(err.message || 'Failed to save product');
+      } else {
+        setError('Failed to save product');
+      }
     }
   };
 
@@ -153,9 +161,13 @@ export default function AdminProductsPage() {
       
       // Update local state
       setProducts(products.filter(product => product.id !== id));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting product:', err);
-      setError(err.message || 'Failed to delete product');
+      if (err instanceof Error) {
+        setError(err.message || 'Failed to delete product');
+      } else {
+        setError('Failed to delete product');
+      }
     }
   };
 

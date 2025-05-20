@@ -45,7 +45,7 @@ export const createProduct = async (product: {
     console.log('Creating product:', product);
     
     // First, check if the table exists and has the right structure
-    const { data: tableInfo, error: tableError } = await supabase
+    const { error: tableError } = await supabase
       .from('products')
       .select('id')
       .limit(1);
