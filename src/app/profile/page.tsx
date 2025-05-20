@@ -35,28 +35,6 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Use useCallback to memoize fetchProfile to avoid dependency issues
-  const fetchProfile = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user?.id)
-        .single();
-      
-      if (error) throw error;
-      
-      if (data) {
-        setProfile(data);
-      }
-    } catch (err: unknown) {
-      if (err && typeof err === 'object' && 'message' in err) {
-        console.error('Error fetching profile:', (err as { message: string }).message);
-      } else {
-        console.error('Error fetching profile:', err);
-      }
-    }
-  }, [user?.id]); // Add user?.id as a dependency
 
   useEffect(() => {
     // Redirect if not logged in
@@ -66,9 +44,8 @@ export default function ProfilePage() {
     
     // Fetch profile data
     if (user) {
-      fetchProfile();
     }
-  }, [user, loading, router, fetchProfile]); // Add fetchProfile to the dependency array
+  }, [user, loading, router]);  
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
