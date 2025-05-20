@@ -15,17 +15,20 @@ const CtaSection = () => {
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link href="/contact-us" passHref>
               <Button 
-                variant="outline" 
+                variant="primary" 
                 size="lg"
-                className="border-white text-white hover:bg-primary-700"
+                className="border-white text-white bg-primary-700 hover:bg-primary-800  dark:bg-primary-600 dark:text-white dark:border-primary-600
+    dark:hover:bg-primary-700 dark:hover:border-primary-400"
               >
                 Get a Quote
               </Button>
             </Link>
             <Link href="/services" passHref>
               <Button 
-                variant="secondary" 
+                variant="primary" 
                 size="lg"
+                className="border-white text-white bg-primary-700 hover:bg-primary-800  dark:bg-primary-600 dark:text-white dark:border-primary-600
+    dark:hover:bg-primary-700 dark:hover:border-primary-400"
               >
                 Explore Our Products
               </Button>
