@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/context/AuthContext';
 
-export default function LoginForm() {
+// Create a separate component for the parts that use searchParams
+function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirectTo') || '/';
@@ -181,5 +182,29 @@ export default function LoginForm() {
         </p>
       </div>
     </div>
+  );
+}
+
+// Loading fallback component
+function LoginFormFallback() {
+  return (
+    <div className="max-w-md w-full mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      <h2 className="text-2xl font-bold text-center mb-6 text-gray-900 dark:text-white">
+        Sign In to Your Account
+      </h2>
+      <div className="animate-pulse">
+        <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+        <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded mb-6"></div>
+        <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
+      </div>
+    </div>
+  );
+}
+
+export default function LoginForm() {
+  return (
+    <Suspense fallback={<LoginFormFallback />}>
+      <LoginFormContent />
+    </Suspense>
   );
 }
