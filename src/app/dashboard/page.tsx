@@ -399,17 +399,31 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <table className="min-w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
+                    <colgroup>
+                      <col style={{ width: '320px' }} /> {/* Product column fixed width */}
+                      <col style={{ width: '120px' }} /> {/* Price column */}
+                      {isAdmin && <col style={{ width: '160px' }} />} {/* Actions column */}
+                    </colgroup>
                     <thead className="bg-gray-50 dark:bg-gray-700">
                       <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-80"
+                        >
                           Product
                         </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-28"
+                        >
                           Price
                         </th>
                         {isAdmin && (
-                          <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          <th
+                            scope="col"
+                            className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-40"
+                          >
                             Actions
                           </th>
                         )}
@@ -418,7 +432,7 @@ export default function DashboardPage() {
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                       {products.map((product) => (
                         <tr key={product.id}>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-4 whitespace-nowrap w-80 max-w-xs">
                             <div className="flex items-center">
                               <div className="h-10 w-10 flex-shrink-0 relative">
                                 <Image
@@ -432,23 +446,23 @@ export default function DashboardPage() {
                                   }}
                                 />
                               </div>
-                              <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900 dark:text-white">
+                              <div className="ml-4 min-w-0">
+                                <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
                                   {product.name}
                                 </div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
+                                <div className="text-sm text-gray-500 dark:text-gray-400 overflow-hidden text-ellipsis break-normal">
                                   {product.description || "No description"}
                                 </div>
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-4 whitespace-nowrap w-28">
                             <div className="text-sm text-gray-900 dark:text-white">
                               ${product.unit_price?.toFixed(2) || "0.00"}
                             </div>
                           </td>
                           {isAdmin && (
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium w-40">
                               <button
                                 onClick={() => handleEdit(product)}
                                 className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-4"
