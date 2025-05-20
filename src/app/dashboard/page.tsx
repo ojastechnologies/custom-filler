@@ -401,9 +401,9 @@ export default function DashboardPage() {
                 <div className="overflow-x-auto">
                   <table className="min-w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
                     <colgroup>
-                      <col style={{ width: '320px' }} /> {/* Product column fixed width */}
-                      <col style={{ width: '120px' }} /> {/* Price column */}
-                      {isAdmin && <col style={{ width: '160px' }} />} {/* Actions column */}
+                      <col style={{ width: '320px' }}/>
+                      <col style={{ width: '120px' }}/>
+                      {isAdmin && <col style={{ width: '160px' }}/>}
                     </colgroup>
                     <thead className="bg-gray-50 dark:bg-gray-700">
                       <tr>
