@@ -105,18 +105,6 @@ export default function ContactUs() {
                           />
                         </svg>
                       </div>
-                      <div>
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">WhatsApp</h3>
-                        <p className="text-gray-600 dark:text-gray-400">Chat with us on WhatsApp</p>
-                        <a
-                          href="https://wa.me/1234567890"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-block mt-2 text-green-600 dark:text-green-400 hover:underline"
-                        >
-                          +1 (234) 567-890
-                        </a>
-                      </div>
                     </div>
                   </div>
                 </Card>

@@ -17,8 +17,8 @@ const CtaSection = () => {
               <Button 
                 variant="primary" 
                 size="lg"
-                className="border-white text-white bg-primary-700 hover:bg-primary-800  dark:bg-primary-600 dark:text-white dark:border-primary-600
-    dark:hover:bg-primary-700 dark:hover:border-primary-400"
+                className="border-white text-white bg-primary-700 hover:bg-primary-800  dark:bg-primary-600 dark:text-white dark:border-lg
+    dark:hover:bg-primary-700 dark:hover:border-white"
               >
                 Get a Quote
               </Button>

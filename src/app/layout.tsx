@@ -3,7 +3,6 @@ import { ThemeProvider } from '@/context/ThemeContext';
 import { MenuProvider } from '@/context/MenuContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
-import WhatsAppChat from '@/components/WhatsAppChat';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -26,7 +25,6 @@ export default function RootLayout({
             <AuthProvider>
               <CartProvider>
                 {children}
-                <WhatsAppChat />
               </CartProvider>
             </AuthProvider>
           </MenuProvider>
