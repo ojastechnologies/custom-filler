@@ -1,7 +1,9 @@
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+
 export default function AboutUs() {
   return (
     <>
@@ -30,7 +32,7 @@ export default function AboutUs() {
                 <p className="text-gray-700 dark:text-gray-300 text-lg leading-relaxed">
                   Aero Tech Labs is a small, dedicated, and ambitious aerosol custom filling facility located in South Florida. 
                   Strategically located in the Southern U.S., we can be an important link to produce aerosol products in that region. 
-                  Our forte is the filling of HFC 134a, a non-flammable propellant which is used in &quot;ozone safe&quot; refrigerant systems, 
+                  Our forte is the filling of HFC 134a, a non-flammable propellant which is used in &ldquo;ozone safe&rdquo; refrigerant systems, 
                   when there is an imperative need for non-flammable necessary end use products are a requisite, we use HFC 134a. 
                   If you need a different non-flammable propellant with a low global warming potential (GWP), then let us suggest 
                   HFO 1234ze. This new propellant is an exciting addition especially to high end cosmetic formulations where 
@@ -63,6 +65,24 @@ export default function AboutUs() {
                   be mixed with other chemicals or propellants. The BOV non-aerosol system is perfect for Topical Pharmaceutical, 
                   Skin Care, Cosmetic, Sunscreen, and other high end products of a similar nature.
                 </p>
+              </div>
+            </div>
+            
+            {/* FAQs Link Section */}
+            <div className="mt-16 text-center">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-8 rounded-lg shadow-md max-w-3xl mx-auto">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                  Have Questions?
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Check out our frequently asked questions to learn more about our services, processes, and capabilities.
+                </p>
+                <Link 
+                  href="/faqs" 
+                  className="inline-block px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors shadow-md"
+                >
+                  View FAQs
+                </Link>
               </div>
             </div>
           </div>
