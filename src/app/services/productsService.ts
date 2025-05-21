@@ -7,8 +7,8 @@ const createPublicClient = () => {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string,
     {
       auth: {
-        persistSession: false,
-        autoRefreshToken: false,
+        persistSession: true,
+        autoRefreshToken: true,
       }
     }
   );
