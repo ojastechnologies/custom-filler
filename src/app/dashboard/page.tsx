@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Header from '@/components/layout/Header';
@@ -8,7 +8,7 @@ import Footer from '@/components/layout/Footer';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Image from 'next/image';
-import { fetchProducts, createProduct, updateProduct, deleteProduct, uploadProductImage } from '@/app/services/productsService';
+import { fetchProducts, createProduct, updateProduct, deleteProduct } from '@/app/services/productsService';
 import ImageUploader from '@/components/admin/ImageUploader';
 
 interface Product {

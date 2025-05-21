@@ -10,7 +10,7 @@ interface ImageUploaderProps {
 
 const ImageUploader = ({ currentImage, onImageSelected }: ImageUploaderProps) => {
   const [previewUrl, setPreviewUrl] = useState<string>(currentImage || '');
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
