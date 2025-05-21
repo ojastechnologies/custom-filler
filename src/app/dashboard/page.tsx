@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Header from '@/components/layout/Header';
@@ -8,7 +8,8 @@ import Footer from '@/components/layout/Footer';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Image from 'next/image';
-import { fetchProducts, createProduct, updateProduct, deleteProduct } from '@/app/services/productsService';
+import { fetchProducts, createProduct, updateProduct, deleteProduct, uploadProductImage } from '@/app/services/productsService';
+import ImageUploader from '@/components/admin/ImageUploader';
 
 interface Product {
   id: string;
@@ -34,6 +35,8 @@ export default function DashboardPage() {
     unit_price: 0,
     thumbnail_url: ''
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     // Redirect if not logged in
@@ -86,6 +89,15 @@ export default function DashboardPage() {
     }));
   };
 
+  // Handle image selection
+  const handleImageSelected = (imageUrl: string, file: File | null) => {
+    setFormData(prev => ({
+      ...prev,
+      thumbnail_url: imageUrl
+    }));
+    setSelectedFile(file);
+  };
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,13 +105,16 @@ export default function DashboardPage() {
     if (!isAdmin) return;
     
     try {
+      setIsUploading(true);
+      
       if (editingProduct) {
         // Update existing product using the service
         const result = await updateProduct(editingProduct.id, {
           name: formData.name,
           description: formData.description,
           unit_price: formData.unit_price,
-          thumbnail_url: formData.thumbnail_url
+          thumbnail_url: formData.thumbnail_url,
+          imageFile: selectedFile || undefined
         });
         
         console.log('Update result:', result);
@@ -108,10 +123,10 @@ export default function DashboardPage() {
         setProducts(products.map(product => 
           product.id === editingProduct.id ? { 
             ...product, 
-            name: formData.name, // Use form data directly to be safe
+            name: formData.name,
             description: formData.description,
             unit_price: formData.unit_price,
-            thumbnail_url: formData.thumbnail_url
+            thumbnail_url: result.thumbnail_url || formData.thumbnail_url
           } : product
         ));
       } else {
@@ -120,7 +135,8 @@ export default function DashboardPage() {
           name: formData.name,
           description: formData.description,
           unit_price: formData.unit_price,
-          thumbnail_url: formData.thumbnail_url
+          thumbnail_url: formData.thumbnail_url,
+          imageFile: selectedFile || undefined
         });
         
         console.log('Create result:', result);
@@ -128,10 +144,10 @@ export default function DashboardPage() {
         // Add to local state safely
         setProducts([...products, {
           id: result?.id || 'temp-' + Date.now(),
-          name: formData.name, // Use form data directly to be safe
+          name: formData.name,
           description: formData.description || '',
           unit_price: formData.unit_price || 0,
-          thumbnail_url: formData.thumbnail_url || ''
+          thumbnail_url: result.thumbnail_url || formData.thumbnail_url || ''
         }]);
       }
       
@@ -144,6 +160,8 @@ export default function DashboardPage() {
       } else {
         setError('Failed to save product');
       }
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -158,6 +176,7 @@ export default function DashboardPage() {
       unit_price: product.unit_price || 0,
       thumbnail_url: product.thumbnail_url || ''
     });
+    setSelectedFile(null);
     setShowForm(true);
   };
 
@@ -195,6 +214,7 @@ export default function DashboardPage() {
       thumbnail_url: ''
     });
     setEditingProduct(null);
+    setSelectedFile(null);
     setShowForm(false);
   };
 
@@ -321,46 +341,36 @@ export default function DashboardPage() {
                   </div>
                   
                   <div className="mb-6">
-                    <label htmlFor="thumbnail_url" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Image URL
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Product Image
                     </label>
-                    <input
-                      id="thumbnail_url"
-                      name="thumbnail_url"
-                      type="text"
-                      value={formData.thumbnail_url}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                      placeholder="https://example.com/image.jpg"
+                    <ImageUploader 
+                      currentImage={formData.thumbnail_url} 
+                      onImageSelected={handleImageSelected} 
                     />
-                    {formData.thumbnail_url && (
-                      <div className="mt-2 relative h-20 w-20 border border-gray-300 dark:border-gray-600 rounded-md overflow-hidden">
-                        <Image
-                          src={formData.thumbnail_url}
-                          alt="Product thumbnail preview"
-                          fill
-                          className="object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = "/placeholder-product.jpg";
-                          }}
-                        />
-                      </div>
-                    )}
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      Recommended size: 800x800px. Max file size: 2MB.
+                    </p>
                   </div>
                   
                   <div className="flex justify-end space-x-3">
                     <Button
                       variant="outline"
                       onClick={resetForm}
+                      type="button"
                     >
                       Cancel
                     </Button>
                     <Button
                       variant="primary"
                       type="submit"
+                      disabled={isUploading}
                     >
-                      {editingProduct ? 'Update Product' : 'Add Product'}
+                      {isUploading 
+                        ? 'Uploading...' 
+                        : editingProduct 
+                          ? 'Update Product' 
+                          : 'Add Product'}
                     </Button>
                   </div>
                 </form>

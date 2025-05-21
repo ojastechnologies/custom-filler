@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabaseClient';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Image from 'next/image';
+import ImageUploader from '@/components/admin/ImageUploader';
 
 interface Product {
   id: string;
@@ -32,6 +33,8 @@ export default function AdminProductsPage() {
     thumbnail_url: ''
   });
   const [isEditing, setIsEditing] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Fetch products
   useEffect(() => {
@@ -79,11 +82,64 @@ export default function AdminProductsPage() {
     }));
   };
 
+  // Handle image selection
+  const handleImageSelected = (imageUrl: string, file: File | null) => {
+    setFormData(prev => ({
+      ...prev,
+      thumbnail_url: imageUrl
+    }));
+    setSelectedFile(file);
+  };
+
+  // Upload image to public folder
+  const uploadImage = async (file: File): Promise<string> => {
+    setIsUploading(true);
+    
+    try {
+      // Create a unique filename
+      const timestamp = Date.now();
+      const fileExtension = file.name.split('.').pop();
+      const fileName = `product-${timestamp}.${fileExtension}`;
+      const filePath = `/images/upload/${fileName}`;
+      
+      // Create a FormData object to send the file
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('path', filePath);
+      
+      // Send the file to a server endpoint that will save it
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to upload image');
+      }
+      
+      const data = await response.json();
+      return data.url; // Return the URL of the uploaded image
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      throw err;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
+      let imageUrl = formData.thumbnail_url;
+      
+      // If there's a selected file, upload it
+      if (selectedFile) {
+        imageUrl = await uploadImage(selectedFile);
+      }
+      
       if (isEditing) {
         // Update existing product
         const { error } = await supabase
@@ -92,7 +148,7 @@ export default function AdminProductsPage() {
             name: formData.name,
             description: formData.description,
             unit_price: formData.unit_price,
-            thumbnail_url: formData.thumbnail_url
+            thumbnail_url: imageUrl
           })
           .eq('id', formData.id);
           
@@ -100,7 +156,11 @@ export default function AdminProductsPage() {
         
         // Update local state
         setProducts(products.map(product => 
-          product.id === formData.id ? { ...product, ...formData } : product
+          product.id === formData.id ? { 
+            ...product, 
+            ...formData,
+            thumbnail_url: imageUrl
+          } : product
         ));
       } else {
         // Create new product
@@ -110,7 +170,7 @@ export default function AdminProductsPage() {
             name: formData.name,
             description: formData.description,
             unit_price: formData.unit_price,
-            thumbnail_url: formData.thumbnail_url
+            thumbnail_url: imageUrl
           }])
           .select();
           
@@ -145,6 +205,7 @@ export default function AdminProductsPage() {
     });
     setIsEditing(true);
     setShowForm(true);
+    setSelectedFile(null);
   };
 
   // Handle product delete
@@ -182,6 +243,7 @@ export default function AdminProductsPage() {
     });
     setIsEditing(false);
     setShowForm(false);
+    setSelectedFile(null);
   };
 
   if (authLoading) {
@@ -296,32 +358,16 @@ export default function AdminProductsPage() {
               </div>
               
               <div className="mb-6">
-                <label htmlFor="thumbnail_url" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Image URL
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Product Image
                 </label>
-                <input
-                  id="thumbnail_url"
-                  name="thumbnail_url"
-                  type="text"
-                  value={formData.thumbnail_url}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                  placeholder="https://example.com/image.jpg"
+                <ImageUploader 
+                  currentImage={formData.thumbnail_url} 
+                  onImageSelected={handleImageSelected} 
                 />
-                {formData.thumbnail_url && (
-                  <div className="mt-2 relative h-20 w-20 border border-gray-300 dark:border-gray-600 rounded-md overflow-hidden">
-                    <Image
-                      src={formData.thumbnail_url}
-                      alt="Product thumbnail preview"
-                      fill
-                      className="object-cover"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = "/placeholder-product.jpg";
-                      }}
-                    />
-                  </div>
-                )}
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  Recommended size: 800x800px. Max file size: 2MB.
+                </p>
               </div>
               
               <div className="flex justify-end space-x-3">
@@ -334,9 +380,14 @@ export default function AdminProductsPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                  disabled={isUploading}
+                  className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  {isEditing ? 'Update Product' : 'Add Product'}
+                  {isUploading 
+                    ? 'Uploading...' 
+                    : isEditing 
+                      ? 'Update Product' 
+                      : 'Add Product'}
                 </button>
               </div>
             </form>
