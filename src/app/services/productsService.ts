@@ -1,10 +1,26 @@
 import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@supabase/supabase-js';
+
+const createPublicClient = () => {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL as string,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      }
+    }
+  );
+};
 
 export const fetchProducts = async () => {
   console.log('Fetching products from Supabase...');
   
   try {
-    const { data, error } = await supabase
+    const publicClient = createPublicClient();
+    
+    const { data, error } = await publicClient
       .from('products')
       .select('*');
 
@@ -33,21 +49,18 @@ export const fetchProducts = async () => {
   }
 };
 
-// Helper function to upload an image
 export const uploadProductImage = async (file: File): Promise<string> => {
   try {
-    // Create a unique filename
+
     const timestamp = Date.now();
     const fileExtension = file.name.split('.').pop();
     const fileName = `product-${timestamp}.${fileExtension}`;
     const filePath = `/images/upload/${fileName}`;
     
-    // Create a FormData object to send the file
     const formData = new FormData();
     formData.append('file', file);
     formData.append('path', filePath);
     
-    // Send the file to our upload API endpoint
     const response = await fetch('/api/upload', {
       method: 'POST',
       body: formData,
@@ -59,7 +72,7 @@ export const uploadProductImage = async (file: File): Promise<string> => {
     }
     
     const data = await response.json();
-    return data.url; // Return the URL of the uploaded image
+    return data.url; 
   } catch (err) {
     console.error('Error uploading image:', err);
     throw err;
@@ -79,12 +92,10 @@ export const createProduct = async (product: {
     
     let imageUrl = product.thumbnail_url || '';
     
-    // If there's an image file, upload it first
     if (product.imageFile) {
       imageUrl = await uploadProductImage(product.imageFile);
     }
     
-    // First, check if the table exists and has the right structure
     const { error: tableError } = await supabase
       .from('products')
       .select('id')
@@ -92,10 +103,8 @@ export const createProduct = async (product: {
       
     if (tableError) {
       console.error('Error checking products table:', tableError);
-      // Table might not exist or have permission issues
     }
     
-    // Insert the new product
     const { data, error } = await supabase
       .from('products')
       .insert([{
@@ -113,7 +122,6 @@ export const createProduct = async (product: {
     
     console.log('Product created successfully:', data);
     
-    // If data is returned, use it; otherwise, use the input with a temporary ID
     if (data && data.length > 0) {
       return data[0];
     } else {
@@ -144,12 +152,10 @@ export const updateProduct = async (id: string, updates: {
     
     let imageUrl = updates.thumbnail_url;
     
-    // If there's an image file, upload it first
     if (updates.imageFile) {
       imageUrl = await uploadProductImage(updates.imageFile);
     }
     
-    // First, check if the product exists
     const { data: existingProduct, error: checkError } = await supabase
       .from('products')
       .select('*')
@@ -158,12 +164,10 @@ export const updateProduct = async (id: string, updates: {
       
     if (checkError) {
       console.error('Error checking product existence:', checkError);
-      // Product might not exist
     } else {
       console.log('Existing product:', existingProduct);
     }
     
-    // Update the product
     const { data, error } = await supabase
       .from('products')
       .update({
@@ -182,7 +186,6 @@ export const updateProduct = async (id: string, updates: {
     
     console.log('Update operation result:', data);
     
-    // If data is returned, use it; otherwise, use the updates with the original ID
     if (data && data.length > 0) {
       return data[0];
     } else {
@@ -204,7 +207,6 @@ export const deleteProduct = async (id: string) => {
   try {
     console.log(`Deleting product ${id}`);
     
-    // First, check if the product exists and get its image URL
     const { data: existingProduct, error: checkError } = await supabase
       .from('products')
       .select('id, thumbnail_url')
@@ -213,15 +215,11 @@ export const deleteProduct = async (id: string) => {
       
     if (checkError) {
       console.error('Error checking product existence:', checkError);
-      // Product might not exist
     } else {
       console.log('Product to delete exists:', existingProduct);
       
-      // Note: If you want to also delete the image file from the server,
-      // you would need to implement an API endpoint for that and call it here
     }
     
-    // Delete the product
     const { error, count } = await supabase
       .from('products')
       .delete()
