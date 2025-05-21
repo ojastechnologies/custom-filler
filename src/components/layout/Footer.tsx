@@ -79,8 +79,9 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Contact</h3>
             <address className="not-italic text-gray-600 dark:text-gray-400 space-y-2">
-              <p>South Florida, USA</p>
-              <p>Phone: (123) 456-7890</p>
+                <p className="text-gray-600 dark:text-gray-400">728 N. W. 7th Terrace</p>
+                        <p className='text-gray-600 dark:text-gray-400'>Fort Lauderdale, FL 33311</p>
+              <p>Phone: 954-463-4584</p>
             </address>
           </div>
         </div>
