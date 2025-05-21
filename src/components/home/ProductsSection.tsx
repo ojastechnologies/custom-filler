@@ -78,9 +78,17 @@ const ProductsSection = () => {
     router.push("/cart");
   };
 
+  // Determine grid columns based on number of products
+  const getGridClass = () => {
+    const count = products.length;
+    if (count === 1) return "grid-cols-1 max-w-md";
+    if (count === 2) return "grid-cols-1 md:grid-cols-2 max-w-2xl";
+    return "grid-cols-1 md:grid-cols-3 max-w-5xl";
+  };
+
   if (loading) {
     return (
-      <section className="py-16 bg-gray-50 dark:bg-gray-900">
+      <section className="py-12 bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto px-4 text-center">
           <div className="flex justify-center items-center h-32">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
@@ -92,7 +100,7 @@ const ProductsSection = () => {
 
   if (error) {
     return (
-      <section className="py-16 bg-gray-50 dark:bg-gray-900">
+      <section className="py-12 bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto px-4 text-center">
           <p className="text-red-500 dark:text-red-400">{error}</p>
         </div>
@@ -101,13 +109,13 @@ const ProductsSection = () => {
   }
 
   return (
-    <section className="py-16 bg-gray-50 dark:bg-gray-900">
+    <section className="py-12 bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
+        <div className="text-center mb-10">
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
             Featured Products
           </h2>
-          <p className="mt-4 text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+          <p className="mt-3 text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
             Explore our specialized aerosol products
           </p>
         </div>
@@ -119,14 +127,14 @@ const ProductsSection = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className={`grid ${getGridClass()} gap-6 mx-auto`}>
             {products.map((product) => (
               <Card
                 key={product.id}
-                className="overflow-hidden flex flex-col h-full transition-transform duration-300 hover:shadow-lg hover:-translate-y-1"
+                className="bg-gray-50 dark:bg-gray-900 rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1"
               >
                 <div
-                  className="relative h-48 bg-gray-200 dark:bg-gray-700"
+                  className="relative h-48 flex items-center justify-center bg-white dark:bg-gray-800 p-2"
                   onMouseEnter={() => setHoveredProduct(product.id)}
                   onMouseLeave={() => setHoveredProduct(null)}
                 >
@@ -136,7 +144,7 @@ const ProductsSection = () => {
                       src={product.image}
                       alt={product.title}
                       fill
-                      className="object-cover"
+                      className="object-contain p-2"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -155,40 +163,40 @@ const ProductsSection = () => {
                   >
                     <button
                       onClick={() => handleAddToCart(product)}
-                      className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                      className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors text-sm"
                     >
                       Add to Cart
                     </button>
                     <button
                       onClick={() => handleBuyNow(product)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
                     >
                       Buy Now
                     </button>
                   </div>
                 </div>
-                <div className="p-6 flex-grow flex flex-col">
+                <div className="p-4">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white line-clamp-1">
                       {product.title}
                     </h3>
                     <span className="text-lg font-bold text-primary-600 dark:text-primary-400">
                       ${product.price.toFixed(2)}
                     </span>
                   </div>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4 flex-grow">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-3">
                     {product.description}
                   </p>
                   
                   {/* Buttons at the bottom of the card */}
-                  <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-2 justify-between items-center">
+                  <div className="pt-3 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-2 justify-between items-center">
                     <Link
                       href={`${product?.about_url}`}
-                      className="w-full sm:w-auto inline-flex items-center justify-center text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
+                      className="w-full sm:w-auto inline-flex items-center justify-center text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-sm font-medium"
                     >
                       <span>Learn More</span>
                       <svg
-                        className="ml-2 h-5 w-5"
+                        className="ml-1 h-4 w-4"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -217,6 +225,15 @@ const ProductsSection = () => {
             ))}
           </div>
         )}
+        
+        <div className="mt-10 text-center">
+          <Link 
+            href="/services" 
+            className="inline-block px-5 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 transition-colors"
+          >
+            View All Products
+          </Link>
+        </div>
       </div>
     </section>
   );
