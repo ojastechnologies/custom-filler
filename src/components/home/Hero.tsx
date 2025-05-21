@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 
-// Updated carousel items with local video paths
 const carouselItems = [
   {
     id: 1,
@@ -51,11 +50,11 @@ const carouselItems = [
   }
 ];
 
-// Define slide durations
 const IMAGE_SLIDE_DURATION = 6000; 
 const VIDEO_SLIDE_DURATION = 20000; 
 
 const Hero = () => {
+  const router = useRouter();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
@@ -64,7 +63,6 @@ const Hero = () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Clear any existing timer
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
@@ -72,15 +70,12 @@ const Hero = () => {
 
     if (isVideoPlaying) return;
 
-    // Check if current slide has video
     const hasVideo = carouselItems[currentSlide].videoUrl !== undefined;
     
-    // Set timer with appropriate duration
     timerRef.current = setTimeout(() => {
       setCurrentSlide((prev) => (prev === carouselItems.length - 1 ? 0 : prev + 1));
     }, hasVideo ? VIDEO_SLIDE_DURATION : IMAGE_SLIDE_DURATION);
 
-    // Cleanup function
     return () => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
@@ -89,17 +84,14 @@ const Hero = () => {
     };
   }, [currentSlide, isVideoPlaying]);
 
-  // Handle video events when slide changes
   useEffect(() => {
     const hasVideo = carouselItems[currentSlide].videoUrl !== undefined;
     
     if (hasVideo && videoRef.current) {
-      // Set up video event listeners
       const handlePlay = () => setIsVideoPlaying(true);
       const handlePause = () => setIsVideoPlaying(false);
       const handleEnded = () => {
         setIsVideoPlaying(false);
-        // Advance to next slide when video ends
         setCurrentSlide((prev) => (prev === carouselItems.length - 1 ? 0 : prev + 1));
       };
       
@@ -108,7 +100,6 @@ const Hero = () => {
       videoElement.addEventListener('pause', handlePause);
       videoElement.addEventListener('ended', handleEnded);
       
-      // Clean up event listeners
       return () => {
         videoElement.removeEventListener('play', handlePlay);
         videoElement.removeEventListener('pause', handlePause);
@@ -117,10 +108,8 @@ const Hero = () => {
     }
   }, [currentSlide]);
 
-  // Simple next/prev functions - only work when video is not playing
   const nextSlide = () => {
     if (!isVideoPlaying) {
-      // Clear any existing timer
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
@@ -131,7 +120,6 @@ const Hero = () => {
   
   const prevSlide = () => {
     if (!isVideoPlaying) {
-      // Clear any existing timer
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
@@ -140,7 +128,6 @@ const Hero = () => {
     }
   };
 
-  // Basic touch handlers - only work when video is not playing
   const handleTouchStart = (e: React.TouchEvent) => {
     if (!isVideoPlaying) {
       setTouchStart(e.targetTouches[0].clientX);
@@ -163,13 +150,16 @@ const Hero = () => {
       }
     }
   };
+  const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation(); 
+    router.push(carouselItems[currentSlide].buttonLink);
+  };
 
-  // Check if current slide has video
+
   const hasVideo = carouselItems[currentSlide].videoUrl !== undefined;
 
   return (
     <section className="relative">
-      {/* Hero Carousel Section */}
       <div
         className="relative overflow-hidden bg-gradient-to-br from-primary-800 via-primary-700 to-primary-900 dark:from-primary-900 dark:via-primary-800 dark:to-black"
         onTouchStart={handleTouchStart}
@@ -189,7 +179,6 @@ const Hero = () => {
             className="w-full"
           >
             <div className="flex flex-col md:flex-row md:h-[600px]">
-              {/* Image/Video Side */}
               <motion.div
                 className="w-full md:w-1/2 h-[300px] md:h-full relative"
                 initial={{ x: -50, opacity: 0 }}
@@ -197,7 +186,6 @@ const Hero = () => {
                 transition={{ duration: 0.7, delay: 0.2 }}
               >
                 {hasVideo ? (
-                  // Simple video element with ref for controlling playback
                   <div className="relative w-full h-full bg-black">
                     <video
                       ref={videoRef}
@@ -212,7 +200,6 @@ const Hero = () => {
                     </video>
                   </div>
                 ) : (
-                  // Image content
                   <div className="relative w-full h-full bg-white/5">
                     <Image
                       src={carouselItems[currentSlide].image}
@@ -225,7 +212,6 @@ const Hero = () => {
                 )}
               </motion.div>
               
-              {/* Content Side */}
               <motion.div
                 className="w-full md:w-1/2 flex items-center bg-primary-800/50"
                 initial={{ x: 50, opacity: 0 }}
@@ -243,22 +229,30 @@ const Hero = () => {
                     {carouselItems[currentSlide].description}
                   </p>
                   
-                  <Link
-                    href={carouselItems[currentSlide].buttonLink}
-                    className="inline-flex items-center px-5 py-2.5 md:px-6 md:py-3 bg-white hover:bg-primary-50 text-primary-700 font-medium rounded-lg transition-colors"
+                  <button
+                    onClick={handleButtonClick}
+                    className="relative z-20 inline-flex items-center px-5 py-2.5 md:px-6 md:py-3 bg-white hover:bg-primary-50 text-primary-700 font-medium rounded-lg transition-colors"
                   >
                     {carouselItems[currentSlide].buttonText}
                     <svg className="w-4 h-4 md:w-5 md:h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                     </svg>
-                  </Link>
+                  </button>
+                  
+                  <a 
+                    href={carouselItems[currentSlide].buttonLink}
+                    className="hidden"
+                    aria-hidden="true"
+                    tabIndex={-1}
+                  >
+                    {carouselItems[currentSlide].buttonText}
+                  </a>
                 </div>
               </motion.div>
             </div>
           </motion.div>
         </AnimatePresence>
         
-        {/* Navigation Arrows - Only show when video is not playing */}
         {!isVideoPlaying && (
           <>
             <button
@@ -282,8 +276,7 @@ const Hero = () => {
             </button>
           </>
         )}
-        
-        {/* Indicator Dots - Only show when video is not playing */}
+  
         {!isVideoPlaying && (
           <div className="absolute bottom-4 md:bottom-6 left-0 right-0 z-10 flex justify-center space-x-2 md:space-x-3">
             {carouselItems.map((_, index) => (
