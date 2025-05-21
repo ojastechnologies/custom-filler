@@ -15,6 +15,9 @@ export default function ContactUs() {
     company: '',
     message: ''
   });
+
+  const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL as string;
+
   const formRef = useRef<HTMLFormElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -32,7 +35,7 @@ export default function ContactUs() {
     
     const form = formRef.current as HTMLFormElement;
     form.target = 'form-target';
-    form.action = 'https://formsubmit.co/aerosol@comcast.net';
+    form.action = `https://formsubmit.co/${CONTACT_EMAIL}`;
     form.method = 'POST';
     form.submit();
 
