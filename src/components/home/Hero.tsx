@@ -302,54 +302,7 @@ const Hero = () => {
         )}
       </div>
 
-      {/* Hero content below carousel */}
-      <div className="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/30 py-12 md:py-16">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-2xl sm:text-3xl font-bold text-primary-900 dark:text-white mb-3 md:mb-4">
-              Contract Aerosol Filling and Laser Cryogen Specialists
-            </h2>
-            <p className="text-lg sm:text-xl font-semibold text-primary-700 dark:text-primary-300 mb-6 md:mb-8">
-              COMMITTED TO THE FINEST CARE FOR YOUR LONG TERM FILLING NEEDS!
-            </p>
-            
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8 mt-8 md:mt-12">
-              <div className="bg-white dark:bg-gray-800 p-5 md:p-6 rounded-lg shadow-md">
-                <div className="w-14 h-14 md:w-16 md:h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
-                  <svg className="w-7 h-7 md:w-8 md:h-8 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
-                </div>
-                <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-2 md:mb-3">Custom Component Sourcing</h3>
-                <p className="text-sm md:text-base text-gray-700 dark:text-gray-300">
-                  Aero Tech Labs will source your can, valve, box, actuator and other components to build your specific product.
-                </p>
-              </div>
-              
-              <div className="bg-white dark:bg-gray-800 p-5 md:p-6 rounded-lg shadow-md">
-                <div className="w-14 h-14 md:w-16 md:h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
-                  <svg className="w-7 h-7 md:w-8 md:h-8 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-2 md:mb-3">Quality Assurance</h3>
-                <p className="text-sm md:text-base text-gray-700 dark:text-gray-300">
-                  We maintain strict quality control standards to ensure your products meet all specifications and regulatory requirements.
-                </p>
-              </div>
-            </div>
-            
-            <div className="mt-8 md:mt-12">
-              <Link 
-                href="/contact-us" 
-                className="inline-block bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-6 md:py-3 md:px-8 rounded-md transition-colors shadow-md"
-              >
-                Request a Quote
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+  
     </section>
   );
 };
