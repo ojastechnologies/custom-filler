@@ -79,14 +79,15 @@ const Header = () => {
             <Link href="/about-us" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
               About Us
             </Link>
-            <Link href="/services" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
-              Products
-            </Link>
             <Link href="/faqs" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
               FAQs
             </Link>
             <Link href="/contact-us" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
               Contact
+            </Link>
+
+            <Link href="/services" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
+              Products
             </Link>
           </nav>
           
@@ -158,7 +159,7 @@ const Header = () => {
                       className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                       onClick={() => setIsUserMenuOpen(false)}
                     >
-                      Dashboard
+                      Admin Dashboard
                     </Link>
                     <Link 
                       href="/profile" 
@@ -167,15 +168,6 @@ const Header = () => {
                     >
                       Profile
                     </Link>
-                    {isAdmin && (
-                      <Link 
-                        href="/admin" 
-                        className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        Admin Dashboard
-                      </Link>
-                    )}
                     <button 
                       onClick={() => {
                         signOut();
@@ -234,13 +226,7 @@ const Header = () => {
               >
                 About Us
               </Link>
-              <Link 
-                href="/services" 
-                className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Products
-              </Link>
+             
               <Link 
                 href="/faqs" 
                 className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400"
@@ -254,6 +240,13 @@ const Header = () => {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Contact
+              </Link>
+               <Link 
+                href="/services" 
+                className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Products
               </Link>
               
               {/* Auth links for mobile - Only show user info if logged in */}

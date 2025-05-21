@@ -33,16 +33,56 @@ export const fetchProducts = async () => {
   }
 };
 
-// Admin functions
+// Helper function to upload an image
+export const uploadProductImage = async (file: File): Promise<string> => {
+  try {
+    // Create a unique filename
+    const timestamp = Date.now();
+    const fileExtension = file.name.split('.').pop();
+    const fileName = `product-${timestamp}.${fileExtension}`;
+    const filePath = `/images/upload/${fileName}`;
+    
+    // Create a FormData object to send the file
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('path', filePath);
+    
+    // Send the file to our upload API endpoint
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to upload image');
+    }
+    
+    const data = await response.json();
+    return data.url; // Return the URL of the uploaded image
+  } catch (err) {
+    console.error('Error uploading image:', err);
+    throw err;
+  }
+};
 
+// Admin functions
 export const createProduct = async (product: {
   name: string;
   description?: string;
   unit_price: number;
   thumbnail_url?: string;
+  imageFile?: File;
 }) => {
   try {
     console.log('Creating product:', product);
+    
+    let imageUrl = product.thumbnail_url || '';
+    
+    // If there's an image file, upload it first
+    if (product.imageFile) {
+      imageUrl = await uploadProductImage(product.imageFile);
+    }
     
     // First, check if the table exists and has the right structure
     const { error: tableError } = await supabase
@@ -62,7 +102,7 @@ export const createProduct = async (product: {
         name: product.name,
         description: product.description,
         unit_price: product.unit_price,
-        thumbnail_url: product.thumbnail_url
+        thumbnail_url: imageUrl
       }])
       .select();
 
@@ -83,7 +123,7 @@ export const createProduct = async (product: {
         name: product.name,
         description: product.description,
         unit_price: product.unit_price,
-        thumbnail_url: product.thumbnail_url
+        thumbnail_url: imageUrl
       };
     }
   } catch (err) {
@@ -97,9 +137,17 @@ export const updateProduct = async (id: string, updates: {
   description?: string;
   unit_price?: number;
   thumbnail_url?: string;
+  imageFile?: File;
 }) => {
   try {
     console.log(`Updating product ${id}:`, updates);
+    
+    let imageUrl = updates.thumbnail_url;
+    
+    // If there's an image file, upload it first
+    if (updates.imageFile) {
+      imageUrl = await uploadProductImage(updates.imageFile);
+    }
     
     // First, check if the product exists
     const { data: existingProduct, error: checkError } = await supabase
@@ -122,7 +170,7 @@ export const updateProduct = async (id: string, updates: {
         name: updates.name,
         description: updates.description,
         unit_price: updates.unit_price,
-        thumbnail_url: updates.thumbnail_url
+        thumbnail_url: imageUrl
       })
       .eq('id', id)
       .select();
@@ -142,7 +190,8 @@ export const updateProduct = async (id: string, updates: {
       return {
         id: id,
         ...existingProduct,
-        ...updates
+        ...updates,
+        thumbnail_url: imageUrl
       };
     }
   } catch (err) {
@@ -155,10 +204,10 @@ export const deleteProduct = async (id: string) => {
   try {
     console.log(`Deleting product ${id}`);
     
-    // First, check if the product exists
+    // First, check if the product exists and get its image URL
     const { data: existingProduct, error: checkError } = await supabase
       .from('products')
-      .select('id')
+      .select('id, thumbnail_url')
       .eq('id', id)
       .single();
       
@@ -167,6 +216,9 @@ export const deleteProduct = async (id: string) => {
       // Product might not exist
     } else {
       console.log('Product to delete exists:', existingProduct);
+      
+      // Note: If you want to also delete the image file from the server,
+      // you would need to implement an API endpoint for that and call it here
     }
     
     // Delete the product

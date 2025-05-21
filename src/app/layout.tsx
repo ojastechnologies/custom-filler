@@ -3,7 +3,6 @@ import { ThemeProvider } from '@/context/ThemeContext';
 import { MenuProvider } from '@/context/MenuContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
-import WhatsAppChat from '@/components/WhatsAppChat';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -20,13 +19,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={inter.className} suppressHydrationWarning={true}>
         <ThemeProvider>
           <MenuProvider>
             <AuthProvider>
               <CartProvider>
                 {children}
-                <WhatsAppChat />
               </CartProvider>
             </AuthProvider>
           </MenuProvider>
