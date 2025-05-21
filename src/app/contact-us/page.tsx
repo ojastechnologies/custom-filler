@@ -1,42 +1,69 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Layout from '@/components/layout/Layout';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 
 export default function ContactUs() {
-  const [formData, setFormData] = useState({
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [formValues, setFormValues] = useState({
     name: '',
     email: '',
     phone: '',
     company: '',
-    message: '',
+    message: ''
   });
-  
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  
+  const formRef = useRef<HTMLFormElement>(null);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormValues(prev => ({ ...prev, [name]: value }));
   };
   
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Create form data to submit
+    // const formData = new FormData(formRef.current as HTMLFormElement);
     
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    setFormData({
+    // Create a hidden iframe to submit the form
+    const iframe = document.createElement('iframe');
+    iframe.name = 'form-target';
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+    
+    // Set up form for submission via iframe
+    const form = formRef.current as HTMLFormElement;
+    form.target = 'form-target';
+    form.action = 'https://formsubmit.co/aerosol@comcast.net';
+    form.method = 'POST';
+    
+    // Submit the form
+    form.submit();
+    
+    // Show success message after a delay
+    setTimeout(() => {
+      setIsSubmitted(true);
+      setIsSubmitting(false);
+      
+      // Clean up the iframe
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 1000);
+    }, 1500);
+  };
+  
+  const resetForm = () => {
+    setIsSubmitted(false);
+    setFormValues({
       name: '',
       email: '',
       phone: '',
       company: '',
-      message: '',
+      message: ''
     });
   };
   
@@ -69,41 +96,11 @@ export default function ContactUs() {
                     
                     <div className="flex items-start">
                       <svg className="h-6 w-6 text-primary-600 dark:text-primary-400 mr-3 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                      <div>
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Email</h3>
-                        <p className="text-gray-600 dark:text-gray-400">info@aerotechlabs.com</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start">
-                      <svg className="h-6 w-6 text-primary-600 dark:text-primary-400 mr-3 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                       </svg>
                       <div>
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white">Phone</h3>
                         <p className="text-gray-600 dark:text-gray-400">(123) 456-7890</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center p-4 border rounded-lg mb-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                      <div className="bg-green-100 dark:bg-green-900 p-3 rounded-full mr-4">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-6 w-6 text-green-600 dark:text-green-400"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"
-                          />
-                          <path
-                            d="M12 1.5C5.925 1.5 1 6.425 1 12.5c0 2.25.675 4.35 1.875 6.075L1 22.5l4.125-1.125c1.65 1.05 3.6 1.625 5.625 1.625h.375c6.075 0 11-4.925 11-11 0-2.925-1.125-5.7-3.225-7.8C17.7 2.625 14.925 1.5 12 1.5zm0 20.25h-.375c-1.8 0-3.525-.525-5.025-1.5l-.375-.225-3.6.975.975-3.525-.225-.375c-1.05-1.65-1.575-3.525-1.575-5.475 0-5.625 4.575-10.2 10.2-10.2 2.7 0 5.25 1.05 7.125 2.925 1.95 1.95 3 4.5 3 7.275 0 5.625-4.575 10.2-10.125 10.2z"
-                            fillRule="evenodd"
-                            clipRule="evenodd"
-                          />
-                        </svg>
                       </div>
                     </div>
                   </div>
@@ -124,13 +121,23 @@ export default function ContactUs() {
                       <Button 
                         variant="primary" 
                         className="mt-6"
-                        onClick={() => setIsSubmitted(false)}
+                        onClick={resetForm}
                       >
                         Send Another Message
                       </Button>
                     </div>
                   ) : (
-                    <form onSubmit={handleSubmit}>
+                    <form 
+                      ref={formRef}
+                      onSubmit={handleSubmit}
+                    >
+                      {/* FormSubmit.co configuration */}
+                      <input type="hidden" name="_subject" value="New Contact Form Submission" />
+                      <input type="hidden" name="_captcha" value="false" />
+                      <input type="hidden" name="_template" value="table" />
+                      <input type="hidden" name="_next" value="false" />
+                      <input type="text" name="_honey" style={{ display: 'none' }} />
+                      
                       <div className="space-y-4">
                         <div>
                           <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -140,7 +147,7 @@ export default function ContactUs() {
                             type="text"
                             id="name"
                             name="name"
-                            value={formData.name}
+                            value={formValues.name}
                             onChange={handleChange}
                             required
                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -155,7 +162,7 @@ export default function ContactUs() {
                             type="email"
                             id="email"
                             name="email"
-                            value={formData.email}
+                            value={formValues.email}
                             onChange={handleChange}
                             required
                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -170,7 +177,7 @@ export default function ContactUs() {
                             type="tel"
                             id="phone"
                             name="phone"
-                            value={formData.phone}
+                            value={formValues.phone}
                             onChange={handleChange}
                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                           />
@@ -184,7 +191,7 @@ export default function ContactUs() {
                             type="text"
                             id="company"
                             name="company"
-                            value={formData.company}
+                            value={formValues.company}
                             onChange={handleChange}
                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                           />
@@ -197,7 +204,7 @@ export default function ContactUs() {
                           <textarea
                             id="message"
                             name="message"
-                            value={formData.message}
+                            value={formValues.message}
                             onChange={handleChange}
                             required
                             rows={4}
