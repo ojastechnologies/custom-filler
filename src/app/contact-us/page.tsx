@@ -25,31 +25,21 @@ export default function ContactUs() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // Create form data to submit
-    // const formData = new FormData(formRef.current as HTMLFormElement);
-    
-    // Create a hidden iframe to submit the form
     const iframe = document.createElement('iframe');
     iframe.name = 'form-target';
     iframe.style.display = 'none';
     document.body.appendChild(iframe);
     
-    // Set up form for submission via iframe
     const form = formRef.current as HTMLFormElement;
     form.target = 'form-target';
     form.action = 'https://formsubmit.co/aerosol@comcast.net';
     form.method = 'POST';
-    
-    // Submit the form
     form.submit();
-    
-    // Show success message after a delay
+
     setTimeout(() => {
       setIsSubmitted(true);
       setIsSubmitting(false);
-      
-      // Clean up the iframe
+
       setTimeout(() => {
         document.body.removeChild(iframe);
       }, 1000);
@@ -90,7 +80,8 @@ export default function ContactUs() {
                       </svg>
                       <div>
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white">Location</h3>
-                        <p className="text-gray-600 dark:text-gray-400">South Florida, USA</p>
+                        <p className="text-gray-600 dark:text-gray-400">728 N. W. 7th Terrace</p>
+                        <p className='text-gray-600 dark:text-gray-400'>Fort Lauderdale, FL 33311</p>
                       </div>
                     </div>
                     
@@ -100,7 +91,7 @@ export default function ContactUs() {
                       </svg>
                       <div>
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white">Phone</h3>
-                        <p className="text-gray-600 dark:text-gray-400">(123) 456-7890</p>
+                        <p className="text-gray-600 dark:text-gray-400"> 954-463-4584</p>
                       </div>
                     </div>
                   </div>
@@ -131,7 +122,6 @@ export default function ContactUs() {
                       ref={formRef}
                       onSubmit={handleSubmit}
                     >
-                      {/* FormSubmit.co configuration */}
                       <input type="hidden" name="_subject" value="New Contact Form Submission" />
                       <input type="hidden" name="_captcha" value="false" />
                       <input type="hidden" name="_template" value="table" />

@@ -11,7 +11,7 @@ const carouselItems = [
     title: "Contract Aerosol Filling and Laser Cryogen",
     description: "Contract Aerosol Filling of Your Products with Non-Flammable Propellents HFC134a and HFO12342e",
     image: "/img/1.png",
-    buttonText: "Explore Services",
+    buttonText: "Explore Products",
     buttonLink: "/services"
   },
   {
