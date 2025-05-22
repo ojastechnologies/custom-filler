@@ -20,6 +20,13 @@ const ServicesSection = () => {
       image: '/img/20mm.png',
       link: '/services/20mm-filling'
     },
+       {
+      id: 'non-flammable-propellant',
+      title: 'Non Flammable Propellant',
+      description: 'We fill exclusively with HFC134a and HFO1234ze, a new, low GWP, non VOC propellant. Ideal for high-end products requiring safe, environmentally friendly delivery systems.',
+      image: '/images/non_flammable_propellant.png',
+      link: '/services/non-flammable-propellant'
+    },
     {
       id: 'laser-cryogen',
       title: 'Laser Cryogen',
@@ -27,6 +34,7 @@ const ServicesSection = () => {
       image: '/images/laser_cryogen.png',
       link: '/services/laser-cryogen'
     }
+ 
   ];
 
   return (
@@ -39,7 +47,7 @@ const ServicesSection = () => {
           </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
           {services.map(service => (
             <div 
               key={service.id} 
