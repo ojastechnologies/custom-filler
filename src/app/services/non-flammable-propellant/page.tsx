@@ -31,11 +31,15 @@ const NonFlammablePropellantPage = () => {
                 <div className="md:w-1/2">
                   <div className="relative h-80 w-full">
                     <Image 
-                      src="/images/non_flammable_propellant.png" 
-                      alt="Non Flammable Propellant" 
+                      src="/images/laser_cryogen.png" 
+                      alt="Laser Cryogen Cylinder" 
                       fill
                       className="object-contain"
-                     
+                      onError={(e) => {
+                        // Fallback if image doesn't exist
+                        const target = e.target as HTMLImageElement;
+                        target.src = "https://via.placeholder.com/400x300?text=Laser+Cryogen+Cylinder";
+                      }}
                     />
                   </div>
                 </div>
@@ -66,7 +70,7 @@ const NonFlammablePropellantPage = () => {
                 
                 <div className="prose dark:prose-invert max-w-none mb-6">
                   <p className="mb-4">
-                    1,1,1,2-Tetrafluoroethane is an inert gas used primarily as a "high-temperature" refrigerant for domestic 
+                    1,1,1,2-Tetrafluoroethane is an inert gas used primarily as a high-temperature refrigerant for domestic 
                     <span className="text-primary-600 dark:text-primary-400"> refrigeration</span> and 
                     <span className="text-primary-600 dark:text-primary-400"> automobile air conditioners</span>. These devices
                     began using 1,1,1,2-tetrafluoroethane in the early 1990s as a replacement for the more
@@ -102,7 +106,7 @@ const NonFlammablePropellantPage = () => {
                   <p className="mb-4">
                     1,3,3,3-Tetrafluoropropene (HFO-1234ze) is a 
                     <span className="text-primary-600 dark:text-primary-400"> hydrofluoroolefin</span>. It was developed as
-                    a "fourth generation" refrigerant to replace 
+                    a &quot;fourth generation&quot; refrigerant to replace 
                     <span className="text-primary-600 dark:text-primary-400"> R-134a </span> and as a blowing agent for foam and
                     aerosol applications. The use of R-134a is being phased out because of its high 
                     <span className="text-primary-600 dark:text-primary-400"> global-warming potential</span>.
@@ -111,7 +115,7 @@ const NonFlammablePropellantPage = () => {
                     HFO-1234ez has zero ozone-depletion potential and a low global-warming potential (GWP = 6). Tetrafluoropropene is an exciting new, non-flammable
                     propellant with a low vapor pressure that we use in cosmetic spray applications and
                     mousse formulations. If you have a high end product where a nice misty delivery of a
-                    non-flammable end product is desired, then let's consider formulating with HFO 1234ze.
+                    non-flammable end product is desired, then let&apos;s consider formulating with HFO 1234ze.
                   </p>
                 </div>
                 

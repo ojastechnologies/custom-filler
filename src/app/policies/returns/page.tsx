@@ -29,7 +29,7 @@ export default function ReturnAndRefundPolicyPage() {
               </div>
               
               <p className="text-gray-700 dark:text-gray-300 mb-4">
-                Our refund and returns policy lasts 30 days. If 30 days have passed since your purchase, we can't offer you an exchange.
+                Our refund and returns policy lasts 30 days. If 30 days have passed since your purchase, we can&apos;t offer you an exchange.
               </p>
               
               <p className="text-gray-700 dark:text-gray-300 mb-4">

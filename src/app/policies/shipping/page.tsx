@@ -53,7 +53,7 @@ export default function ShippingPolicyPage() {
               Have questions about our Shipping Policy?
             </h3>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
-              If you have any questions or concerns about our shipping practices, please don't hesitate to contact us.
+              If you have any questions or concerns about our shipping practices, please don&apos;t hesitate to contact us.
             </p>
             <div className="flex justify-center">
               <Link 

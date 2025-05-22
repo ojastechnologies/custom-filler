@@ -35,7 +35,7 @@ export default function TermsAndConditionsPage() {
               
               <div className="space-y-3 text-gray-700 dark:text-gray-300">
                 <p>
-                  Our refund and returns policy lasts 30 days. If 30 days have passed since your purchase, we can't offer you an exchange.
+                  Our refund and returns policy lasts 30 days. If 30 days have passed since your purchase, we can&apos;t offer you an exchange.
                 </p>
                 
                 <p>
@@ -149,7 +149,7 @@ export default function TermsAndConditionsPage() {
               Have questions about our Terms and Conditions?
             </h3>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
-              If you have any questions or concerns about our terms, please don't hesitate to contact us.
+              If you have any questions or concerns about our terms, please don&apos;t hesitate to contact us.
             </p>
             <div className="flex justify-center">
               <Link 

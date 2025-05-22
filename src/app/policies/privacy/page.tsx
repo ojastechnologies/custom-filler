@@ -31,7 +31,7 @@ export default function PrivacyPolicyPage() {
                 Comments
               </h2>
               <p className="text-gray-700 dark:text-gray-300 mb-3">
-                When visitors leave comments on the site we collect the data shown in the comments form, and also the visitor's IP address and browser user agent string to help spam detection.
+                When visitors leave comments on the site we collect the data shown in the comments form, and also the visitor&apos;s IP address and browser user agent string to help spam detection.
               </p>
               <p className="text-gray-700 dark:text-gray-300">
                 An anonymized string created from your email address (also called a hash) may be provided to the Gravatar service to see if you are using it. The Gravatar service privacy policy is available here: <a href="https://automattic.com/privacy/" className="text-primary-600 dark:text-primary-400 hover:underline" target="_blank" rel="noopener noreferrer">https://automattic.com/privacy/</a>. After approval of your comment, your profile picture is visible to the public in the context of your comment.
@@ -59,7 +59,7 @@ export default function PrivacyPolicyPage() {
                   If you visit our login page, we will set a temporary cookie to determine if your browser accepts cookies. This cookie contains no personal data and is discarded when you close your browser.
                 </p>
                 <p>
-                  When you log in, we will also set up several cookies to save your login information and your screen display choices. Login cookies last for two days, and screen options cookies last for a year. If you select "Remember Me", your login will persist for two weeks. If you log out of your account, the login cookies will be removed.
+                  When you log in, we will also set up several cookies to save your login information and your screen display choices. Login cookies last for two days, and screen options cookies last for a year. If you select &quot;Remember Me&quot;, your login will persist for two weeks. If you log out of your account, the login cookies will be removed.
                 </p>
                 <p>
                   If you edit or publish an article, an additional cookie will be saved in your browser. This cookie includes no personal data and simply indicates the post ID of the article you just edited. It expires after 1 day.
@@ -128,7 +128,7 @@ export default function PrivacyPolicyPage() {
               Have questions about our Privacy Policy?
             </h3>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
-              If you have any questions or concerns about our privacy practices, please don't hesitate to contact us.
+              If you have any questions or concerns about our privacy practices, please don&apos;t hesitate to contact us.
             </p>
             <div className="flex justify-center">
               <Link 
