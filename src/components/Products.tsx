@@ -23,51 +23,53 @@ const Products = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
-    
     const loadProducts = async () => {
       try {
+        setLoading(true);
         const data = await fetchProducts();
         
-        if (isMounted) {
-          setProducts(data);
-          setError(null);
+      
+        if (data.length === 0) {
+          console.log('No products returned from API');
+          setProducts([]);
+        } else {
+          const transformedData = data.map(item => ({
+            id: item.id,
+            title: item.name,
+            price: item.price,
+            image: item.image || '/placeholder-product.jpg',
+            description: item.description
+          }));
+          setProducts(transformedData);
         }
+        
+        setError(null);
       } catch (err) {
         console.error('Error fetching products:', err);
-        
-        if (isMounted) {
-          setError('Failed to load products. Please try again later.');
-          // Fallback products
-          setProducts([
-            {
-              id: 'fallback-1',
-              title: 'Sample Product 1',
-              price: 19.99,
-              image: '/placeholder-product.jpg',
-              description: 'This is a fallback product shown when database connection fails.'
-            },
-            {
-              id: 'fallback-2',
-              title: 'Sample Product 2',
-              price: 29.99,
-              image: '/placeholder-product.jpg',
-              description: 'This is a fallback product shown when database connection fails.'
-            }
-          ]);
-        }
+        setError('Failed to load products. Please try again later.');
+        // Fallback products
+        setProducts([
+          {
+            id: 'fallback-1',
+            title: 'Sample Product 1',
+            price: 19.99,
+            image: '/placeholder-product.jpg',
+            description: 'This is a fallback product shown when database connection fails.'
+          },
+          {
+            id: 'fallback-2',
+            title: 'Sample Product 2',
+            price: 29.99,
+            image: '/placeholder-product.jpg',
+            description: 'This is a fallback product shown when database connection fails.'
+          }
+        ]);
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
 
     loadProducts();
-    
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
   const handleAddToCart = (product: Product) => {
@@ -96,6 +98,9 @@ const Products = () => {
       </section>
     );
   }
+
+  // Add more console logs to help debug
+  console.log('Products state:', { loading, error, productsCount: products.length });
 
   return (
     <section className="py-12 bg-white dark:bg-gray-800">
