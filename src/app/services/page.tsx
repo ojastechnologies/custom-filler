@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import Header from "@/components/layout/Header";
@@ -22,7 +21,6 @@ interface ProductType {
 }
 
 export default function ServicesPage() {
-  const router = useRouter();
   const { addToCart } = useCart();
   const [ setHoveredProduct] = useState<string | null>(null);
   const [addedToCart, setAddedToCart] = useState<Record<string, boolean>>({});
