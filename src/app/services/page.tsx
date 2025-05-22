@@ -24,7 +24,7 @@ interface ProductType {
 export default function ServicesPage() {
   const router = useRouter();
   const { addToCart } = useCart();
-  const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
+  const [ setHoveredProduct] = useState<string | null>(null);
   const [addedToCart, setAddedToCart] = useState<Record<string, boolean>>({});
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [products, setProducts] = useState<ProductType[]>([]);
@@ -73,17 +73,6 @@ export default function ServicesPage() {
     }, 2000);
   };
 
-  const handleBuyNow = (product: ProductType) => {
-    addToCart({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-      quantity: quantities[product.id] || 1,
-    });
-
-    router.push("/cart");
-  };
 
   const filteredProducts = selectedCategory
     ? products.filter(

@@ -21,7 +21,7 @@ interface Product {
 const ProductsSection = () => {
   const router = useRouter();
   const { addToCart } = useCart();
-  const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
+  const [setHoveredProduct] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,20 +63,6 @@ const ProductsSection = () => {
     setTimeout(() => {
       setAddedToCart((prev) => ({ ...prev, [product.id]: false }));
     }, 2000);
-  };
-
-  const handleBuyNow = (product: Product) => {
-    // Add to cart first
-    addToCart({
-      id: product.id,
-      name: product.title,
-      price: product.price,
-      image: product.image,
-      quantity: 1,
-    });
-
-    // Navigate to cart
-    router.push("/cart");
   };
 
   // Determine grid columns based on number of products
