@@ -30,8 +30,12 @@ export default function LoginForm() {
 
       // If login is successful, redirect to dashboard
       router.push('/dashboard');
-    } catch (error: any) {
-      setError(error.message || 'An error occurred during login');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error.message || 'An error occurred during login');
+      } else {
+        setError('An unknown error occurred');
+      }
     } finally {
       setLoading(false);
     }
@@ -88,7 +92,7 @@ export default function LoginForm() {
           Forgot password?
         </Link>
         <p className="mt-2">
-          Don't have an account?{' '}
+          Don&apos;t have an account?{' '}
           <Link href="/register" className="text-blue-600 hover:underline">
             Register
           </Link>

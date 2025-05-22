@@ -1,66 +1,132 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
-import { createClientComponentClient, User } from '@supabase/auth-helpers-nextjs';
+import { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 
-type AuthContextType = {
+interface User {
+  id: string;
+  email: string;
+  role?: string;
+}
+
+interface AuthContextType {
   user: User | null;
-  loading: boolean;
+  isAdmin: boolean;
   signOut: () => Promise<void>;
-};
+  loading: boolean;
+  checkUserRole: () => Promise<void>;
+}
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  loading: true,
-  signOut: async () => {},
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const supabase = createClientComponentClient();
+
+  // Function to check user role
+  const checkUserRole = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        // Fetch user data including role
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (error) throw error;
+        
+        setUser({
+          id: session.user.id,
+          email: session.user.email || '',
+          role: userData?.role
+        });
+        
+        setIsAdmin(userData?.role === 'admin');
+      } else {
+        setUser(null);
+        setIsAdmin(false);
+      }
+    } catch (error) {
+      console.error('Error checking user role:', error);
+      setUser(null);
+      setIsAdmin(false);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const getUser = async () => {
-      try {
-        // Check active session
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user) {
-          setUser(session.user);
-        }
-      } catch (error) {
-        console.error('Error getting user session:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getUser();
-
-    // Set up auth state listener
+    // Check for existing session
+    checkUserRole();
+    
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user || null);
+      async (event, session) => {
+        if (session?.user) {
+          try {
+            // Fetch user data including role
+            const { data: userData, error } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+              
+            if (error) throw error;
+            
+            setUser({
+              id: session.user.id,
+              email: session.user.email || '',
+              role: userData?.role
+            });
+            
+            setIsAdmin(userData?.role === 'admin');
+          } catch (error) {
+            console.error('Error fetching user data:', error);
+            setUser(null);
+            setIsAdmin(false);
+          }
+        } else {
+          setUser(null);
+          setIsAdmin(false);
+        }
+        
         setLoading(false);
       }
     );
-
+    
     return () => {
       subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
     setUser(null);
+    setIsAdmin(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signOut }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      isAdmin, 
+      signOut,
+      loading,
+      checkUserRole
+    }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = () => useContext(AuthContext);
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}
