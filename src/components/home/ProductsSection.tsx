@@ -21,7 +21,7 @@ interface Product {
 const ProductsSection = () => {
   const router = useRouter();
   const { addToCart } = useCart();
-  const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
+  const [setHoveredProduct] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +30,7 @@ const ProductsSection = () => {
   useEffect(() => {
     const loadProducts = async () => {
       try {
+        debugger;
         setLoading(true);
         const data = await fetchProducts();
         setProducts(data.slice(0, 3));
@@ -62,20 +63,6 @@ const ProductsSection = () => {
     setTimeout(() => {
       setAddedToCart((prev) => ({ ...prev, [product.id]: false }));
     }, 2000);
-  };
-
-  const handleBuyNow = (product: Product) => {
-    // Add to cart first
-    addToCart({
-      id: product.id,
-      name: product.title,
-      price: product.price,
-      image: product.image,
-      quantity: 1,
-    });
-
-    // Navigate to cart
-    router.push("/cart");
   };
 
   // Determine grid columns based on number of products
@@ -153,27 +140,6 @@ const ProductsSection = () => {
                       </span>
                     </div>
                   )}
-
-                  <div
-                    className={`absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center gap-3 transition-opacity duration-300 ${
-                      hoveredProduct === product.id
-                        ? "opacity-100"
-                        : "opacity-0"
-                    }`}
-                  >
-                    <button
-                      onClick={() => handleAddToCart(product)}
-                      className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors text-sm"
-                    >
-                      Add to Cart
-                    </button>
-                    <button
-                      onClick={() => handleBuyNow(product)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
-                    >
-                      Buy Now
-                    </button>
-                  </div>
                 </div>
                 <div className="p-4">
                   <div className="flex justify-between items-start mb-2">
@@ -189,26 +155,7 @@ const ProductsSection = () => {
                   </p>
                   
                   {/* Buttons at the bottom of the card */}
-                  <div className="pt-3 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-2 justify-between items-center">
-                    <Link
-                      href={`${product?.about_url}`}
-                      className="w-full sm:w-auto inline-flex items-center justify-center text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-sm font-medium"
-                    >
-                      <span>Learn More</span>
-                      <svg
-                        className="ml-1 h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M14 5l7 7m0 0l-7 7m7-7H3"
-                        />
-                      </svg>
-                    </Link>
+                  <div className="pt-3 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-2 justify-end items-center">
                     <button
                       onClick={() => handleAddToCart(product)}
                       className={`w-full sm:w-auto px-4 py-2 text-sm rounded transition-colors ${

@@ -51,9 +51,10 @@ export default function DashboardPage() {
       try {
         setLoadingProducts(true);
         const data = await fetchProducts();
-        
+        debugger;
         // Transform the data to match our Product interface
         const transformedProducts = data.map(item => ({
+        
           id: item.id,
           name: item.name || item.title,
           description: item.description,

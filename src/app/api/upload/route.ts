@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { existsSync } from 'fs';
+import path from 'path';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,40 +15,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get file data
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+
+    const uploadDir = path.join(process.cwd(), 'public', 'images', 'upload');
     
-    // Define the path where the file will be saved
-    const uploadDir = join(process.cwd(), 'public', 'images', 'upload');
-    
-    // Create the directory if it doesn't exist
-    if (!existsSync(uploadDir)) {
+    try {
       await mkdir(uploadDir, { recursive: true });
+      console.log(`Directory created or already exists: ${uploadDir}`);
+    } catch (error) {
+      console.error('Error creating directory:', error);
+      return NextResponse.json(
+        { error: 'Failed to create upload directory' },
+        { status: 500 }
+      );
     }
+
+
+    const filename = path.basename(pathParam);
+    const filePath = path.join(uploadDir, filename);
+
+    await writeFile(filePath, buffer);
     
-    // Generate a unique filename if not provided
-    let filePath = pathParam;
-    if (!filePath) {
-      const timestamp = Date.now();
-      const fileExtension = file.name.split('.').pop();
-      filePath = `/images/upload/product-${timestamp}.${fileExtension}`;
-    }
+
+    const fileUrl = `/images/upload/${filename}`;
     
-    // Remove leading slash if present for file system path
-    const relativePath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
-    const fullPath = join(process.cwd(), 'public', relativePath);
-    
-    // Write the file
-    await writeFile(fullPath, buffer);
-    
-    // Return the public URL
     return NextResponse.json({ 
-      success: true,
-      url: filePath
+      url: fileUrl,
+      message: 'File uploaded successfully' 
     });
   } catch (error) {
-    console.error('Error uploading file:', error);
+    console.error('Error handling file upload:', error);
     return NextResponse.json(
       { error: 'Failed to upload file' },
       { status: 500 }

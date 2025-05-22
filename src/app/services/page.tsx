@@ -24,7 +24,7 @@ interface ProductType {
 export default function ServicesPage() {
   const router = useRouter();
   const { addToCart } = useCart();
-  const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
+  const [ setHoveredProduct] = useState<string | null>(null);
   const [addedToCart, setAddedToCart] = useState<Record<string, boolean>>({});
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [products, setProducts] = useState<ProductType[]>([]);
@@ -73,17 +73,6 @@ export default function ServicesPage() {
     }, 2000);
   };
 
-  const handleBuyNow = (product: ProductType) => {
-    addToCart({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-      quantity: quantities[product.id] || 1,
-    });
-
-    router.push("/cart");
-  };
 
   const filteredProducts = selectedCategory
     ? products.filter(
@@ -186,27 +175,6 @@ export default function ServicesPage() {
                           target.src = "/images/placeholder-product.jpg";
                         }}
                       />
-
-                      <div
-                        className={`absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center gap-3 transition-opacity duration-300 ${
-                          hoveredProduct === product.id
-                            ? "opacity-100"
-                            : "opacity-0"
-                        }`}
-                      >
-                        <button
-                          onClick={() => handleAddToCart(product)}
-                          className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
-                        >
-                          Add to Cart
-                        </button>
-                        <button
-                          onClick={() => handleBuyNow(product)}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                        >
-                          Buy Now
-                        </button>
-                      </div>
                     </div>
 
                     <div className="p-5 flex-grow flex flex-col">
@@ -223,26 +191,8 @@ export default function ServicesPage() {
                         {product.description || "No description available."}
                       </p>
 
-                      <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-2 justify-between items-center">
-                        <Link
-                          href={`/products/${product.id}`}
-                          className="w-full sm:w-auto inline-flex items-center justify-center text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium text-sm"
-                        >
-                          <span>Learn More</span>
-                          <svg
-                            className="ml-1 h-4 w-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M14 5l7 7m0 0l-7 7m7-7H3"
-                            />
-                          </svg>
-                        </Link>
+                      <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-2 justify-end items-center">
+                
                         <button
                           onClick={() => handleAddToCart(product)}
                           className={`w-full sm:w-auto px-4 py-2 text-sm rounded transition-colors ${
