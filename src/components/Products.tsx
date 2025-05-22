@@ -1,20 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image'; // Import the Image component from next/image
+import Image from 'next/image';
 import Card from './ui/Card';
 import Button from './ui/Button';
 import { useCart } from '@/context/CartContext';
 import { fetchProducts } from '@/app/services/productsService';
+
 export interface Product {
   id: string;
-  // name?: string;
   title: string;
   price: number;
-  quantity?: number;
   image?: string;
   description?: string;
-  about_url?:string;
 }
 
 const Products = () => {
@@ -25,45 +23,51 @@ const Products = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+    
     const loadProducts = async () => {
       try {
-        setLoading(true);
         const data = await fetchProducts();
-        const transformedData = data.map(item => ({
-          id: item.id,
-          title: item.name,
-          price: item.price,
-          image: item.image || '/placeholder-product.jpg',
-          description: item.description
-        }));
-        setProducts(transformedData);
-        setError(null);
+        
+        if (isMounted) {
+          setProducts(data);
+          setError(null);
+        }
       } catch (err) {
         console.error('Error fetching products:', err);
-        setError('Failed to load products. Please try again later.');
-       
-        setProducts([
-          {
-            id: 'fallback-1',
-            title: 'Sample Product 1',
-            price: 19.99,
-            image: '/placeholder-product.jpg',
-            description: 'This is a fallback product shown when database connection fails.'
-          },
-          {
-            id: 'fallback-2',
-            title: 'Sample Product 2',
-            price: 29.99,
-            image: '/placeholder-product.jpg',
-            description: 'This is a fallback product shown when database connection fails.'
-          }
-        ]);
+        
+        if (isMounted) {
+          setError('Failed to load products. Please try again later.');
+          // Fallback products
+          setProducts([
+            {
+              id: 'fallback-1',
+              title: 'Sample Product 1',
+              price: 19.99,
+              image: '/placeholder-product.jpg',
+              description: 'This is a fallback product shown when database connection fails.'
+            },
+            {
+              id: 'fallback-2',
+              title: 'Sample Product 2',
+              price: 29.99,
+              image: '/placeholder-product.jpg',
+              description: 'This is a fallback product shown when database connection fails.'
+            }
+          ]);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     loadProducts();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleAddToCart = (product: Product) => {
@@ -75,6 +79,7 @@ const Products = () => {
     });
    
     setAddedToCart(prev => ({ ...prev, [product.id]: true }));
+  
     setTimeout(() => {
       setAddedToCart(prev => ({ ...prev, [product.id]: false }));
     }, 2000);
@@ -92,19 +97,6 @@ const Products = () => {
     );
   }
 
-  if (error) {
-    return (
-      <section className="py-12 bg-white dark:bg-gray-800">
-        <div className="container mx-auto px-4 text-center">
-          <div className="bg-red-100 dark:bg-red-900 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 px-4 py-3 rounded relative" role="alert">
-            <strong className="font-bold">Error: </strong>
-            <span className="block sm:inline">{error}</span>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
   return (
     <section className="py-12 bg-white dark:bg-gray-800">
       <div className="container mx-auto px-4">
@@ -115,6 +107,13 @@ const Products = () => {
           </p>
         </div>
         
+        {error && (
+          <div className="bg-red-100 dark:bg-red-900 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 px-4 py-3 rounded relative mb-8" role="alert">
+            <strong className="font-bold">Error: </strong>
+            <span className="block sm:inline">{error}</span>
+          </div>
+        )}
+        
         {products.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-gray-600 dark:text-gray-400">No products available at the moment.</p>
@@ -124,22 +123,22 @@ const Products = () => {
             {products.map((product) => (
               <Card key={product.id} className="h-full">
                 <div className="h-48 bg-gray-200 dark:bg-gray-700 relative">
-                  {product.image ? (
+                  {product.image && (
                     <Image 
                       src={product.image} 
                       alt={product.title} 
                       fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                       className="object-cover"
+                      priority={false}
                     />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
-                      {/* <span>Product Image</span> */}
-                    </div>
                   )}
                 </div>
                 <div className="p-6">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{product.title}</h3>
-                  <p className="mt-2 text-gray-600 dark:text-gray-400">{product.description}</p>
+                  {product.description && (
+                    <p className="mt-2 text-gray-600 dark:text-gray-400">{product.description}</p>
+                  )}
                   <div className="mt-4 flex items-center justify-between">
                     <span className="text-lg font-bold text-gray-900 dark:text-white">${product.price.toFixed(2)}</span>
                     <Button
