@@ -9,7 +9,6 @@ import { useCart } from "@/context/CartContext";
 import { fetchProducts } from "@/app/services/productsService";
 import Card from "@/components/ui/Card";
 
-// Define a proper type for products
 interface ProductType {
   id: string;
   name: string;
@@ -22,7 +21,7 @@ interface ProductType {
 
 export default function ServicesPage() {
   const { addToCart } = useCart();
-  const [ setHoveredProduct] = useState<string | null>(null);
+
   const [addedToCart, setAddedToCart] = useState<Record<string, boolean>>({});
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [products, setProducts] = useState<ProductType[]>([]);
@@ -160,8 +159,6 @@ export default function ServicesPage() {
                   >
                     <div
                       className="relative h-48 bg-gray-200 dark:bg-gray-700"
-                      onMouseEnter={() => setHoveredProduct(product.id)}
-                      onMouseLeave={() => setHoveredProduct(null)}
                     >
                       <Image
                         src={product.image || "/images/placeholder-product.jpg"}

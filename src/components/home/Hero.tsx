@@ -167,7 +167,7 @@ const Hero = () => {
         onTouchEnd={handleTouchEnd}
       >
         {/* Subtle pattern overlay */}
-        <div className="absolute inset-0 opacity-5 bg-[url('/images/pattern.png')]"></div>
+        {/* <div className="absolute inset-0 opacity-5 bg-[url('/images/pattern.png')]"></div> */}
         
         <AnimatePresence mode="wait">
           <motion.div
