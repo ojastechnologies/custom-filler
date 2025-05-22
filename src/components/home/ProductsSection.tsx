@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import Card from "@/components/ui/Card";
-import { useRouter } from "next/navigation";
 import { fetchProducts } from "@/app/services/productsService";
 import { useCart } from "@/context/CartContext";
 
