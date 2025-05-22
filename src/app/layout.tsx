@@ -1,15 +1,20 @@
-import { Inter } from 'next/font/google';
-import { ThemeProvider } from '@/context/ThemeContext';
-import { MenuProvider } from '@/context/MenuContext';
-import { AuthProvider } from '@/context/AuthContext';
-import { CartProvider } from '@/context/CartContext';
-import './globals.css';
+import { Inter } from "next/font/google";
+import { ThemeProvider } from "@/context/ThemeContext";
+import { MenuProvider } from "@/context/MenuContext";
+import { AuthProvider } from "@/context/AuthContext";
+import { CartProvider } from "@/context/CartContext";
+import "./globals.css";
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: 'Custom Filler',
-  description: 'Custom Aerosol Filling Services',
+  title: "Custom Filler",
+  description: "Custom Aerosol Filling Services",
+  icons: {
+    icon: '/favicon-v2.ico',
+    apple: '/favicon-v2.ico',
+    shortcut: '/favicon-v2.ico'
+  },
 };
 
 export default function RootLayout({
@@ -23,9 +28,7 @@ export default function RootLayout({
         <ThemeProvider>
           <MenuProvider>
             <AuthProvider>
-              <CartProvider>
-                {children}
-              </CartProvider>
+              <CartProvider>{children}</CartProvider>
             </AuthProvider>
           </MenuProvider>
         </ThemeProvider>

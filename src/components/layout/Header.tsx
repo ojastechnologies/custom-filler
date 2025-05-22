@@ -89,6 +89,9 @@ const Header = () => {
             <Link href="/services" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
               Products
             </Link>
+            <Link href="/services/laser-cryogen" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
+              Laser Cryogen
+            </Link>
           </nav>
           
           {/* Right side actions */}
@@ -247,6 +250,13 @@ const Header = () => {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Products
+              </Link>
+              <Link 
+                href="/services/laser-cryogen" 
+                className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Laser Cryogen
               </Link>
               
               {/* Auth links for mobile - Only show user info if logged in */}

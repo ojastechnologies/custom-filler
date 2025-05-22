@@ -28,8 +28,9 @@ const LaserCryogenPage = () => {
               </div>
               
               <div className="flex flex-col md:flex-row gap-8 items-center mb-8">
-                <div className="md:w-1/2">
-                  <div className="relative h-80 w-full">
+                <div className="w-full md:w-1/2">
+                  {/* Modified image container for better mobile display */}
+                  <div className="relative w-full aspect-square md:aspect-auto md:h-80">
                     <Image 
                       src="/images/laser_cryogen.png" 
                       alt="Laser Cryogen Cylinder" 
@@ -44,7 +45,7 @@ const LaserCryogenPage = () => {
                   </div>
                 </div>
                 
-                <div className="md:w-1/2">
+                <div className="w-full md:w-1/2">
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                     We Are The Manufacturer - Buy Directly From Us
                   </h3>
