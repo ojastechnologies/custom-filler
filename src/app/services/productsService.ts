@@ -7,6 +7,7 @@ const publicClient = createClient(supabaseUrl, supabaseAnonKey);
 
 export const fetchProducts = async () => {
   console.log('Fetching products from Supabase...');
+  console.log(`Supabase URL: ${supabaseUrl}`);
   console.log('Using URL:', supabaseUrl.substring(0, 10) + '...');
   
   try {
