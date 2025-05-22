@@ -19,7 +19,6 @@ interface Product {
 
 const ProductsSection = () => {
   const { addToCart } = useCart();
-  const [setHoveredProduct] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -120,8 +119,6 @@ const ProductsSection = () => {
               >
                 <div
                   className="relative h-48 flex items-center justify-center bg-white dark:bg-gray-800 p-2"
-                  onMouseEnter={() => setHoveredProduct(product.id)}
-                  onMouseLeave={() => setHoveredProduct(null)}
                 >
                   {product.image &&
                   product.image !== "/placeholder-product.jpg" ? (
