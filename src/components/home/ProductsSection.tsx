@@ -19,7 +19,6 @@ interface Product {
 }
 
 const ProductsSection = () => {
-  const router = useRouter();
   const { addToCart } = useCart();
   const [setHoveredProduct] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);

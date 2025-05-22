@@ -22,7 +22,6 @@ interface ProductType {
 }
 
 export default function ServicesPage() {
-  const router = useRouter();
   const { addToCart } = useCart();
   const [ setHoveredProduct] = useState<string | null>(null);
   const [addedToCart, setAddedToCart] = useState<Record<string, boolean>>({});
