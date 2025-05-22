@@ -41,6 +41,23 @@ const Products = () => {
       } catch (err) {
         console.error('Error fetching products:', err);
         setError('Failed to load products. Please try again later.');
+       
+        setProducts([
+          {
+            id: 'fallback-1',
+            title: 'Sample Product 1',
+            price: 19.99,
+            image: '/placeholder-product.jpg',
+            description: 'This is a fallback product shown when database connection fails.'
+          },
+          {
+            id: 'fallback-2',
+            title: 'Sample Product 2',
+            price: 29.99,
+            image: '/placeholder-product.jpg',
+            description: 'This is a fallback product shown when database connection fails.'
+          }
+        ]);
       } finally {
         setLoading(false);
       }

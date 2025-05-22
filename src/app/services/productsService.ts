@@ -1,25 +1,15 @@
-import { supabase } from '@/lib/supabaseClient';
 import { createClient } from '@supabase/supabase-js';
+ import { supabase } from '@/lib/supabaseClient';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-const createPublicClient = () => {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string,
-    {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      }
-    }
-  );
-};
+const publicClient = createClient(supabaseUrl, supabaseAnonKey);
 
 export const fetchProducts = async () => {
   console.log('Fetching products from Supabase...');
+  console.log('Using URL:', supabaseUrl.substring(0, 10) + '...');
   
   try {
-    const publicClient = createPublicClient();
-    
     const { data, error } = await publicClient
       .from('products')
       .select('*');
@@ -30,6 +20,11 @@ export const fetchProducts = async () => {
     }
     
     console.log('Fetched products:', data);
+    
+    if (!data || data.length === 0) {
+      console.log('No products found in database');
+      return [];
+    }
     
     const transformedData = data.map(item => {
       return {
@@ -79,7 +74,7 @@ export const uploadProductImage = async (file: File): Promise<string> => {
   }
 };
 
-// Admin functions
+
 export const createProduct = async (product: {
   name: string;
   description?: string;
@@ -150,12 +145,7 @@ export const updateProduct = async (id: string, updates: {
   try {
     console.log(`Updating product ${id}:`, updates);
     
-    let imageUrl = updates.thumbnail_url;
-    
-    if (updates.imageFile) {
-      imageUrl = await uploadProductImage(updates.imageFile);
-    }
-    
+    // Get the existing product to check for image replacement
     const { data: existingProduct, error: checkError } = await supabase
       .from('products')
       .select('*')
@@ -166,6 +156,20 @@ export const updateProduct = async (id: string, updates: {
       console.error('Error checking product existence:', checkError);
     } else {
       console.log('Existing product:', existingProduct);
+    }
+    
+    let imageUrl = updates.thumbnail_url;
+    
+    // If a new image file is provided, upload it
+    if (updates.imageFile) {
+      imageUrl = await uploadProductImage(updates.imageFile);
+      
+      // Delete the old image if it exists and is different from the new one
+      if (existingProduct?.thumbnail_url && 
+          existingProduct.thumbnail_url !== imageUrl && 
+          existingProduct.thumbnail_url.startsWith('/images/upload/')) {
+        await deleteImageFile(existingProduct.thumbnail_url);
+      }
     }
     
     const { data, error } = await supabase
@@ -218,6 +222,10 @@ export const deleteProduct = async (id: string) => {
     } else {
       console.log('Product to delete exists:', existingProduct);
       
+      // Delete the associated image file if it exists
+      if (existingProduct?.thumbnail_url) {
+        await deleteImageFile(existingProduct.thumbnail_url);
+      }
     }
     
     const { error, count } = await supabase
@@ -259,5 +267,32 @@ export const getProductById = async (id: string) => {
   } catch (err) {
     console.error('Error fetching product:', err);
     throw err;
+  }
+};
+
+// Function to delete an image file from the upload folder
+const deleteImageFile = async (imageUrl: string) => {
+  if (!imageUrl || !imageUrl.startsWith('/images/upload/')) {
+    console.log('No valid image URL to delete');
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/delete-image', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ imageUrl }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to delete image');
+    }
+    
+    console.log(`Successfully deleted image: ${imageUrl}`);
+  } catch (error) {
+    console.error('Error deleting image file:', error);
   }
 };

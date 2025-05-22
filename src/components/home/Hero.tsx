@@ -37,7 +37,7 @@ const carouselItems = [
     videoUrl: "/videos/carousel5.mp4",
     image: "/img/video-poster.jpg",
     buttonText: "Learn About Our Process",
-    buttonLink: "/services"
+    buttonLink: "/about-us"
   },
   {
     id: 5,
