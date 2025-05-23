@@ -99,6 +99,11 @@ const Footer = () => {
                   Laser Cryogen
                 </Link>
               </li>
+              <li>
+                <Link href="/services/non-flammable-propellant" className="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400">
+                  Non Flammable Propellant
+                </Link>
+              </li>
             </ul>
           </div>
           

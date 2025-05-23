@@ -8,11 +8,11 @@ import { useRouter } from 'next/navigation';
 const carouselItems = [
   {
     id: 1,
-    title: "Contract Aerosol Filling and Laser Cryogen",
-    description: "Contract Aerosol Filling of Your Products with Non-Flammable Propellents HFC134a and HFO12342e",
-    image: "/img/1.png",
-    buttonText: "Explore Products",
-    buttonLink: "/services"
+    title: "Laser Cryogen",
+    description: "Contract Aerosol Filling of Your Products with We manufacture the 1000 gram cylinder containing High Purity Grade 1,1,1,3-Tetrafluoropropene, the next generation of safe, non-flammable, non-toxic, non-ozone depleting and non-global warming potential (Low GWP) fluorocarbon gas approved for medical devices.Non-Flammable Propellents HFC134a and HFO12342e",
+    image: "/images/laser_cryogen.png",
+    buttonText: "Learn More",
+    buttonLink: "/services/laser-cryogen"
   },
   {
     id: 2,
@@ -31,22 +31,13 @@ const carouselItems = [
     buttonLink: "/services/20mm-filling"
   },
   {
-    id: 4,
-    title: "Aerosol Filling Process",
-    description: "Watch our specialized aerosol filling process in action. Our state-of-the-art equipment ensures precision and quality in every product.",
-    videoUrl: "/videos/carousel5.mp4",
-    image: "/img/video-poster.jpg",
-    buttonText: "Learn About Our Process",
-    buttonLink: "/about-us"
-  },
-  {
     id: 5,
-    title: "Custom Aerosol Solutions",
+    title: "Custom Aerosol Filling",
     description: "See how we can customize aerosol solutions for your specific needs. Our flexible manufacturing capabilities can accommodate various product requirements.",
     videoUrl: "/videos/carousel4.mp4",
     image: "/img/video-poster.jpg",
-    buttonText: "Request Custom Solution",
-    buttonLink: "/contact-us"
+    buttonText: "Learn About Our Custom Solutions",
+    buttonLink: "/about-us"
   }
 ];
 

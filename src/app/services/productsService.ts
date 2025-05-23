@@ -1,14 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
  import { supabase } from '@/lib/supabaseClient';
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
 
 const publicClient = createClient(supabaseUrl, supabaseAnonKey);
 
 export const fetchProducts = async () => {
   console.log('Fetching products from Supabase...');
   console.log(`Supabase URL: ${supabaseUrl}`);
-  console.log('Using URL:', supabaseUrl.substring(0, 10) + '...');
+  console.log('Using URL:', supabaseUrl.substring(0, 30) + '...');
   
   try {
     const { data, error } = await publicClient
