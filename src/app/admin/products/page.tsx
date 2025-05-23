@@ -8,29 +8,21 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Image from 'next/image';
 import ImageUploader from '@/components/admin/ImageUploader';
-
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  unit_price: number;
-  thumbnail_url: string;
-  created_at: string;
-}
+import { ProductType } from '@/types/product';
 
 export default function AdminProductsPage() {
   const router = useRouter();
   const { user, isAdmin, loading: authLoading } = useAuth();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     id: '',
-    name: '',
+    title: '',
     description: '',
-    unit_price: 0,
-    thumbnail_url: ''
+    price: 0,
+    image: ''
   });
   const [isEditing, setIsEditing] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -45,22 +37,14 @@ export default function AdminProductsPage() {
           .from('products')
           .select('*')
           .order('created_at', { ascending: false });
-          
         if (error) throw error;
-        
         setProducts(data || []);
-      } catch (err: unknown) {
-        console.error('Error fetching products:', err);
-        if (err instanceof Error) {
-          setError(err.message || 'Failed to load products');
-        } else {
-          setError('Failed to load products');
-        }
+      } catch {
+        setError('Failed to load products');
       } finally {
         setLoading(false);
       }
     };
-    
     if (!authLoading && user) {
       fetchProducts();
     }
@@ -78,7 +62,7 @@ export default function AdminProductsPage() {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'unit_price' ? parseFloat(value) || 0 : value
+      [name]: name === 'price' ? parseFloat(value) || 0 : value
     }));
   };
 
@@ -86,7 +70,7 @@ export default function AdminProductsPage() {
   const handleImageSelected = (imageUrl: string, file: File | null) => {
     setFormData(prev => ({
       ...prev,
-      thumbnail_url: imageUrl
+      image: imageUrl
     }));
     setSelectedFile(file);
   };
@@ -133,7 +117,7 @@ export default function AdminProductsPage() {
     e.preventDefault();
     
     try {
-      let imageUrl = formData.thumbnail_url;
+      let imageUrl = formData.image;
       
       // If there's a selected file, upload it
       if (selectedFile) {
@@ -145,9 +129,9 @@ export default function AdminProductsPage() {
         const { error } = await supabase
           .from('products')
           .update({
-            name: formData.name,
+            name: formData.title,
             description: formData.description,
-            unit_price: formData.unit_price,
+            unit_price: formData.price,
             thumbnail_url: imageUrl
           })
           .eq('id', formData.id);
@@ -159,7 +143,7 @@ export default function AdminProductsPage() {
           product.id === formData.id ? { 
             ...product, 
             ...formData,
-            thumbnail_url: imageUrl
+            image: imageUrl
           } : product
         ));
       } else {
@@ -167,9 +151,9 @@ export default function AdminProductsPage() {
         const { data, error } = await supabase
           .from('products')
           .insert([{
-            name: formData.name,
+            name: formData.title,
             description: formData.description,
-            unit_price: formData.unit_price,
+            unit_price: formData.price,
             thumbnail_url: imageUrl
           }])
           .select();
@@ -178,30 +162,31 @@ export default function AdminProductsPage() {
         
         // Add to local state
         if (data) {
-          setProducts([data[0], ...products]);
+          setProducts([{
+            id: data[0].id,
+            title: data[0].name,
+            description: data[0].description,
+            price: data[0].unit_price,
+            image: data[0].thumbnail_url
+          }, ...products]);
         }
       }
       
       // Reset form
       resetForm();
-    } catch (err: unknown) {
-      console.error('Error saving product:', err);
-      if (err instanceof Error) {
-        setError(err.message || 'Failed to save product');
-      } else {
-        setError('Failed to save product');
-      }
+    } catch {
+      setError('Failed to save product');
     }
   };
 
   // Handle product edit
-  const handleEdit = (product: Product) => {
+  const handleEdit = (product: ProductType) => {
     setFormData({
       id: product.id,
-      name: product.name,
+      title: product.title,
       description: product.description || '',
-      unit_price: product.unit_price || 0,
-      thumbnail_url: product.thumbnail_url || ''
+      price: product.price || 0,
+      image: product.image || ''
     });
     setIsEditing(true);
     setShowForm(true);
@@ -222,13 +207,8 @@ export default function AdminProductsPage() {
       
       // Update local state
       setProducts(products.filter(product => product.id !== id));
-    } catch (err: unknown) {
-      console.error('Error deleting product:', err);
-      if (err instanceof Error) {
-        setError(err.message || 'Failed to delete product');
-      } else {
-        setError('Failed to delete product');
-      }
+    } catch {
+      setError('Failed to delete product');
     }
   };
 
@@ -236,10 +216,10 @@ export default function AdminProductsPage() {
   const resetForm = () => {
     setFormData({
       id: '',
-      name: '',
+      title: '',
       description: '',
-      unit_price: 0,
-      thumbnail_url: ''
+      price: 0,
+      image: ''
     });
     setIsEditing(false);
     setShowForm(false);
@@ -311,14 +291,14 @@ export default function AdminProductsPage() {
             <form onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Product Name
                   </label>
                   <input
-                    id="name"
-                    name="name"
+                    id="title"
+                    name="title"
                     type="text"
-                    value={formData.name}
+                    value={formData.title}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
                     required
@@ -326,16 +306,16 @@ export default function AdminProductsPage() {
                 </div>
                 
                 <div>
-                  <label htmlFor="unit_price" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="price" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Price ($)
                   </label>
                   <input
-                    id="unit_price"
-                    name="unit_price"
+                    id="price"
+                    name="price"
                     type="number"
                     step="0.01"
                     min="0"
-                    value={formData.unit_price}
+                    value={formData.price}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
                     required
@@ -362,7 +342,7 @@ export default function AdminProductsPage() {
                   Product Image
                 </label>
                 <ImageUploader 
-                  currentImage={formData.thumbnail_url} 
+                  currentImage={formData.image} 
                   onImageSelected={handleImageSelected} 
                 />
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -415,9 +395,6 @@ export default function AdminProductsPage() {
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         Price
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Created
-                      </th>
                       <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         Actions
                       </th>
@@ -430,8 +407,8 @@ export default function AdminProductsPage() {
                           <div className="flex items-center">
                             <div className="flex-shrink-0 h-10 w-10 relative">
                               <Image 
-                                src={product.thumbnail_url || "/placeholder-product.jpg"}
-                                alt={product.name}
+                                src={product.image || "/placeholder-product.jpg"}
+                                alt={product.title}
                                 fill
                                 className="rounded-md object-cover"
                                 onError={(e) => {
@@ -442,7 +419,7 @@ export default function AdminProductsPage() {
                             </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                {product.name}
+                                {product.title}
                               </div>
                               <div className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
                                 {product.description || "No description"}
@@ -452,11 +429,8 @@ export default function AdminProductsPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900 dark:text-white">
-                            ${product.unit_price?.toFixed(2) || "0.00"}
+                            ${product.price?.toFixed(2) || "0.00"}
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                          {new Date(product.created_at).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button

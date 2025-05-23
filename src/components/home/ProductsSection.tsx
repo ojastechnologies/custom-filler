@@ -6,20 +6,11 @@ import Image from "next/image";
 import Card from "@/components/ui/Card";
 import { fetchProducts } from "@/app/services/productsService";
 import { useCart } from "@/context/CartContext";
-
-interface Product {
-  id: string;
-  title: string;
-  description: string;
-  image: string;
-  price: number;
-  category?: string;
-  about_url?: string;
-}
+import { ProductType } from "@/types/product";
 
 const ProductsSection = () => {
   const { addToCart } = useCart();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [addedToCart, setAddedToCart] = useState<Record<string, boolean>>({});
@@ -27,13 +18,11 @@ const ProductsSection = () => {
   useEffect(() => {
     const loadProducts = async () => {
       try {
-        debugger;
         setLoading(true);
         const data = await fetchProducts();
         setProducts(data.slice(0, 3));
         setError(null);
-      } catch (err) {
-        console.error("Error fetching products:", err);
+      } catch {
         setError("Failed to load products. Please try again later.");
       } finally {
         setLoading(false);
@@ -43,7 +32,7 @@ const ProductsSection = () => {
     loadProducts();
   }, []);
 
-  const handleAddToCart = (product: Product) => {
+  const handleAddToCart = (product: ProductType) => {
     // Add the product to cart
     addToCart({
       id: product.id,

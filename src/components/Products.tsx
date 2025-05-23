@@ -6,19 +6,12 @@ import Card from './ui/Card';
 import Button from './ui/Button';
 import { useCart } from '@/context/CartContext';
 import { fetchProducts } from '@/app/services/productsService';
-
-export interface Product {
-  id: string;
-  title: string;
-  price: number;
-  image?: string;
-  description?: string;
-}
+import { ProductType } from '@/types/product';
 
 const Products = () => {
   const { addToCart } = useCart();
   const [addedToCart, setAddedToCart] = useState<Record<string, boolean>>({});
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,27 +20,14 @@ const Products = () => {
       try {
         setLoading(true);
         const data = await fetchProducts();
-        
-      
         if (data.length === 0) {
-          console.log('No products returned from API');
           setProducts([]);
         } else {
-          const transformedData = data.map(item => ({
-            id: item.id,
-            title: item.name,
-            price: item.price,
-            image: item.image || '/placeholder-product.jpg',
-            description: item.description
-          }));
-          setProducts(transformedData);
+          setProducts(data);
         }
-        
         setError(null);
-      } catch (err) {
-        console.error('Error fetching products:', err);
+      } catch {
         setError('Failed to load products. Please try again later.');
-        // Fallback products
         setProducts([
           {
             id: 'fallback-1',
@@ -72,7 +52,7 @@ const Products = () => {
     loadProducts();
   }, []);
 
-  const handleAddToCart = (product: Product) => {
+  const handleAddToCart = (product: ProductType) => {
     addToCart({
       id: product.id,
       name: product.title,
@@ -98,9 +78,6 @@ const Products = () => {
       </section>
     );
   }
-
-  // Add more console logs to help debug
-  console.log('Products state:', { loading, error, productsCount: products.length });
 
   return (
     <section className="py-12 bg-white dark:bg-gray-800">

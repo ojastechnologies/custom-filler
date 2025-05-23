@@ -8,16 +8,7 @@ import Footer from "@/components/layout/Footer";
 import { useCart } from "@/context/CartContext";
 import { fetchProducts } from "@/app/services/productsService";
 import Card from "@/components/ui/Card";
-
-interface ProductType {
-  id: string;
-  name: string;
-  price: number;
-  description?: string;
-  image?: string;
-  category?: string;
-  quantity?: number;
-}
+import { ProductType } from "@/types/product";
 
 export default function ServicesPage() {
   const { addToCart } = useCart();
@@ -57,7 +48,7 @@ export default function ServicesPage() {
   const handleAddToCart = (product: ProductType) => {
     addToCart({
       id: product.id,
-      name: product.name,
+      name: product.title, // Use 'title' from ProductType
       price: product.price,
       image: product.image,
       quantity: quantities[product.id] || 1,
@@ -162,7 +153,7 @@ export default function ServicesPage() {
                     >
                       <Image
                         src={product.image || "/images/placeholder-product.jpg"}
-                        alt={product.name}
+                        alt={product.title}
                         fill
                         className="object-cover"
                         onError={(e) => {
@@ -175,7 +166,7 @@ export default function ServicesPage() {
                     <div className="p-5 flex-grow flex flex-col">
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white line-clamp-1">
-                          {product.name}
+                          {product.title}
                         </h3>
                         <span className="text-lg font-bold text-primary-600 dark:text-primary-400">
                           ${product.price.toFixed(2)}

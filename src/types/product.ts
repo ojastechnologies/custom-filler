@@ -1,7 +1,7 @@
+// Centralized product type for all components
 export interface ProductType {
   id: string;
   title: string;
-  name?: string;
   description?: string;
   price: number;
   image?: string;

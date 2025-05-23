@@ -54,12 +54,11 @@ export default function DashboardPage() {
         debugger;
         // Transform the data to match our Product interface
         const transformedProducts = data.map(item => ({
-        
           id: item.id,
-          name: item.name || item.title,
-          description: item.description,
+          name: item.title,
+          description: item.description || '',
           unit_price: item.price || 0,
-          thumbnail_url: item.image
+          thumbnail_url: item.image || ''
         }));
         
         setProducts(transformedProducts);

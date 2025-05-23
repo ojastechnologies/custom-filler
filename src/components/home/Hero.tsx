@@ -18,7 +18,7 @@ const carouselItems = [
     id: 2,
     title: "1 Inch Opening Contract Aerosol Filling",
     description: "Found on a majority of aerosol products throughout the industry and is the standard for larger fill operations. These cans are available in a variety of shapes and sizes from 35mm all the way up to 76mm diameter.",
-    image: "https://customfiller.com/wp-content/uploads/2022/04/carousel2.png",
+    image: "/img/carousel2.png",
     buttonText: "Learn More",
     buttonLink: "/services/1-inch-filling"
   },

@@ -1,46 +1,23 @@
-import { createClient } from '@supabase/supabase-js';
- import { supabase } from '@/lib/supabaseClient';
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
+import { supabase } from '@/lib/supabaseClient';
+import { ProductType } from '@/types/product';
 
-const publicClient = createClient(supabaseUrl, supabaseAnonKey);
-
-export const fetchProducts = async () => {
-  console.log('Fetching products from Supabase...');
-  console.log(`Supabase URL: ${supabaseUrl}`);
-  console.log('Using URL:', supabaseUrl.substring(0, 30) + '...');
-  
+export const fetchProducts = async (): Promise<ProductType[]> => {
   try {
-    const { data, error } = await publicClient
+    const { data, error } = await supabase
       .from('products')
       .select('*');
-
-    if (error) {
-      console.error('Supabase error:', error);
-      throw error;
-    }
-    
-    console.log('Fetched products:', data);
-    
-    if (!data || data.length === 0) {
-      console.log('No products found in database');
-      return [];
-    }
-    
-    const transformedData = data.map(item => {
-      return {
-        id: item.id,
-        title: item.name,
-        name: item.name,
-        price: item.unit_price || 0,
-        image: item.thumbnail_url || '/placeholder-product.jpg',
-        description: item.description || 'No description available'
-      };
-    });
-    
-    return transformedData;
+    if (error) throw error;
+    if (!data || data.length === 0) return [];
+    return data.map(item => ({
+      id: item.id,
+      title: item.name,
+      price: item.unit_price || 0,
+      image: item.thumbnail_url || '/placeholder-product.jpg',
+      description: item.description || 'No description available',
+      category: item.category || undefined,
+      about_url: item.about_url || undefined,
+    }));
   } catch (err) {
-    console.error('Error in fetchProducts:', err);
     throw err;
   }
 };
@@ -84,8 +61,6 @@ export const createProduct = async (product: {
   imageFile?: File;
 }) => {
   try {
-    console.log('Creating product:', product);
-    
     let imageUrl = product.thumbnail_url || '';
     
     if (product.imageFile) {
@@ -116,8 +91,6 @@ export const createProduct = async (product: {
       throw error;
     }
     
-    console.log('Product created successfully:', data);
-    
     if (data && data.length > 0) {
       return data[0];
     } else {
@@ -144,8 +117,6 @@ export const updateProduct = async (id: string, updates: {
   imageFile?: File;
 }) => {
   try {
-    console.log(`Updating product ${id}:`, updates);
-    
     // Get the existing product to check for image replacement
     const { data: existingProduct, error: checkError } = await supabase
       .from('products')
@@ -189,8 +160,6 @@ export const updateProduct = async (id: string, updates: {
       throw error;
     }
     
-    console.log('Update operation result:', data);
-    
     if (data && data.length > 0) {
       return data[0];
     } else {
@@ -210,8 +179,6 @@ export const updateProduct = async (id: string, updates: {
 
 export const deleteProduct = async (id: string) => {
   try {
-    console.log(`Deleting product ${id}`);
-    
     const { data: existingProduct, error: checkError } = await supabase
       .from('products')
       .select('id, thumbnail_url')
@@ -260,7 +227,6 @@ export const getProductById = async (id: string) => {
     return {
       id: data.id,
       title: data.name,
-      name: data.name,
       price: data.unit_price || 0,
       image: data.thumbnail_url || '/placeholder-product.jpg',
       description: data.description || 'No description available'
