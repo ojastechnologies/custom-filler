@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Card from './ui/Card';
 import Button from './ui/Button';
 import { useCart } from '@/context/CartContext';
-import { fetchProducts } from '@/app/services/productsService';
+import { fetchProducts } from '@/services/productsService';
 import { ProductType } from '@/types/product';
 
 const Products = () => {

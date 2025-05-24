@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import Card from "@/components/ui/Card";
-import { fetchProducts } from "@/app/services/productsService";
+import { fetchProducts } from "@/services/productsService";
 import { useCart } from "@/context/CartContext";
 import { ProductType } from "@/types/product";
 

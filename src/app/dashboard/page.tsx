@@ -8,32 +8,30 @@ import Footer from '@/components/layout/Footer';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Image from 'next/image';
-import { fetchProducts, createProduct, updateProduct, deleteProduct } from '@/app/services/productsService';
+import { fetchProducts, createProduct, updateProduct, deleteProduct } from '@/services/productsService';
 import ImageUploader from '@/components/admin/ImageUploader';
-
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  unit_price: number;
-  thumbnail_url: string;
-}
+import { ProductType } from '@/types/product';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function DashboardPage() {
   const { user, loading, isAdmin } = useAuth();
   const router = useRouter();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductType[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   // For product form
   const [showForm, setShowForm] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
+  const [editingProduct, setEditingProduct] = useState<ProductType | null>(null);
+  const [formData, setFormData] = useState<ProductType>({
+    id: '',
+    title: '',
     description: '',
-    unit_price: 0,
-    thumbnail_url: ''
+    price: 0,
+    image: '',
+    category: '',
+    quantity: 1,
+    about_url: ''
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -45,40 +43,51 @@ export default function DashboardPage() {
     }
   }, [user, loading, router]);
 
+  // Fetch products with timeout and retry
+  const fetchProductsWithTimeout = async (timeoutMs = 8000) => {
+    return Promise.race([
+      fetchProducts(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out. Please try again.')), timeoutMs))
+    ]);
+  };
+
+  const loadProducts = async () => {
+    try {
+      setLoadingProducts(true);
+      const data = await fetchProductsWithTimeout();
+      if (Array.isArray(data)) {
+        setProducts(data as ProductType[]);
+        setError(null);
+      } else {
+        throw new Error('Invalid product data received');
+      }
+    } catch (err: unknown) {
+      console.error('Error fetching products:', err);
+      if (err instanceof Error) {
+        setError(err.message || 'Failed to load products');
+      } else {
+        setError('Failed to load products');
+      }
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
   // Fetch products
   useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        setLoadingProducts(true);
-        const data = await fetchProducts();
-        debugger;
-        // Transform the data to match our Product interface
-        const transformedProducts = data.map(item => ({
-          id: item.id,
-          name: item.title,
-          description: item.description || '',
-          unit_price: item.price || 0,
-          thumbnail_url: item.image || ''
-        }));
-        
-        setProducts(transformedProducts);
-        setError(null);
-      } catch (err: unknown) {
-        console.error('Error fetching products:', err);
-        if (err instanceof Error) {
-          setError(err.message || 'Failed to load products');
+    // Only check session for dashboard, not for public product fetches
+    if (!loading && user) {
+      const checkAndLoadProducts = async () => {
+        const { data, error: sessionError } = await supabase.auth.getSession();
+        if (data?.session) {
+          loadProducts();
         } else {
-          setError('Failed to load products');
+          setError('No active session. Please log in again.');
         }
-      } finally {
-        setLoadingProducts(false);
-      }
-    };
-    
-    if (user) {
-      loadProducts();
+      };
+      checkAndLoadProducts();
     }
-  }, [user]);
+  }, [user, loading]);
 
   // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -93,7 +102,7 @@ export default function DashboardPage() {
   const handleImageSelected = (imageUrl: string, file: File | null) => {
     setFormData(prev => ({
       ...prev,
-      thumbnail_url: imageUrl
+      image: imageUrl
     }));
     setSelectedFile(file);
   };
@@ -110,44 +119,33 @@ export default function DashboardPage() {
       if (editingProduct) {
         // Update existing product using the service
         const result = await updateProduct(editingProduct.id, {
-          name: formData.name,
+          title: formData.title,
           description: formData.description,
-          unit_price: formData.unit_price,
-          thumbnail_url: formData.thumbnail_url,
-          imageFile: selectedFile || undefined
+          price: formData.price,
+          image: formData.image,
+          category: formData.category,
+          about_url: formData.about_url
         });
         
-        console.log('Update result:', result);
-        
-        // Update local state safely
-        setProducts(products.map(product => 
-          product.id === editingProduct.id ? { 
-            ...product, 
-            name: formData.name,
-            description: formData.description,
-            unit_price: formData.unit_price,
-            thumbnail_url: result.thumbnail_url || formData.thumbnail_url
-          } : product
-        ));
+        setProducts((prev) =>
+          prev.map((product) =>
+            product.id === editingProduct.id ? result : product
+          )
+        );
       } else {
         // Create new product using the service
         const result = await createProduct({
-          name: formData.name,
+          name: formData.title,
           description: formData.description,
-          unit_price: formData.unit_price,
-          thumbnail_url: formData.thumbnail_url,
-          imageFile: selectedFile || undefined
+          unit_price: formData.price,
+          thumbnail_url: formData.image,
+          imageFile: selectedFile || undefined,
+          category: formData.category,
+          about_url: formData.about_url
         });
         
-        console.log('Create result:', result);
-        
-        // Add to local state safely
         setProducts([...products, {
-          id: result?.id || 'temp-' + Date.now(),
-          name: formData.name,
-          description: formData.description || '',
-          unit_price: formData.unit_price || 0,
-          thumbnail_url: result.thumbnail_url || formData.thumbnail_url || ''
+          ...result
         }]);
       }
       
@@ -166,15 +164,12 @@ export default function DashboardPage() {
   };
 
   // Handle product edit
-  const handleEdit = (product: Product) => {
+  const handleEdit = (product: ProductType) => {
     if (!isAdmin) return;
     
     setEditingProduct(product);
     setFormData({
-      name: product.name,
-      description: product.description || '',
-      unit_price: product.unit_price || 0,
-      thumbnail_url: product.thumbnail_url || ''
+      ...product
     });
     setSelectedFile(null);
     setShowForm(true);
@@ -188,9 +183,7 @@ export default function DashboardPage() {
     
     try {
       // Delete product using the service
-      const success = await deleteProduct(id);
-      
-      console.log('Delete result:', success);
+      await deleteProduct(id);
       
       // Update local state regardless of the result
       // This ensures the UI stays in sync even if there's an issue with the database
@@ -208,10 +201,14 @@ export default function DashboardPage() {
   // Reset form
   const resetForm = () => {
     setFormData({
-      name: '',
+      id: '',
+      title: '',
       description: '',
-      unit_price: 0,
-      thumbnail_url: ''
+      price: 0,
+      image: '',
+      category: '',
+      quantity: 1,
+      about_url: ''
     });
     setEditingProduct(null);
     setSelectedFile(null);
@@ -299,9 +296,9 @@ export default function DashboardPage() {
                       </label>
                       <input
                         id="name"
-                        name="name"
+                        name="title"
                         type="text"
-                        value={formData.name}
+                        value={formData.title}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
                         required
@@ -314,11 +311,11 @@ export default function DashboardPage() {
                       </label>
                       <input
                         id="unit_price"
-                        name="unit_price"
+                        name="price"
                         type="number"
                         step="0.01"
                         min="0"
-                        value={formData.unit_price}
+                        value={formData.price}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
                         required
@@ -345,7 +342,7 @@ export default function DashboardPage() {
                       Product Image
                     </label>
                     <ImageUploader 
-                      currentImage={formData.thumbnail_url} 
+                      currentImage={formData.image || ''} 
                       onImageSelected={handleImageSelected} 
                     />
                     <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -382,12 +379,20 @@ export default function DashboardPage() {
               <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
                 <p className="font-medium">Error</p>
                 <p>{error}</p>
-                <button 
-                  onClick={() => setError(null)} 
-                  className="text-sm underline mt-1"
-                >
-                  Dismiss
-                </button>
+                <div className="flex items-center space-x-2 mt-2">
+                  <button 
+                    onClick={() => setError(null)} 
+                    className="text-sm underline"
+                  >
+                    Dismiss
+                  </button>
+                  <button
+                    onClick={loadProducts}
+                    className="text-sm underline text-primary-700 font-semibold"
+                  >
+                    Retry
+                  </button>
+                </div>
               </div>
             )}
             
@@ -400,8 +405,17 @@ export default function DashboardPage() {
               </div>
               
               {loadingProducts ? (
-                <div className="flex justify-center items-center h-32">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+                <div className="flex flex-col justify-center items-center h-32">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600 mb-2"></div>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">Loading products...</p>
+                  {error && (
+                    <button
+                      onClick={loadProducts}
+                      className="mt-2 text-sm underline text-primary-700 font-semibold"
+                    >
+                      Retry
+                    </button>
+                  )}
                 </div>
               ) : products.length === 0 ? (
                 <div className="text-center py-8">
@@ -446,8 +460,8 @@ export default function DashboardPage() {
                             <div className="flex items-center">
                               <div className="h-10 w-10 flex-shrink-0 relative">
                                 <Image
-                                  src={product.thumbnail_url || "/placeholder-product.jpg"}
-                                  alt={product.name}
+                                  src={product.image || "/placeholder-product.jpg"}
+                                  alt={product.title}
                                   fill
                                   className="object-cover rounded-md"
                                   onError={(e) => {
@@ -458,7 +472,7 @@ export default function DashboardPage() {
                               </div>
                               <div className="ml-4 min-w-0">
                                 <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                  {product.name}
+                                  {product.title}
                                 </div>
                                 <div className="text-sm text-gray-500 dark:text-gray-400 overflow-hidden text-ellipsis break-normal">
                                   {product.description || "No description"}
@@ -468,7 +482,7 @@ export default function DashboardPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap w-28">
                             <div className="text-sm text-gray-900 dark:text-white">
-                              ${product.unit_price?.toFixed(2) || "0.00"}
+                              ${product.price?.toFixed(2) || "0.00"}
                             </div>
                           </td>
                           {isAdmin && (

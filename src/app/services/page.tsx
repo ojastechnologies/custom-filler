@@ -6,7 +6,7 @@ import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { useCart } from "@/context/CartContext";
-import { fetchProducts } from "@/app/services/productsService";
+import { fetchProducts } from "@/services/productsService";
 import Card from "@/components/ui/Card";
 import { ProductType } from "@/types/product";
 
