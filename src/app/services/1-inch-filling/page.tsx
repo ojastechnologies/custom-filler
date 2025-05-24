@@ -34,7 +34,7 @@ const InchFillingPage = () => {
               <div className="md:w-1/2">
                 <div className="relative h-80 w-full mb-4">
                   <Image 
-                    src="/img/1inch.png" 
+                    src="/images/1inch.png" 
                     alt="1 Inch Aerosol Can" 
                     fill
                     className="object-contain rounded-lg"

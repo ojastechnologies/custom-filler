@@ -10,14 +10,14 @@ const ServicesSection = () => {
       id: '1-inch-filling',
       title: '1 Inch Opening Contract Filling',
       description: 'Standard 1 inch opening found on a majority of aerosol products throughout the industry. Available in various shapes and sizes from 35mm to 76mm diameter.',
-      image: '/img/1inch.png',
+      image: '/images/1inch.png',
       link: '/services/1-inch-filling'
     },
     {
       id: '20mm-filling',
       title: '20mm Filling',
       description: '20mm opening usually found on small, one piece, aluminum cans. These aerosol products will hold anywhere from a few grams to around three ounces.',
-      image: '/img/20mm.png',
+      image: '/images/20mm.png',
       link: '/services/20mm-filling'
     },
        {

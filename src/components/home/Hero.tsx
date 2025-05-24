@@ -18,7 +18,7 @@ const carouselItems = [
     id: 2,
     title: "1 Inch Opening Contract Aerosol Filling",
     description: "Found on a majority of aerosol products throughout the industry and is the standard for larger fill operations. These cans are available in a variety of shapes and sizes from 35mm all the way up to 76mm diameter.",
-    image: "/img/carousel2.png",
+    image: "/images/carousel2.png", 
     buttonText: "Learn More",
     buttonLink: "/services/1-inch-filling"
   },
@@ -26,16 +26,16 @@ const carouselItems = [
     id: 3,
     title: "20 mm Opening Contract Aerosol Filling",
     description: "Usually found on small, one piece, aluminum cans. These aerosol products will hold anywhere from a few grams to several ounces of your product. Sizes range from 22mm in diameter up to 50mm with the 20mm top.",
-    image: "/img/20mm.png",
+    image: "/images/20mm.png", 
     buttonText: "View Details",
     buttonLink: "/services/20mm-filling"
   },
   {
-    id: 5,
+    id: 4,
     title: "Custom Aerosol Filling",
     description: "See how we can customize aerosol solutions for your specific needs. Our flexible manufacturing capabilities can accommodate various product requirements.",
     videoUrl: "/videos/carousel4.mp4",
-    image: "/img/video-poster.jpg",
+    image: "/images/video-poster.jpg", 
     buttonText: "Learn About Our Custom Solutions",
     buttonLink: "/about-us"
   }

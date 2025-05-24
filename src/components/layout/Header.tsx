@@ -45,7 +45,7 @@ const Header = () => {
             {/* For server-side rendering, use a default that will be replaced on client */}
             {!mounted ? (
               <Image 
-                src="/img/logo_nav_customfiller.png" 
+                src="/images/logo_nav_customfiller.png" 
                 alt="Aero Tech Labs" 
                 width={180} 
                 height={40}
@@ -54,7 +54,7 @@ const Header = () => {
             ) : theme === 'dark' ? (
               // White logo for dark mode
               <Image 
-                src="/img/logo_nav_customfiller.png" 
+                src="/images/logo_nav_customfiller.png" 
                 alt="Aero Tech Labs" 
                 width={180} 
                 height={40}
@@ -62,7 +62,7 @@ const Header = () => {
             ) : (
               // Black logo for light mode
               <Image 
-                src="/img/logo_nav_customfiller.png" 
+                src="/images/logo_nav_customfiller.png" 
                 alt="Aero Tech Labs" 
                 width={180} 
                 height={40}
