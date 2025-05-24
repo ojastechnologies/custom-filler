@@ -78,7 +78,7 @@ export default function DashboardPage() {
     // Only check session for dashboard, not for public product fetches
     if (!loading && user) {
       const checkAndLoadProducts = async () => {
-        const { data, error: sessionError } = await supabase.auth.getSession();
+        const { data } = await supabase.auth.getSession();
         if (data?.session) {
           loadProducts();
         } else {
@@ -87,7 +87,7 @@ export default function DashboardPage() {
       };
       checkAndLoadProducts();
     }
-  }, [user, loading]);
+  }, [user, loading]); // eslint-disable-next-line react-hooks/exhaustive-deps
 
   // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

@@ -9,7 +9,7 @@ const clearSupabaseSession = async () => {
     localStorage.removeItem('supabase.auth.token');
     localStorage.removeItem('supabase.auth.refresh_token');
     localStorage.removeItem('supabase.auth.access_token');
-  } catch (e) {
+  } catch {
     // Ignore
   }
 };
@@ -32,11 +32,13 @@ export const fetchProducts = async (): Promise<ProductType[]> => {
         category: item.category || undefined,
         about_url: item.about_url || undefined,
       }));
-    } catch (err: any) {
+    } catch (err) {
       // If error is auth/session related and we haven't retried, clear session and retry once
-      if (!triedClearingSession && err?.code && (
-        err.code === '401' || err.code === '403' || (err.message && err.message.toLowerCase().includes('jwt'))
-      )) {
+      if (!triedClearingSession && typeof err === 'object' && err !== null &&
+        ('code' in err || 'message' in err) &&
+        ((err as { code?: string }).code === '401' || (err as { code?: string }).code === '403' ||
+         ((err as { message?: string }).message && (err as { message: string }).message.toLowerCase().includes('jwt')))
+      ) {
         await clearSupabaseSession();
         triedClearingSession = true;
         continue;
