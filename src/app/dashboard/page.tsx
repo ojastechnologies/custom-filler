@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Header from '@/components/layout/Header';
@@ -8,10 +8,12 @@ import Footer from '@/components/layout/Footer';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Image from 'next/image';
-import { fetchProducts, createProduct, updateProduct, deleteProduct } from '@/services/productsService';
+import { fetchProducts, createProduct, updateProduct, deleteProduct, uploadProductImage } from '@/services/productsService';
 import ImageUploader from '@/components/admin/ImageUploader';
 import { ProductType } from '@/types/product';
 import { supabase } from '@/lib/supabaseClient';
+
+import { debugStorageBucket } from '@/services/productsService';
 
 export default function DashboardPage() {
   const { user, loading, isAdmin } = useAuth();
@@ -35,6 +37,8 @@ export default function DashboardPage() {
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  debugStorageBucket();
 
   useEffect(() => {
     // Redirect if not logged in
@@ -70,14 +74,14 @@ export default function DashboardPage() {
   }, [user, loading, router]);
 
   // Fetch products with timeout and retry
-  const fetchProductsWithTimeout = async (timeoutMs = 8000) => {
+  const fetchProductsWithTimeout = useCallback(async (timeoutMs = 8000) => {
     return Promise.race([
       fetchProducts(),
       new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out. Please try again.')), timeoutMs))
     ]);
-  };
+  }, []);
 
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     try {
       setLoadingProducts(true);
       const data = await fetchProductsWithTimeout();
@@ -97,7 +101,7 @@ export default function DashboardPage() {
     } finally {
       setLoadingProducts(false);
     }
-  };
+  }, [fetchProductsWithTimeout]);
 
   // Fetch products
   useEffect(() => {
@@ -136,23 +140,24 @@ export default function DashboardPage() {
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!isAdmin) return;
-    
     try {
       setIsUploading(true);
-      
+      let imageUrl = formData.image;
+      if (selectedFile) {
+        imageUrl = await uploadProductImage(selectedFile);
+      }
       if (editingProduct) {
         // Update existing product using the service
         const result = await updateProduct(editingProduct.id, {
           title: formData.title,
           description: formData.description,
           price: formData.price,
-          image: formData.image,
+          image: imageUrl,
           category: formData.category,
-          about_url: formData.about_url
+          about_url: formData.about_url,
+          imageFile: selectedFile || undefined,
         });
-        
         setProducts((prev) =>
           prev.map((product) =>
             product.id === editingProduct.id ? result : product
@@ -164,18 +169,13 @@ export default function DashboardPage() {
           name: formData.title,
           description: formData.description,
           unit_price: formData.price,
-          thumbnail_url: formData.image,
+          thumbnail_url: imageUrl,
           imageFile: selectedFile || undefined,
           category: formData.category,
-          about_url: formData.about_url
+          about_url: formData.about_url,
         });
-        
-        setProducts([...products, {
-          ...result
-        }]);
+        setProducts([...products, { ...result }]);
       }
-      
-      // Reset form
       resetForm();
     } catch (err: unknown) {
       console.error('Error saving product:', err);
@@ -208,11 +208,7 @@ export default function DashboardPage() {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
     
     try {
-      // Delete product using the service
       await deleteProduct(id);
-      
-      // Update local state regardless of the result
-      // This ensures the UI stays in sync even if there's an issue with the database
       setProducts(products.filter(product => product.id !== id));
     } catch (err: unknown) {
       console.error('Error deleting product:', err);
