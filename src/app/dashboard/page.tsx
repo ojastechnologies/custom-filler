@@ -53,6 +53,22 @@ export default function DashboardPage() {
     }
   }, [user, loading, router]);
 
+  // Robust session sync: Wait for both Supabase and AuthContext to resolve before redirecting or fetching
+  useEffect(() => {
+    if (loading) return; // Wait for AuthContext to finish loading
+    supabase.auth.getSession().then(({ data }) => {
+      const supabaseSession = !!data?.session;
+      if (!user && !supabaseSession) {
+        // No session anywhere: redirect
+        router.push('/auth/enter-portal-9f3b2');
+      } else if (!user && supabaseSession) {
+        // Supabase has session but AuthContext does not: force reload to sync context
+        window.location.reload();
+      }
+      // else: user is present, do nothing (normal flow)
+    });
+  }, [user, loading, router]);
+
   // Fetch products with timeout and retry
   const fetchProductsWithTimeout = async (timeoutMs = 8000) => {
     return Promise.race([
