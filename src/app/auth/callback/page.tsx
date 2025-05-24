@@ -17,7 +17,7 @@ export default function AuthCallbackPage() {
       await supabase.auth.getSession();
       
       // Redirect to login page regardless of result
-      router.push('/login');
+      router.push('/auth/enter-portal-9f3b2');
     };
 
     handleAuthCallback();

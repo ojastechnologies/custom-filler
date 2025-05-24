@@ -71,7 +71,7 @@ function LoginFormContent() {
         type: 'signup',
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/login`,
+          emailRedirectTo: `${window.location.origin}/auth/enter-portal-9f3b2`,
         },
       });
       

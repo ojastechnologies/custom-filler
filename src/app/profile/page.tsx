@@ -39,7 +39,7 @@ export default function ProfilePage() {
   useEffect(() => {
     // Redirect if not logged in
     if (!loading && !user) {
-      router.push('/login');
+      router.push('/auth/enter-portal-9f3b2');
     }
     
     // Fetch profile data

@@ -30,7 +30,7 @@ export default function RegisterForm() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/login`,
+          emailRedirectTo: `${window.location.origin}/auth/enter-portal-9f3b2`,
         }
       });
       
@@ -55,7 +55,7 @@ export default function RegisterForm() {
       }
       
       // Redirect to login page with success message
-      router.push('/login?registered=true');
+      router.push('/auth/enter-portal-9f3b2?registered=true');
     } catch (err: unknown) {
       console.error('Registration error:', err);
       if (err instanceof Error) {
@@ -139,7 +139,7 @@ export default function RegisterForm() {
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-600 dark:text-gray-400">
           Already have an account?{' '}
-          <Link href="/login" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
+          <Link href="/auth/enter-portal-9f3b2" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
             Sign in
           </Link>
         </p>

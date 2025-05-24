@@ -17,7 +17,7 @@ export async function middleware(req: NextRequest) {
 
   if (req.nextUrl.pathname.startsWith('/admin')) {
     if (!session) {
-      return NextResponse.redirect(new URL('/login?redirectTo=' + req.nextUrl.pathname, req.url));
+      return NextResponse.redirect(new URL('/auth/enter-portal-9f3b2?redirectTo=' + req.nextUrl.pathname, req.url));
     }
   }
 

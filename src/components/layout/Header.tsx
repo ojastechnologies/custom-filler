@@ -185,7 +185,7 @@ const Header = () => {
               </div>
             ) : (
               <div className="hidden md:block">
-                {/* <Link href="/login" passHref>
+                {/* <Link href="/auth/enter-portal-9f3b2" passHref>
                   <Button variant="primary" size="sm">
                     Sign In
                   </Button>

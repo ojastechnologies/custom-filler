@@ -39,7 +39,17 @@ export default function DashboardPage() {
   useEffect(() => {
     // Redirect if not logged in
     if (!loading && !user) {
-      router.push('/login');
+      // If Supabase thinks there is a session but AuthContext does not, clear it
+      supabase.auth.getSession().then(({ data }) => {
+        if (data?.session) {
+          supabase.auth.signOut();
+          // Remove legacy keys if present
+          localStorage.removeItem('supabase.auth.token');
+          localStorage.removeItem('supabase.auth.refresh_token');
+          localStorage.removeItem('supabase.auth.access_token');
+        }
+        router.push('/auth/enter-portal-9f3b2');
+      });
     }
   }, [user, loading, router]);
 
@@ -87,7 +97,7 @@ export default function DashboardPage() {
       };
       checkAndLoadProducts();
     }
-  }, [user, loading]); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, loading, loadProducts]);
 
   // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

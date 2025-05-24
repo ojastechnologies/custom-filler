@@ -117,7 +117,7 @@ function CheckoutContent() {
               
               <div className="text-gray-600 dark:text-gray-400">
                 <span>or</span>
-                <Link href="/login" className="ml-2 text-blue-600 dark:text-blue-400 hover:underline">
+                <Link href="/auth/enter-portal-9f3b2" className="ml-2 text-blue-600 dark:text-blue-400 hover:underline">
                   Have an account? Log in
                 </Link>
               </div>
