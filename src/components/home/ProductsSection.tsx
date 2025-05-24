@@ -159,7 +159,7 @@ const ProductsSection = () => {
         
         <div className="mt-10 text-center">
           <Link 
-            href="/services" 
+            href="/products" 
             className="inline-block px-5 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 transition-colors"
           >
             View All Products

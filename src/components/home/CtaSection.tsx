@@ -23,7 +23,7 @@ const CtaSection = () => {
                 Get a Quote
               </Button>
             </Link>
-            <Link href="/services" passHref>
+            <Link href="/products" passHref>
               <Button 
                 variant="primary" 
                 size="lg"
