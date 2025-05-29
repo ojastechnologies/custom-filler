@@ -31,7 +31,7 @@ const NonFlammablePropellantPage = () => {
                 <div className="md:w-1/2">
                   <div className="relative h-80 w-full">
                     <Image 
-                      src="/images/laser_cryogen.png" 
+                      src="/images/non_flammable_propellant.png" 
                       alt="Laser Cryogen Cylinder" 
                       fill
                       className="object-contain"
