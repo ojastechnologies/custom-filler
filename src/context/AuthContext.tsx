@@ -24,13 +24,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Function to check user role
   const checkUserRole = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user) {
-        // Fetch user data including role
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('supabase.auth.token', JSON.stringify(session));
+        }
+        
         const { data: userData, error } = await supabase
           .from('users')
           .select('*')
@@ -49,26 +51,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setUser(null);
         setIsAdmin(false);
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('supabase.auth.token');
+        }
       }
     } catch (error) {
       console.error('Error checking user role:', error);
       setUser(null);
       setIsAdmin(false);
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('supabase.auth.token');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    // Check for existing session
     checkUserRole();
     
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session?.user) {
           try {
-            // Fetch user data including role
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem('supabase.auth.token', JSON.stringify(session));
+            }
+            
             const { data: userData, error } = await supabase
               .from('users')
               .select('*')
@@ -92,6 +101,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           setUser(null);
           setIsAdmin(false);
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('supabase.auth.token');
+          }
         }
         
         setLoading(false);
@@ -106,6 +118,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('supabase.auth.token');
+    }
+    
     setUser(null);
     setIsAdmin(false);
   };
