@@ -7,25 +7,27 @@ import Card from "@/components/ui/Card";
 import { fetchProducts } from "@/services/productsService";
 import { useCart } from "@/context/CartContext";
 import { ProductType } from "@/types/product";
-
+import { useAuth } from "@/context/AuthContext";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 const ProductsSection = () => {
   const { addToCart } = useCart();
+  const { loading } = useAuth();
   const [products, setProducts] = useState<ProductType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [addedToCart, setAddedToCart] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const loadProducts = async () => {
       try {
-        setLoading(true);
+        setIsLoading(true);
         const data = await fetchProducts();
         setProducts(data.slice(0, 3));
         setError(null);
       } catch {
         setError("Failed to load products. Please try again later.");
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
@@ -59,13 +61,11 @@ const ProductsSection = () => {
     return "grid-cols-1 md:grid-cols-3 max-w-5xl";
   };
 
-  if (loading) {
+  if (loading || isLoading) {
     return (
       <section className="py-12 bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto px-4 text-center">
-          <div className="flex justify-center items-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
-          </div>
+          <LoadingSpinner />
         </div>
       </section>
     );

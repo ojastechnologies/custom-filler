@@ -11,14 +11,16 @@ import { useCart } from "@/context/CartContext";
 import { fetchProducts } from "@/services/productsService";
 import Card from "@/components/ui/Card";
 import { ProductType } from "@/types/product";
-
+import { useAuth } from "@/context/AuthContext";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 export default function ProductsPage() {
   const { addToCart } = useCart();
+  const { loading } = useAuth();
 
   const [addedToCart, setAddedToCart] = useState<Record<string, boolean>>({});
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [products, setProducts] = useState<ProductType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingProducts, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory] = useState<string | null>(null);
 
@@ -64,13 +66,13 @@ export default function ProductsPage() {
       )
     : products;
 
-  if (loading) {
+  if (loading || loadingProducts) {
     return (
       <>
         <Header />
         <main className="pt-20 pb-16 bg-gray-50 dark:bg-gray-900">
           <div className="container mx-auto px-4 flex justify-center items-center min-h-[50vh]">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+            <LoadingSpinner />
           </div>
         </main>
         <Footer />

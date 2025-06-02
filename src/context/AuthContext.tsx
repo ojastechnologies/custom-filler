@@ -128,14 +128,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      isAdmin, 
+    <AuthContext.Provider value={{
+      user,
+      isAdmin,
       signOut,
       loading,
       checkUserRole
     }}>
-      {children}
+      {/* Only render children when loading is false */}
+      {!loading && children}
     </AuthContext.Provider>
   );
 }
