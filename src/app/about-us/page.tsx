@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
@@ -13,11 +13,11 @@ export default function AboutUs() {
   const [paragraph1, setParagraph1] = useState<string>('');
   const [paragraph2, setParagraph2] = useState<string>('');
   const [editMode, setEditMode] = useState<number | null>(null);
-  const [draft, setDraft] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
 
   // Default content
   const defaultParagraph1 = `<p>Aero Tech Labs is a small, dedicated, and ambitious aerosol custom filling facility located in South Florida. Strategically located in the Southern U.S., we can be an important link to produce aerosol products in that region. Our forte is the filling of HFC 134a, a non-flammable propellant which is used in "ozone safe" refrigerant systems, when there is an imperative need for non-flammable necessary end use products are a requisite, we use HFC 134a. If you need a different non-flammable propellant with a low global warming potential (GWP), then let us suggest HFO 1234ze. This new propellant is an exciting addition especially to high end cosmetic formulations where flammability may be considered a high liability.</p>`;
@@ -91,22 +91,24 @@ export default function AboutUs() {
     setSaving(true);
     setError(null);
     try {
+      const htmlContent = editorRef.current?.innerHTML || '';
+      
       if (editMode === 1) {
-        setParagraph1(draft);
+        setParagraph1(htmlContent);
       } else if (editMode === 2) {
-        setParagraph2(draft);
+        setParagraph2(htmlContent);
       }
       
-      const updatedParagraph1 = editMode === 1 ? draft : paragraph1;
-      const updatedParagraph2 = editMode === 2 ? draft : paragraph2;
+      const updatedParagraph1 = editMode === 1 ? htmlContent : paragraph1;
+      const updatedParagraph2 = editMode === 2 ? htmlContent : paragraph2;
       const combinedContent = `${updatedParagraph1}\n\n${updatedParagraph2}`;
       
       await updateAboutUsContent(combinedContent);
       
       if (editMode === 1) {
-        setParagraph1(draft);
+        setParagraph1(htmlContent);
       } else if (editMode === 2) {
-        setParagraph2(draft);
+        setParagraph2(htmlContent);
       }
       
       setEditMode(null);
@@ -118,44 +120,60 @@ export default function AboutUs() {
     }
   };
 
-  const insertTag = (tag: string, closingTag?: string) => {
-    const textarea = document.getElementById('content-editor') as HTMLTextAreaElement;
-    if (!textarea) return;
+  // WYSIWYG formatting functions
+  const formatText = (command: string, value?: string) => {
+    document.execCommand(command, false, value);
+    editorRef.current?.focus();
+  };
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = textarea.value.substring(start, end);
-    const beforeText = textarea.value.substring(0, start);
-    const afterText = textarea.value.substring(end);
-    
-    const insertText = closingTag 
-      ? `${tag}${selectedText}${closingTag}`
-      : tag;
-    
-    const newText = beforeText + insertText + afterText;
-    setDraft(newText);
-    
-    setTimeout(() => {
-      textarea.focus();
-      const newPosition = start + tag.length + selectedText.length + (closingTag?.length || 0);
-      textarea.setSelectionRange(newPosition, newPosition);
-    }, 0);
+  const insertHeading = (level: number) => {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const selectedText = range.toString();
+      
+      if (selectedText) {
+        const headingElement = document.createElement(`h${level}`);
+        headingElement.textContent = selectedText;
+        headingElement.className = level === 2 ? 'text-2xl font-bold mb-4' : 'text-xl font-semibold mb-3';
+        
+        range.deleteContents();
+        range.insertNode(headingElement);
+        
+        // Clear selection
+        selection.removeAllRanges();
+      }
+    }
+    editorRef.current?.focus();
+  };
+
+  const insertList = (ordered: boolean = false) => {
+    const listType = ordered ? 'insertOrderedList' : 'insertUnorderedList';
+    document.execCommand(listType, false);
+    editorRef.current?.focus();
   };
 
   const startEdit = (paragraphIndex: number) => {
     setEditMode(paragraphIndex);
-    if (paragraphIndex === 1) {
-      setDraft(paragraph1);
-    } else if (paragraphIndex === 2) {
-      setDraft(paragraph2);
-    }
     setPreviewMode(false);
+    
+    // Set content in editor after a brief delay to ensure DOM is ready
+    setTimeout(() => {
+      if (editorRef.current) {
+        const content = paragraphIndex === 1 ? paragraph1 : paragraph2;
+        editorRef.current.innerHTML = content;
+        editorRef.current.focus();
+      }
+    }, 100);
   };
 
   const cancelEdit = () => {
     setEditMode(null);
-    setDraft('');
     setPreviewMode(false);
+  };
+
+  const getCurrentContent = () => {
+    return editorRef.current?.innerHTML || '';
   };
 
   return (
@@ -214,7 +232,7 @@ export default function AboutUs() {
                     )}
                     
                     {editMode === 1 ? (
-                      /* Edit Mode for First Paragraph */
+                      /* WYSIWYG Editor for First Paragraph */
                       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700">
                         <div className="flex justify-between items-center mb-4">
                           <div className="flex items-center gap-2">
@@ -248,21 +266,107 @@ export default function AboutUs() {
 
                         {!previewMode ? (
                           <>
-                            {/* Enhanced Toolbar */}
+                            {/* WYSIWYG Toolbar */}
                             <div className="border border-gray-300 dark:border-gray-600 rounded-t-lg bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 p-3 flex flex-wrap gap-2">
-                              <button type="button" onClick={() => insertTag('<strong>', '</strong>')} className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors font-bold shadow-sm" title="Bold">B</button>
-                              <button type="button" onClick={() => insertTag('<em>', '</em>')} className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors italic shadow-sm" title="Italic">I</button>
-                              <button type="button" onClick={() => insertTag('<p>', '</p>')} className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors shadow-sm" title="Paragraph">P</button>
-                              <button type="button" onClick={() => insertTag('<h3>', '</h3>')} className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors font-bold shadow-sm" title="Heading">H3</button>
+                              <button 
+                                type="button" 
+                                onClick={() => formatText('bold')} 
+                                className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors font-bold shadow-sm" 
+                                title="Bold (Ctrl+B)"
+                              >
+                                B
+                              </button>
+                              <button 
+                                type="button" 
+                                onClick={() => formatText('italic')} 
+                                className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors italic shadow-sm" 
+                                title="Italic (Ctrl+I)"
+                              >
+                                I
+                              </button>
+                              <button 
+                                type="button" 
+                                onClick={() => formatText('underline')} 
+                                className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors underline shadow-sm" 
+                                title="Underline (Ctrl+U)"
+                              >
+                                U
+                              </button>
+                              <div className="w-px h-6 bg-gray-300 dark:bg-gray-500 mx-1"></div>
+                              <button 
+                                type="button" 
+                                onClick={() => insertHeading(2)} 
+                                className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors font-bold shadow-sm" 
+                                title="Heading 2"
+                              >
+                                H2
+                              </button>
+                              <button 
+                                type="button" 
+                                onClick={() => insertHeading(3)} 
+                                className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors font-bold shadow-sm" 
+                                title="Heading 3"
+                              >
+                                H3
+                              </button>
+                              <div className="w-px h-6 bg-gray-300 dark:bg-gray-500 mx-1"></div>
+                              <button 
+                                type="button" 
+                                onClick={() => insertList(false)} 
+                                className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors shadow-sm" 
+                                title="Bullet List"
+                              >
+                                • List
+                              </button>
+                              <button 
+                                type="button" 
+                                onClick={() => insertList(true)} 
+                                className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors shadow-sm" 
+                                title="Numbered List"
+                              >
+                                1. List
+                              </button>
+                              <div className="w-px h-6 bg-gray-300 dark:bg-gray-500 mx-1"></div>
+                              <button 
+                                type="button" 
+                                onClick={() => formatText('removeFormat')} 
+                                className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors shadow-sm" 
+                                title="Clear Formatting"
+                              >
+                                Clear
+                              </button>
                             </div>
 
-                            <textarea
-                              id="content-editor"
-                              className="w-full h-56 p-4 border border-gray-300 dark:border-gray-600 border-t-0 rounded-b-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none font-mono text-sm leading-relaxed"
-                              value={draft}
-                              onChange={(e) => setDraft(e.target.value)}
-                              placeholder="Enter HTML content..."
-                              spellCheck="false"
+                            {/* WYSIWYG Editor */}
+                            <div
+                              ref={editorRef}
+                              contentEditable
+                              className="w-full min-h-56 p-4 border border-gray-300 dark:border-gray-600 border-t-0 rounded-b-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-lg leading-relaxed prose dark:prose-invert max-w-none"
+                              style={{ 
+                                minHeight: '224px',
+                                maxHeight: '400px',
+                                overflowY: 'auto'
+                              }}
+                              suppressContentEditableWarning={true}
+                              onKeyDown={(e) => {
+                                // Handle keyboard shortcuts
+                                if (e.ctrlKey || e.metaKey) {
+                                  switch (e.key) {
+                                    case 'b':
+                                      e.preventDefault();
+                                      formatText('bold');
+                                      break;
+                                    case 'i':
+                                      e.preventDefault();
+                                      formatText('italic');
+                                      break;
+                                    case 'u':
+                                      e.preventDefault();
+                                      formatText('underline');
+                                      break;
+                                  }
+                                }
+                              }}
                             />
                           </>
                         ) : (
@@ -272,7 +376,7 @@ export default function AboutUs() {
                             </div>
                             <div
                               className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 text-lg leading-relaxed"
-                              dangerouslySetInnerHTML={{ __html: draft }}
+                              dangerouslySetInnerHTML={{ __html: getCurrentContent() }}
                             />
                           </div>
                         )}
@@ -347,7 +451,7 @@ export default function AboutUs() {
                     )}
                     
                     {editMode === 2 ? (
-                      /* Edit Mode for Second Paragraph */
+                      /* WYSIWYG Editor for Second Paragraph */
                       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700">
                         <div className="flex justify-between items-center mb-4">
                           <div className="flex items-center gap-2">
@@ -381,21 +485,107 @@ export default function AboutUs() {
 
                         {!previewMode ? (
                           <>
-                            {/* Enhanced Toolbar */}
+                            {/* WYSIWYG Toolbar */}
                             <div className="border border-gray-300 dark:border-gray-600 rounded-t-lg bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 p-3 flex flex-wrap gap-2">
-                              <button type="button" onClick={() => insertTag('<strong>', '</strong>')} className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors font-bold shadow-sm" title="Bold">B</button>
-                              <button type="button" onClick={() => insertTag('<em>', '</em>')} className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors italic shadow-sm" title="Italic">I</button>
-                              <button type="button" onClick={() => insertTag('<p>', '</p>')} className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors shadow-sm" title="Paragraph">P</button>
-                              <button type="button" onClick={() => insertTag('<h3>', '</h3>')} className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors font-bold shadow-sm" title="Heading">H3</button>
+                              <button 
+                                type="button" 
+                                onClick={() => formatText('bold')} 
+                                className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors font-bold shadow-sm" 
+                                title="Bold (Ctrl+B)"
+                              >
+                                B
+                              </button>
+                              <button 
+                                type="button" 
+                                onClick={() => formatText('italic')} 
+                                className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors italic shadow-sm" 
+                                title="Italic (Ctrl+I)"
+                              >
+                                I
+                              </button>
+                              <button 
+                                type="button" 
+                                onClick={() => formatText('underline')} 
+                                className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors underline shadow-sm" 
+                                title="Underline (Ctrl+U)"
+                              >
+                                U
+                              </button>
+                              <div className="w-px h-6 bg-gray-300 dark:bg-gray-500 mx-1"></div>
+                              <button 
+                                type="button" 
+                                onClick={() => insertHeading(2)} 
+                                className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors font-bold shadow-sm" 
+                                title="Heading 2"
+                              >
+                                H2
+                              </button>
+                              <button 
+                                type="button" 
+                                onClick={() => insertHeading(3)} 
+                                className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors font-bold shadow-sm" 
+                                title="Heading 3"
+                              >
+                                H3
+                              </button>
+                              <div className="w-px h-6 bg-gray-300 dark:bg-gray-500 mx-1"></div>
+                              <button 
+                                type="button" 
+                                onClick={() => insertList(false)} 
+                                className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors shadow-sm" 
+                                title="Bullet List"
+                              >
+                                • List
+                              </button>
+                              <button 
+                                type="button" 
+                                onClick={() => insertList(true)} 
+                                className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors shadow-sm" 
+                                title="Numbered List"
+                              >
+                                1. List
+                              </button>
+                              <div className="w-px h-6 bg-gray-300 dark:bg-gray-500 mx-1"></div>
+                              <button 
+                                type="button" 
+                                onClick={() => formatText('removeFormat')} 
+                                className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors shadow-sm" 
+                                title="Clear Formatting"
+                              >
+                                Clear
+                              </button>
                             </div>
 
-                            <textarea
-                              id="content-editor"
-                              className="w-full h-56 p-4 border border-gray-300 dark:border-gray-600 border-t-0 rounded-b-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none font-mono text-sm leading-relaxed"
-                              value={draft}
-                              onChange={(e) => setDraft(e.target.value)}
-                              placeholder="Enter HTML content..."
-                              spellCheck="false"
+                            {/* WYSIWYG Editor */}
+                            <div
+                              ref={editorRef}
+                              contentEditable
+                              className="w-full min-h-56 p-4 border border-gray-300 dark:border-gray-600 border-t-0 rounded-b-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-lg leading-relaxed prose dark:prose-invert max-w-none"
+                              style={{ 
+                                minHeight: '224px',
+                                maxHeight: '400px',
+                                overflowY: 'auto'
+                              }}
+                              suppressContentEditableWarning={true}
+                              onKeyDown={(e) => {
+                                // Handle keyboard shortcuts
+                                if (e.ctrlKey || e.metaKey) {
+                                  switch (e.key) {
+                                    case 'b':
+                                      e.preventDefault();
+                                      formatText('bold');
+                                      break;
+                                    case 'i':
+                                      e.preventDefault();
+                                      formatText('italic');
+                                      break;
+                                    case 'u':
+                                      e.preventDefault();
+                                      formatText('underline');
+                                      break;
+                                  }
+                                }
+                              }}
                             />
                           </>
                         ) : (
@@ -405,7 +595,7 @@ export default function AboutUs() {
                             </div>
                             <div
                               className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 text-lg leading-relaxed"
-                              dangerouslySetInnerHTML={{ __html: draft }}
+                              dangerouslySetInnerHTML={{ __html: getCurrentContent() }}
                             />
                           </div>
                         )}
