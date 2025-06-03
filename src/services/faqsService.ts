@@ -10,7 +10,7 @@ export const fetchFaqs = async (): Promise<FAQ[]> => {
   const { data, error } = await supabase
     .from('faqs')
     .select('*')
-    .order('updated_at', { ascending: false });
+    .order('updated_at', { ascending: true });
   if (error) throw error;
   return data || [];
 };
