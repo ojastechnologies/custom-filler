@@ -31,12 +31,10 @@ export default function AboutUs() {
         const aboutContent = await fetchAboutUsContent();
         
         if (aboutContent && aboutContent.trim()) {
-          // Try to parse existing content
           const paragraphs = splitContentIntoParagraphs(aboutContent);
           setParagraph1(paragraphs[0] || defaultParagraph1);
           setParagraph2(paragraphs[1] || defaultParagraph2);
         } else {
-          // Use defaults
           setParagraph1(defaultParagraph1);
           setParagraph2(defaultParagraph2);
         }
@@ -51,12 +49,8 @@ export default function AboutUs() {
     loadContent();
   }, []);
 
-  // Better paragraph splitting function
   const splitContentIntoParagraphs = (content: string): string[] => {
-    // Remove extra whitespace and normalize
     const cleaned = content.trim();
-    
-    // Split by </p> followed by optional whitespace and <p>
     const parts = cleaned.split(/(<\/p>\s*<p[^>]*>)/gi);
     
     const paragraphs: string[] = [];
@@ -66,7 +60,6 @@ export default function AboutUs() {
       const part = parts[i];
       
       if (part.match(/^<\/p>\s*<p[^>]*>$/gi)) {
-        // This is a separator, finish current paragraph and start new one
         if (currentParagraph) {
           paragraphs.push(currentParagraph + '</p>');
           currentParagraph = '<p>';
@@ -76,14 +69,11 @@ export default function AboutUs() {
       }
     }
     
-    // Add the last paragraph
     if (currentParagraph) {
       paragraphs.push(currentParagraph);
     }
     
-    // Clean up paragraphs
     const cleanedParagraphs = paragraphs.map(p => {
-      // Ensure proper <p> tags
       let cleaned = p.trim();
       if (!cleaned.startsWith('<p')) {
         cleaned = '<p>' + cleaned;
@@ -92,7 +82,7 @@ export default function AboutUs() {
         cleaned = cleaned + '</p>';
       }
       return cleaned;
-    }).filter(p => p.length > 7); // Remove empty paragraphs
+    }).filter(p => p.length > 7);
     
     return cleanedParagraphs;
   };
@@ -107,14 +97,12 @@ export default function AboutUs() {
         setParagraph2(draft);
       }
       
-      // Save both paragraphs as combined content
       const updatedParagraph1 = editMode === 1 ? draft : paragraph1;
       const updatedParagraph2 = editMode === 2 ? draft : paragraph2;
       const combinedContent = `${updatedParagraph1}\n\n${updatedParagraph2}`;
       
       await updateAboutUsContent(combinedContent);
       
-      // Update state
       if (editMode === 1) {
         setParagraph1(draft);
       } else if (editMode === 2) {
@@ -208,46 +196,69 @@ export default function AboutUs() {
                       className="object-contain"
                     />
                   </div>
-                  <div className="w-full md:w-1/2 relative">
-                    {/* Edit button for first paragraph */}
+                  <div className="w-full md:w-1/2">
+                    {/* Enhanced Edit Button for First Paragraph */}
                     {user && editMode !== 1 && (
-                      <button
-                        className="absolute top-0 right-0 px-3 py-1 text-xs bg-primary-600 text-white rounded-bl-lg rounded-tr-lg hover:bg-primary-700 transition-colors z-10"
-                        onClick={() => startEdit(1)}
-                        title="Edit first paragraph"
-                      >
-                        Edit
-                      </button>
+                      <div className="flex justify-end mb-4">
+                        <button
+                          className="group flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white text-sm font-medium rounded-lg shadow-md hover:from-primary-600 hover:to-primary-700 hover:shadow-lg transform hover:scale-105 transition-all duration-200 border border-primary-400"
+                          onClick={() => startEdit(1)}
+                          title="Edit first section content"
+                        >
+                          <svg className="w-4 h-4 group-hover:rotate-12 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          <span>Edit Section</span>
+                        </button>
+                      </div>
                     )}
                     
                     {editMode === 1 ? (
                       /* Edit Mode for First Paragraph */
-                      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-                        <div className="flex justify-between items-center mb-3">
-                          <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
-                            Edit First Section
-                          </h4>
+                      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700">
+                        <div className="flex justify-between items-center mb-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                            <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                              Editing First Section
+                            </h4>
+                          </div>
                           <button
                             onClick={() => setPreviewMode(!previewMode)}
-                            className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            className="flex items-center gap-2 px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                           >
-                            {previewMode ? "Edit" : "Preview"}
+                            {previewMode ? (
+                              <>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                Edit
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                                Preview
+                              </>
+                            )}
                           </button>
                         </div>
 
                         {!previewMode ? (
                           <>
-                            {/* Toolbar */}
-                            <div className="border border-gray-300 dark:border-gray-600 rounded-t-lg bg-gray-50 dark:bg-gray-700 p-2 flex flex-wrap gap-1">
-                              <button type="button" onClick={() => insertTag('<strong>', '</strong>')} className="px-2 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors font-bold" title="Bold">B</button>
-                              <button type="button" onClick={() => insertTag('<em>', '</em>')} className="px-2 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors italic" title="Italic">I</button>
-                              <button type="button" onClick={() => insertTag('<p>', '</p>')} className="px-2 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors" title="Paragraph">P</button>
-                              <button type="button" onClick={() => insertTag('<h3>', '</h3>')} className="px-2 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors font-bold" title="Heading">H3</button>
+                            {/* Enhanced Toolbar */}
+                            <div className="border border-gray-300 dark:border-gray-600 rounded-t-lg bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 p-3 flex flex-wrap gap-2">
+                              <button type="button" onClick={() => insertTag('<strong>', '</strong>')} className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors font-bold shadow-sm" title="Bold">B</button>
+                              <button type="button" onClick={() => insertTag('<em>', '</em>')} className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors italic shadow-sm" title="Italic">I</button>
+                              <button type="button" onClick={() => insertTag('<p>', '</p>')} className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors shadow-sm" title="Paragraph">P</button>
+                              <button type="button" onClick={() => insertTag('<h3>', '</h3>')} className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors font-bold shadow-sm" title="Heading">H3</button>
                             </div>
 
                             <textarea
                               id="content-editor"
-                              className="w-full h-48 p-3 border border-gray-300 dark:border-gray-600 border-t-0 rounded-b-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none font-mono text-xs"
+                              className="w-full h-56 p-4 border border-gray-300 dark:border-gray-600 border-t-0 rounded-b-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none font-mono text-sm leading-relaxed"
                               value={draft}
                               onChange={(e) => setDraft(e.target.value)}
                               placeholder="Enter HTML content..."
@@ -255,34 +266,45 @@ export default function AboutUs() {
                             />
                           </>
                         ) : (
-                          <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-3 bg-white dark:bg-gray-800 min-h-48">
+                          <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-800 min-h-56">
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-3 pb-2 border-b border-gray-200 dark:border-gray-600">
+                              Preview Mode - How it will look:
+                            </div>
                             <div
-                              className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 text-sm leading-relaxed"
+                              className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 text-lg leading-relaxed"
                               dangerouslySetInnerHTML={{ __html: draft }}
                             />
                           </div>
                         )}
 
-                        <div className="flex gap-2 pt-3">
+                        <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-600">
                           <button
-                            className="px-4 py-1 text-xs bg-primary-600 text-white rounded hover:bg-primary-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+                            className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform hover:scale-105"
                             onClick={handleSave}
                             disabled={saving}
                           >
                             {saving ? (
                               <>
-                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                                 Saving...
                               </>
                             ) : (
-                              'Save'
+                              <>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                Save Changes
+                              </>
                             )}
                           </button>
                           <button
-                            className="px-4 py-1 text-xs bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-white rounded hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors"
+                            className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-gray-400 to-gray-500 dark:from-gray-600 dark:to-gray-700 text-white rounded-lg hover:from-gray-500 hover:to-gray-600 dark:hover:from-gray-700 dark:hover:to-gray-800 transition-all duration-200 shadow-md hover:shadow-lg"
                             onClick={cancelEdit}
                             disabled={saving}
                           >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                             Cancel
                           </button>
                         </div>
@@ -307,46 +329,69 @@ export default function AboutUs() {
                       className="object-contain"
                     />
                   </div>
-                  <div className="w-full md:w-1/2 relative">
-                    {/* Edit button for second paragraph */}
+                  <div className="w-full md:w-1/2">
+                    {/* Enhanced Edit Button for Second Paragraph */}
                     {user && editMode !== 2 && (
-                      <button
-                        className="absolute top-0 right-0 px-3 py-1 text-xs bg-primary-600 text-white rounded-bl-lg rounded-tr-lg hover:bg-primary-700 transition-colors z-10"
-                        onClick={() => startEdit(2)}
-                        title="Edit second paragraph"
-                      >
-                        Edit
-                      </button>
+                      <div className="flex justify-end mb-4">
+                        <button
+                          className="group flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white text-sm font-medium rounded-lg shadow-md hover:from-primary-600 hover:to-primary-700 hover:shadow-lg transform hover:scale-105 transition-all duration-200 border border-primary-400"
+                          onClick={() => startEdit(2)}
+                          title="Edit second section content"
+                        >
+                          <svg className="w-4 h-4 group-hover:rotate-12 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          <span>Edit Section</span>
+                        </button>
+                      </div>
                     )}
                     
                     {editMode === 2 ? (
                       /* Edit Mode for Second Paragraph */
-                      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-                        <div className="flex justify-between items-center mb-3">
-                          <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
-                            Edit Second Section
-                          </h4>
+                      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700">
+                        <div className="flex justify-between items-center mb-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                            <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                              Editing Second Section
+                            </h4>
+                          </div>
                           <button
                             onClick={() => setPreviewMode(!previewMode)}
-                            className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            className="flex items-center gap-2 px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                           >
-                            {previewMode ? "Edit" : "Preview"}
+                            {previewMode ? (
+                              <>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                Edit
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                                Preview
+                              </>
+                            )}
                           </button>
                         </div>
 
                         {!previewMode ? (
                           <>
-                            {/* Toolbar */}
-                            <div className="border border-gray-300 dark:border-gray-600 rounded-t-lg bg-gray-50 dark:bg-gray-700 p-2 flex flex-wrap gap-1">
-                              <button type="button" onClick={() => insertTag('<strong>', '</strong>')} className="px-2 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors font-bold" title="Bold">B</button>
-                              <button type="button" onClick={() => insertTag('<em>', '</em>')} className="px-2 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors italic" title="Italic">I</button>
-                              <button type="button" onClick={() => insertTag('<p>', '</p>')} className="px-2 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors" title="Paragraph">P</button>
-                              <button type="button" onClick={() => insertTag('<h3>', '</h3>')} className="px-2 py-1 text-xs bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors font-bold" title="Heading">H3</button>
+                            {/* Enhanced Toolbar */}
+                            <div className="border border-gray-300 dark:border-gray-600 rounded-t-lg bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 p-3 flex flex-wrap gap-2">
+                              <button type="button" onClick={() => insertTag('<strong>', '</strong>')} className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors font-bold shadow-sm" title="Bold">B</button>
+                              <button type="button" onClick={() => insertTag('<em>', '</em>')} className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors italic shadow-sm" title="Italic">I</button>
+                              <button type="button" onClick={() => insertTag('<p>', '</p>')} className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors shadow-sm" title="Paragraph">P</button>
+                              <button type="button" onClick={() => insertTag('<h3>', '</h3>')} className="px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors font-bold shadow-sm" title="Heading">H3</button>
                             </div>
 
                             <textarea
                               id="content-editor"
-                              className="w-full h-48 p-3 border border-gray-300 dark:border-gray-600 border-t-0 rounded-b-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none font-mono text-xs"
+                              className="w-full h-56 p-4 border border-gray-300 dark:border-gray-600 border-t-0 rounded-b-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none font-mono text-sm leading-relaxed"
                               value={draft}
                               onChange={(e) => setDraft(e.target.value)}
                               placeholder="Enter HTML content..."
@@ -354,34 +399,45 @@ export default function AboutUs() {
                             />
                           </>
                         ) : (
-                          <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-3 bg-white dark:bg-gray-800 min-h-48">
+                          <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-800 min-h-56">
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-3 pb-2 border-b border-gray-200 dark:border-gray-600">
+                              Preview Mode - How it will look:
+                            </div>
                             <div
-                              className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 text-sm leading-relaxed"
+                              className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 text-lg leading-relaxed"
                               dangerouslySetInnerHTML={{ __html: draft }}
                             />
                           </div>
                         )}
 
-                        <div className="flex gap-2 pt-3">
+                        <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-600">
                           <button
-                            className="px-4 py-1 text-xs bg-primary-600 text-white rounded hover:bg-primary-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+                            className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform hover:scale-105"
                             onClick={handleSave}
                             disabled={saving}
                           >
                             {saving ? (
                               <>
-                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                                 Saving...
                               </>
                             ) : (
-                              'Save'
+                              <>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                Save Changes
+                              </>
                             )}
                           </button>
                           <button
-                            className="px-4 py-1 text-xs bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-white rounded hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors"
+                            className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-gray-400 to-gray-500 dark:from-gray-600 dark:to-gray-700 text-white rounded-lg hover:from-gray-500 hover:to-gray-600 dark:hover:from-gray-700 dark:hover:to-gray-800 transition-all duration-200 shadow-md hover:shadow-lg"
                             onClick={cancelEdit}
                             disabled={saving}
                           >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                             Cancel
                           </button>
                         </div>
