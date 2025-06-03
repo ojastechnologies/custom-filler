@@ -144,7 +144,7 @@ export default function FAQsPage() {
                   </svg>
                   <p className="text-gray-500 dark:text-gray-400 text-lg">No FAQs available yet.</p>
                   {user && (
-                    <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">Click "Add New FAQ" below to get started.</p>
+                    <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">Click &quot;Add New FAQ&quot; below to get started.</p>
                   )}
                 </div>
               ) : (
@@ -340,7 +340,7 @@ export default function FAQsPage() {
                   Still Have Questions?
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Don't see your question here? Contact us directly and we'll be happy to help.
+                  Don&apos;t see your question here? Contact us directly and we&apos;ll be happy to help.
                 </p>
                 <a 
                   href="/contact-us" 
