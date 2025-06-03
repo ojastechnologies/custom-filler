@@ -8,6 +8,11 @@ import Footer from '@/components/layout/Footer';
 import { useAuth } from '@/context/AuthContext';
 import { fetchAboutUsContent, updateAboutUsContent } from '@/services/aboutUsService';
 
+// Default content
+const defaultParagraph1 = `<p>Aero Tech Labs is a small, dedicated, and ambitious aerosol custom filling facility located in South Florida. Strategically located in the Southern U.S., we can be an important link to produce aerosol products in that region. Our forte is the filling of HFC 134a, a non-flammable propellant which is used in "ozone safe" refrigerant systems, when there is an imperative need for non-flammable necessary end use products are a requisite, we use HFC 134a. If you need a different non-flammable propellant with a low global warming potential (GWP), then let us suggest HFO 1234ze. This new propellant is an exciting addition especially to high end cosmetic formulations where flammability may be considered a high liability.</p>`;
+
+const defaultParagraph2 = `<p>Aero Tech Labs will fill your 20 mm cans, too. We do small openings in a big way and fill nearly 1 million of these per year. We also fill refrigerant cans for the automotive industry, laser coolant for surgical needs, emergency signal devices, and non-flammable dusters for sensitive electronics. We have also added new machinery to fill the Bag in a Can or what is now called the Bag On Valve (BOV) spray systems in 20mm aerosol cans. This system will allow you to formulate your product and go straight into an aerosol system without having to be mixed with other chemicals or propellants. The BOV non-aerosol system is perfect for Topical Pharmaceutical, Skin Care, Cosmetic, Sunscreen, and other high end products of a similar nature.</p>`;
+
 export default function AboutUs() {
   const { user } = useAuth();
   const [paragraph1, setParagraph1] = useState<string>('');
@@ -18,11 +23,6 @@ export default function AboutUs() {
   const [error, setError] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
-
-  // Default content
-  const defaultParagraph1 = `<p>Aero Tech Labs is a small, dedicated, and ambitious aerosol custom filling facility located in South Florida. Strategically located in the Southern U.S., we can be an important link to produce aerosol products in that region. Our forte is the filling of HFC 134a, a non-flammable propellant which is used in "ozone safe" refrigerant systems, when there is an imperative need for non-flammable necessary end use products are a requisite, we use HFC 134a. If you need a different non-flammable propellant with a low global warming potential (GWP), then let us suggest HFO 1234ze. This new propellant is an exciting addition especially to high end cosmetic formulations where flammability may be considered a high liability.</p>`;
-
-  const defaultParagraph2 = `<p>Aero Tech Labs will fill your 20 mm cans, too. We do small openings in a big way and fill nearly 1 million of these per year. We also fill refrigerant cans for the automotive industry, laser coolant for surgical needs, emergency signal devices, and non-flammable dusters for sensitive electronics. We have also added new machinery to fill the Bag in a Can or what is now called the Bag On Valve (BOV) spray systems in 20mm aerosol cans. This system will allow you to formulate your product and go straight into an aerosol system without having to be mixed with other chemicals or propellants. The BOV non-aerosol system is perfect for Topical Pharmaceutical, Skin Care, Cosmetic, Sunscreen, and other high end products of a similar nature.</p>`;
 
   useEffect(() => {
     const loadContent = async () => {
