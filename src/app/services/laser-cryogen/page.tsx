@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useAuth } from '@/context/AuthContext';
@@ -132,7 +131,6 @@ const LaserCryogenPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
   const [laserCryogenProduct, setLaserCryogenProduct] = useState<ProductType | null>(null);
-  const [addedToCart, setAddedToCart] = useState<{[key: string]: boolean}>({});
   const editorRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -187,22 +185,12 @@ const LaserCryogenPage = () => {
 
     addToCart(cartProduct);
     
-    // Set added state for this product
-    setAddedToCart(prev => ({
-      ...prev,
-      [product.id]: true
-    }));
-
     // Update the ORDER NOW button in the content
     updateOrderNowButton(true);
 
     // Reset the added state after 2 seconds (same as Products component)
     setTimeout(() => {
-      setAddedToCart(prev => ({
-        ...prev,
-        [product.id]: false
-      }));
-      // updateOrderNowButton(false);
+      updateOrderNowButton(false);
     }, 2000);
   }, [addToCart]);
 
