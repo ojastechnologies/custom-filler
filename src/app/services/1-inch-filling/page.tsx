@@ -129,9 +129,7 @@ const InchFillingPage = () => {
     setPreviewMode(false);
   };
 
-  const getCurrentContent = () => {
-    return editorRef.current?.innerHTML || '';
-  };
+
 
   return (
     <>
