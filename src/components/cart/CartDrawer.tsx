@@ -3,7 +3,7 @@ import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
 
 export default function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { items, removeFromCart, updateQuantity, clearCart, totalItems, totalPrice } = useCart();
+  const { items, removeFromCart, totalItems, totalPrice } = useCart();
 
   return (
     <div
