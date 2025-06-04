@@ -1,11 +1,23 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useAuth } from '@/context/AuthContext';
+import { useCart } from '@/context/CartContext';
 import { fetchLaserCryogenContent, updateLaserCryogenContent } from '../../../services/laserCryogenService';
+import { fetchProducts } from '../../../services/productsService';
+import { ProductType } from '@/types/product'; // Import the actual ProductType
+
+// Define the Product interface to match your CartContext
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  quantity?: number;
+  image?: string;
+}
 
 const defaultContent = `
   <div class="max-w-4xl mx-auto">
@@ -64,12 +76,15 @@ const defaultContent = `
           >
             MSDS Download
           </a>
-          <a 
-            href="/contact-us?product=laser_cryogen" 
-            class="inline-block px-6 py-3 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 transition-colors"
+          <button 
+            id="order-now-btn"
+            type="button"
+            class="inline-block px-6 py-3 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 transition-colors cursor-pointer border-0"
+            data-action="add-to-cart"
+            onClick={() => handleAddToCart(laserCryogenProduct)}
           >
-            ORDER NOW
-          </a>
+            ORDER NOW22
+          </button>
         </div>
       </div>
     </div>
@@ -91,7 +106,7 @@ const defaultContent = `
           </p>
         </div>
         <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-          <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Environmentally Friendly</h3>
+          <h3 class="font-semibent text-gray-900 dark:text-white mb-2">Environmentally Friendly</h3>
           <p class="text-gray-700 dark:text-gray-300">
             Non-ozone depleting and low global warming potential make our cryogen an environmentally responsible choice.
           </p>
@@ -109,32 +124,128 @@ const defaultContent = `
 
 const LaserCryogenPage = () => {
   const { user } = useAuth();
+  const { addToCart } = useCart();
   const [content, setContent] = useState<string>('');
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
+  const [laserCryogenProduct, setLaserCryogenProduct] = useState<ProductType | null>(null);
+  const [addedToCart, setAddedToCart] = useState<{[key: string]: boolean}>({});
   const editorRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
+  // Load content and product data
   useEffect(() => {
-    const loadContent = async () => {
+    const loadData = async () => {
       setLoading(true);
       try {
+        // Load page content
         const dbContent = await fetchLaserCryogenContent();
         const finalContent = dbContent && dbContent.trim() ? dbContent : defaultContent;
         setContent(finalContent);
-      } catch {
+
+        // Load products and find the laser cryogen product
+        const products = await fetchProducts();
+        const laserProduct = products.find(product => 
+          product.title.toLowerCase().includes('laser cryogen') ||
+          product.title.toLowerCase().includes('cylinder replacement') ||
+          product.category === 'Medical Equipment'
+        );
+        
+        if (laserProduct) {
+          setLaserCryogenProduct(laserProduct);
+          console.log('Found laser cryogen product:', laserProduct);
+        } else {
+          console.warn('Laser cryogen product not found in database');
+          setError('Product not found in database.');
+        }
+      } catch (err) {
+        console.error('Error loading data:', err);
         setContent(defaultContent);
         setError('Failed to load content.');
       } finally {
         setLoading(false);
       }
     };
-    loadContent();
+    loadData();
   }, []);
 
-  const handleSave = async () => {
+  // Handle add to cart - exactly like Products component
+  const handleAddToCart = useCallback((product: ProductType) => {
+    debugger;
+    if (!product) return;
+
+    // Convert ProductType to Product format for cart
+    const cartProduct: Product = {
+      id: product.id,
+      name: product.title,
+      price: product.price,
+      image: product.image || '/placeholder-product.jpg', // Handle undefined image
+    };
+
+    addToCart(cartProduct);
+    
+    // Set added state for this product
+    setAddedToCart(prev => ({
+      ...prev,
+      [product.id]: true
+    }));
+
+    // Update the ORDER NOW button in the content
+    updateOrderNowButton(true);
+
+    // Reset the added state after 2 seconds (same as Products component)
+    setTimeout(() => {
+      setAddedToCart(prev => ({
+        ...prev,
+        [product.id]: false
+      }));
+      // updateOrderNowButton(false);
+    }, 2000);
+  }, [addToCart]);
+
+  // Update the ORDER NOW button appearance
+  const updateOrderNowButton = (isAdded: boolean) => {
+    const button = document.getElementById('order-now-btn');
+    if (button) {
+      if (isAdded) {
+        button.textContent = 'Added ✓';
+        button.className = 'inline-block px-6 py-3 bg-green-500 text-white font-medium rounded-md hover:bg-green-600 transition-colors cursor-pointer border-0';
+      } else {
+        button.textContent = 'ORDER NOW11';
+        button.className = 'inline-block px-6 py-3 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 transition-colors cursor-pointer border-0';
+      }
+    }
+  };
+
+  // Handle ORDER NOW button click with event delegation
+  useEffect(() => {
+    const handleOrderNowClick = (e: Event) => {
+      const target = e.target as HTMLElement;
+      
+      // Check if clicked element is a link with the contact-us href for laser_cryogen
+      if (target && 
+          target.tagName === 'A' && 
+          target.getAttribute('href') === '/contact-us?product=laser_cryogen') {
+        e.preventDefault(); // Prevent navigation to contact page
+        if (laserCryogenProduct) {
+          handleAddToCart(laserCryogenProduct);
+        }
+      }
+    };
+
+    // Use event delegation on the document body
+    document.addEventListener('click', handleOrderNowClick);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('click', handleOrderNowClick);
+    };
+  }, [laserCryogenProduct, handleAddToCart]);
+
+    const handleSave = async () => {
     setSaving(true);
     setError(null);
     try {
@@ -408,8 +519,8 @@ const LaserCryogenPage = () => {
                     </>
                   )}
                 </button>
-                <button
-                  className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-gray-400 to-gray-500 dark:from-gray-600 dark:to-gray-700 text-white rounded-lg hover:from-gray-500 hover:to-gray-600 dark:hover:from-gray-700 dark:hover:to-gray-800 transition-all duration-200 shadow-md hover:shadow-lg"
+                                <button
+                  className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-gray-400 to-gray-500 dark:from-gray-600 dark:to-gray-700 text-white rounded-lg hover:from-gray-500 hover:to-gray-600 dark:hover:from-gray-500 dark:hover:to-gray-800 transition-all duration-200 shadow-md hover:shadow-lg"
                   onClick={cancelEdit}
                   disabled={saving}
                 >
@@ -422,10 +533,16 @@ const LaserCryogenPage = () => {
             </div>
           ) : (
             /* Display Mode */
-            <div
-              className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 text-lg leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: content }}
-            />
+            <div>
+              {/* Main Content */}
+              <div
+                ref={contentRef}
+                className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 text-lg leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: content }}
+              />
+              
+       
+            </div>
           )}
         </div>
       </main>
