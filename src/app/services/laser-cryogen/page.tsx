@@ -147,9 +147,7 @@ const LaserCryogenPage = () => {
         // Load products and find the laser cryogen product
         const products = await fetchProducts();
         const laserProduct = products.find(product => 
-          product.title.toLowerCase().includes('laser cryogen') ||
-          product.title.toLowerCase().includes('cylinder replacement') ||
-          product.category === 'Medical Equipment'
+          product.clientpathurl === 'services/laser-cryogen'
         );
         
         if (laserProduct) {
