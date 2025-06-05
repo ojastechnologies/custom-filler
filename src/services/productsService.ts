@@ -18,6 +18,7 @@ export const fetchProducts = async (): Promise<ProductType[]> => {
       description: item.description || 'No description available',
       category: item.category || undefined,
       about_url: item.about_url || undefined,
+      clientpathurl: item.clientpathurl || undefined,
     }));
   } catch (err) {
     console.error('Error fetching products:', err);
@@ -176,6 +177,7 @@ export const createProduct = async (product: {
   imageFile?: File;
   category?: string;
   about_url?: string;
+  clientpathurl?: string;
 }): Promise<ProductType> => {
   try {
     let imageUrl = product.thumbnail_url;
@@ -198,6 +200,7 @@ export const createProduct = async (product: {
       unit_price: product.unit_price,
       thumbnail_url: imageUrl,
       about_url: product.about_url,
+      clientpathurl: product.clientpathurl,
     });
     
     const { data, error } = await supabase
@@ -209,6 +212,7 @@ export const createProduct = async (product: {
           unit_price: product.unit_price,
           thumbnail_url: imageUrl,
           about_url: product.about_url,
+          clientpathurl: product.clientpathurl,
         },
       ])
       .select();
@@ -239,6 +243,7 @@ export const createProduct = async (product: {
       description: data[0].description,
       category: data[0].category,
       about_url: data[0].about_url,
+      clientpathurl: data[0].clientpathurl,
     };
   } catch (err) {
     console.error('[createProduct] Caught error:', err);
@@ -288,7 +293,8 @@ export const updateProduct = async (
       description: updates.description,
       unit_price: updates.price,
       thumbnail_url: imageUrl,
-      about_url: updates.about_url
+      about_url: updates.about_url,
+      clientpathurl: updates.clientpathurl
     });
     
     const { data, error } = await supabase
@@ -299,6 +305,7 @@ export const updateProduct = async (
         unit_price: updates.price,
         thumbnail_url: imageUrl,
         about_url: updates.about_url,
+        clientpathurl: updates.clientpathurl
       })
       .eq('id', id)
       .select();
@@ -334,6 +341,7 @@ export const updateProduct = async (
       description: data[0].description,
       category: data[0].category,
       about_url: data[0].about_url,
+      clientpathurl: data[0].clientpathurl
     };
   } catch (err) {
     console.error('[updateProduct] Error during update:', err);

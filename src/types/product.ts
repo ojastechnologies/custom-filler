@@ -8,4 +8,5 @@ export interface ProductType {
   category?: string;
   quantity?: number;
   about_url?: string;
+  clientpathurl?: string;
 }

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-// Update the Product type to include the image property
+// Update the Product type to include the new field
 export interface Product {
   id: string;
   name: string;
@@ -10,6 +10,7 @@ export interface Product {
   quantity?: number;
   image?: string;
   description?: string;
+  clientpathurl?: string; // Add this field
 }
 
 interface CartItem extends Product {
@@ -162,6 +163,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               ? item.description.trim() 
               : `${item.name} - Quality aerosol product`,
             image_url: validImageUrl, // Only include valid URLs
+            clientpathurl: item.clientpathurl, // Include the service category path
           },
           quantity: item.quantity,
         };
