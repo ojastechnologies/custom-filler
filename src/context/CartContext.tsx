@@ -9,6 +9,7 @@ export interface Product {
   price: number;
   quantity?: number;
   image?: string;
+  description?: string;
 }
 
 interface CartItem extends Product {
@@ -23,9 +24,34 @@ interface CartContextType {
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
+  proceedToCheckout: (customerEmail?: string) => Promise<void>;
+  isCheckingOut: boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
+
+// Helper function to validate and clean image URLs
+function getValidImageUrl(imageUrl?: string): string | undefined {
+  if (!imageUrl || imageUrl.trim() === '') return undefined;
+  
+  const cleanUrl = imageUrl.trim();
+  
+  // Skip placeholder images
+  if (cleanUrl === '/placeholder-product.jpg' || cleanUrl.includes('placeholder')) {
+    return undefined;
+  }
+  
+  // Check if it's a valid URL
+  try {
+    new URL(cleanUrl);
+    return cleanUrl;
+  } catch {
+    // If it's not a valid URL, it might be a relative path
+    // For now, we'll skip it to avoid Stripe errors
+    console.warn('Invalid image URL detected:', cleanUrl);
+    return undefined;
+  }
+}
 
 // Use localStorage to persist cart data
 const loadCartFromStorage = (): CartItem[] => {
@@ -53,6 +79,7 @@ const saveCartToStorage = (items: CartItem[]) => {
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   // Load cart from localStorage on initial render
   useEffect(() => {
@@ -112,6 +139,79 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setItems([]);
   };
 
+  // Updated Stripe checkout function with better URL handling
+  const proceedToCheckout = async (customerEmail?: string) => {
+    if (items.length === 0) {
+      throw new Error('Cart is empty');
+    }
+
+    setIsCheckingOut(true);
+    
+    try {
+      // Convert cart items to match the expected format from your original API route
+      const checkoutItems = items.map(item => {
+        const validImageUrl = getValidImageUrl(item.image);
+        
+        return {
+          product: {
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            // Provide a meaningful description or omit if empty
+            description: item.description && item.description.trim() !== '' 
+              ? item.description.trim() 
+              : `${item.name} - Quality aerosol product`,
+            image_url: validImageUrl, // Only include valid URLs
+          },
+          quantity: item.quantity,
+        };
+      });
+
+      console.log('Sending checkout data:', { items: checkoutItems, customer_email: customerEmail });
+
+      const response = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          items: checkoutItems,
+          customer_email: customerEmail,
+        }),
+      });
+
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText };
+        }
+        
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to create checkout session`);
+      }
+
+      const responseData = await response.json();
+      console.log('Checkout session response:', responseData);
+      
+      if (responseData.url) {
+        window.location.href = responseData.url;
+      } else {
+        throw new Error('No checkout URL received from Stripe');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      throw error;
+    } finally {
+      setIsCheckingOut(false);
+    }
+  };
+
   const totalItems = items.reduce((total, item) => total + item.quantity, 0);
   
   const totalPrice = items.reduce(
@@ -127,7 +227,9 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       updateQuantity,
       clearCart,
       totalItems,
-      totalPrice
+      totalPrice,
+      proceedToCheckout,
+      isCheckingOut
     }}>
       {children}
     </CartContext.Provider>
