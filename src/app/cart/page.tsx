@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
@@ -8,13 +8,20 @@ import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
 
 export default function CartPage() {
-  // Fix: Remove the unused router variable or use it in handleCheckout
-  // const router = useRouter();
-  const { items, removeFromCart, updateQuantity, clearCart, totalItems, totalPrice } = useCart();
+  const { items, removeFromCart, updateQuantity, clearCart, totalItems, totalPrice, proceedToCheckout, isCheckingOut } = useCart();
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [checkoutError, setCheckoutError] = useState('');
   
-  const handleCheckout = () => {
-    // Uncomment this to use the router
-    // router.push('/checkout');
+  const handleCheckout = async () => {
+    try {
+      setCheckoutError('');
+      console.log('Starting checkout with items:', items);
+      await proceedToCheckout(customerEmail);
+    } catch (error) {
+      console.error('Checkout failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Checkout failed. Please try again.';
+      setCheckoutError(errorMessage);
+    }
   };
   
   return (
@@ -58,6 +65,16 @@ export default function CartPage() {
               </div>
             ) : (
               <>
+                {/* Debug info in development */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <h3 className="font-semibold text-blue-800 mb-2">Debug Info:</h3>
+                    <pre className="text-xs text-blue-700 overflow-auto">
+                      {JSON.stringify(items, null, 2)}
+                    </pre>
+                  </div>
+                )}
+
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden mb-6">
                   <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -162,6 +179,35 @@ export default function CartPage() {
                     <span className="text-lg font-bold text-gray-900 dark:text-white">${totalPrice.toFixed(2)}</span>
                   </div>
                 </div>
+
+                {/* Checkout Section */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Checkout Information
+                  </h3>
+                  <div className="mb-4">
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Email Address (Optional)
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      value={customerEmail}
+                      onChange={(e) => setCustomerEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      We&apos;ll send your receipt to this email address
+                    </p>
+                  </div>
+                  
+                  {checkoutError && (
+                    <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 rounded-md">
+                      {checkoutError}
+                    </div>
+                  )}
+                </div>
                 
                 <div className="flex flex-col sm:flex-row justify-between gap-4">
                   <Link 
@@ -172,9 +218,10 @@ export default function CartPage() {
                   </Link>
                   <button
                     onClick={handleCheckout}
-                    className="inline-block px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-center"
+                    disabled={isCheckingOut}
+                    className="inline-block px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-center disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Proceed to Checkout
+                    {isCheckingOut ? 'Processing...' : 'Proceed to Stripe Checkout'}
                   </button>
                 </div>
               </>

@@ -9,6 +9,7 @@ import { useCart } from "@/context/CartContext";
 import { ProductType } from "@/types/product";
 import { useAuth } from "@/context/AuthContext";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+
 const ProductsSection = () => {
   const { addToCart } = useCart();
   const { loading } = useAuth();
@@ -35,12 +36,13 @@ const ProductsSection = () => {
   }, []);
 
   const handleAddToCart = (product: ProductType) => {
-    // Add the product to cart
+    // Add the product to cart with description
     addToCart({
       id: product.id,
       name: product.title,
       price: product.price,
       image: product.image,
+      description: product.description, // Pass description to cart
       quantity: 1,
     });
 
@@ -106,9 +108,7 @@ const ProductsSection = () => {
                 key={product.id}
                 className="bg-gray-50 dark:bg-gray-900 rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1"
               >
-                <div
-                  className="relative h-48 flex items-center justify-center bg-white dark:bg-gray-800 p-2"
-                >
+                <div className="relative h-48 flex items-center justify-center bg-white dark:bg-gray-800 p-2">
                   {product.image &&
                   product.image !== "/placeholder-product.jpg" ? (
                     <Image

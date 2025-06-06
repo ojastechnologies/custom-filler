@@ -15,6 +15,14 @@ import { supabase } from '@/lib/supabaseClient';
 
 import { debugStorageBucket } from '@/services/productsService';
 
+// Service categories dropdown options
+const SERVICE_CATEGORIES = [
+  { name: '1 Inch Opening Contract Filling', path: 'services/1-inch-filling' },
+  { name: '20 mm Opening Contract Aerosol Filling', path: 'services/20mm-filling' },
+  { name: 'NON FLAMMABLE PROPELLANTS', path: 'services/non-flammable-propellant' },
+  { name: 'LASER CRYOGEN', path: 'services/laser-cryogen' }
+];
+
 export default function DashboardPage() {
   const { user, loading, isAdmin } = useAuth();
   const router = useRouter();
@@ -33,7 +41,8 @@ export default function DashboardPage() {
     image: '',
     category: '',
     quantity: 1,
-    about_url: ''
+    about_url: '',
+    clientpathurl: '' // Add this field
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -120,7 +129,7 @@ export default function DashboardPage() {
   }, [user, loading, loadProducts]);
 
   // Handle form input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -156,6 +165,7 @@ export default function DashboardPage() {
           image: imageUrl,
           category: formData.category,
           about_url: formData.about_url,
+          clientpathurl: formData.clientpathurl, // Add this field
           imageFile: selectedFile || undefined,
         });
         setProducts((prev) =>
@@ -173,6 +183,7 @@ export default function DashboardPage() {
           imageFile: selectedFile || undefined,
           category: formData.category,
           about_url: formData.about_url,
+          clientpathurl: formData.clientpathurl, // Add this field
         });
         setProducts([...products, { ...result }]);
       }
@@ -230,11 +241,18 @@ export default function DashboardPage() {
       image: '',
       category: '',
       quantity: 1,
-      about_url: ''
+      about_url: '',
+      clientpathurl: '' // Add this field
     });
     setEditingProduct(null);
     setSelectedFile(null);
     setShowForm(false);
+  };
+
+  // Helper function to get service category name from path
+  const getServiceCategoryName = (path: string) => {
+    const category = SERVICE_CATEGORIES.find(cat => cat.path === path);
+    return category ? category.name : path;
   };
 
   if (loading) {
@@ -346,6 +364,26 @@ export default function DashboardPage() {
                   </div>
                   
                   <div className="mb-6">
+                    <label htmlFor="clientpathurl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Service Category
+                    </label>
+                    <select
+                      id="clientpathurl"
+                      name="clientpathurl"
+                      value={formData.clientpathurl}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                    >
+                      <option value="">Select a service category</option>
+                      {SERVICE_CATEGORIES.map((category) => (
+                        <option key={category.path} value={category.path}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="mb-6">
                     <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Description
                     </label>
@@ -447,28 +485,35 @@ export default function DashboardPage() {
                 <div className="overflow-x-auto">
                   <table className="min-w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
                     <colgroup>
-                      <col style={{ width: '320px' }}/>
+                      <col style={{ width: '280px' }}/>
                       <col style={{ width: '120px' }}/>
+                      <col style={{ width: '200px' }}/>
                       {isAdmin && <col style={{ width: '160px' }}/>}
                     </colgroup>
                     <thead className="bg-gray-50 dark:bg-gray-700">
                       <tr>
                         <th
                           scope="col"
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-80"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                         >
                           Product
                         </th>
                         <th
                           scope="col"
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-28"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                         >
                           Price
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                        >
+                          Service Category
                         </th>
                         {isAdmin && (
                           <th
                             scope="col"
-                            className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-40"
+                            className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                           >
                             Actions
                           </th>
@@ -478,7 +523,7 @@ export default function DashboardPage() {
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                       {products.map((product) => (
                         <tr key={product.id}>
-                          <td className="px-6 py-4 whitespace-nowrap w-80 max-w-xs">
+                          <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <div className="h-10 w-10 flex-shrink-0 relative">
                                 <Image
@@ -502,13 +547,18 @@ export default function DashboardPage() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap w-28">
+                          <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900 dark:text-white">
                               ${product.price?.toFixed(2) || "0.00"}
                             </div>
                           </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900 dark:text-white">
+                              {product.clientpathurl ? getServiceCategoryName(product.clientpathurl) : 'No category'}
+                            </div>
+                          </td>
                           {isAdmin && (
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium w-40">
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                               <button
                                 onClick={() => handleEdit(product)}
                                 className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-4"
@@ -553,7 +603,7 @@ export default function DashboardPage() {
                   className="flex items-center justify-center py-3"
                 >
                   <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 002 2z" />
                   </svg>
                   Contact Support
                 </Button>

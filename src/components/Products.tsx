@@ -58,6 +58,7 @@ const Products = () => {
       name: product.title,
       price: product.price,
       image: product.image,
+      description: product.description, // Pass description to cart
     });
    
     setAddedToCart(prev => ({ ...prev, [product.id]: true }));

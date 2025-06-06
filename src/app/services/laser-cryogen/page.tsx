@@ -82,7 +82,7 @@ const defaultContent = `
             data-action="add-to-cart"
             onClick={() => handleAddToCart(laserCryogenProduct)}
           >
-            ORDER NOW22
+            ORDER NOW
           </button>
         </div>
       </div>
@@ -147,9 +147,7 @@ const LaserCryogenPage = () => {
         // Load products and find the laser cryogen product
         const products = await fetchProducts();
         const laserProduct = products.find(product => 
-          product.title.toLowerCase().includes('laser cryogen') ||
-          product.title.toLowerCase().includes('cylinder replacement') ||
-          product.category === 'Medical Equipment'
+          product.clientpathurl === 'services/laser-cryogen'
         );
         
         if (laserProduct) {
@@ -202,7 +200,7 @@ const LaserCryogenPage = () => {
         button.textContent = 'Added ✓';
         button.className = 'inline-block px-6 py-3 bg-green-500 text-white font-medium rounded-md hover:bg-green-600 transition-colors cursor-pointer border-0';
       } else {
-        button.textContent = 'ORDER NOW11';
+        button.textContent = 'ORDER NOW';
         button.className = 'inline-block px-6 py-3 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 transition-colors cursor-pointer border-0';
       }
     }

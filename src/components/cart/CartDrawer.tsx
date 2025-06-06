@@ -1,9 +1,19 @@
 import React from 'react';
+import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
 
 export default function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { items, removeFromCart, totalItems, totalPrice } = useCart();
+  const { items, removeFromCart, totalItems, totalPrice, proceedToCheckout, isCheckingOut } = useCart();
+
+  const handleCheckout = async () => {
+    try {
+      await proceedToCheckout();
+    } catch (error) {
+      console.error('Checkout failed:', error);
+      alert('Checkout failed. Please try again.');
+    }
+  };
 
   return (
     <div
@@ -40,6 +50,17 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
             <ul className="divide-y divide-gray-200 dark:divide-gray-700">
               {items.map(item => (
                 <li key={item.id} className="py-4 flex items-center">
+                  {item.image && (
+                    <div className="relative w-12 h-12 mr-3 flex-shrink-0">
+                      <Image
+                        src={item.image}
+                        alt={item.name}
+                        fill
+                        sizes="48px"
+                        className="object-cover rounded"
+                      />
+                    </div>
+                  )}
                   <div className="flex-1">
                     <div className="font-medium">{item.name}</div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">${item.price.toFixed(2)} x {item.quantity}</div>
@@ -68,13 +89,13 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
             >
               View Cart
             </Link>
-            <Link
-              href="/checkout"
-              className="flex-1 px-4 py-2 bg-green-600 text-white rounded text-center hover:bg-green-700"
-              onClick={onClose}
+            <button
+              onClick={handleCheckout}
+              disabled={isCheckingOut || items.length === 0}
+              className="flex-1 px-4 py-2 bg-green-600 text-white rounded text-center hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Checkout
-            </Link>
+              {isCheckingOut ? 'Processing...' : 'Checkout'}
+            </button>
           </div>
         </div>
       </aside>
