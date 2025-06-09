@@ -118,6 +118,13 @@ export async function POST(request: NextRequest) {
         order_type: 'online_purchase',
         items_count: items.length.toString(),
       },
+      shipping_address_collection: {
+        allowed_countries: ['US', 'CA', 'GB'],
+      },
+      billing_address_collection: 'required',
+      phone_number_collection: {
+        enabled: true,
+      },
     });
 
     console.log('Stripe session created successfully:', session.id);
