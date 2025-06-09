@@ -34,14 +34,16 @@ const Products = () => {
             title: 'Sample Product 1',
             price: 19.99,
             image: '/placeholder-product.jpg',
-            description: 'This is a fallback product shown when database connection fails.'
+            description: 'This is a fallback product shown when database connection fails.',
+            about_url: 'https://example.com/product1'
           },
           {
             id: 'fallback-2',
             title: 'Sample Product 2',
             price: 29.99,
             image: '/placeholder-product.jpg',
-            description: 'This is a fallback product shown when database connection fails.'
+            description: 'This is a fallback product shown when database connection fails.',
+            about_url: 'https://example.com/product2'
           }
         ]);
       } finally {
@@ -53,12 +55,23 @@ const Products = () => {
   }, []);
 
   const handleAddToCart = (product: ProductType) => {
+    // Add the product to cart with ALL fields including description and clientpathurl
     addToCart({
       id: product.id,
       name: product.title,
       price: product.price,
       image: product.image,
-      description: product.description, // Pass description to cart
+      description: product.description, // Include description
+      clientpathurl: product.about_url, // Map about_url to clientpathurl
+    });
+
+    console.log('🛒 Added to cart with all fields from Products component:', {
+      id: product.id,
+      name: product.title,
+      price: product.price,
+      image: product.image,
+      description: product.description,
+      clientpathurl: product.about_url,
     });
    
     setAddedToCart(prev => ({ ...prev, [product.id]: true }));
@@ -120,7 +133,13 @@ const Products = () => {
                 <div className="p-6">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{product.title}</h3>
                   {product.description && (
-                    <p className="mt-2 text-gray-600 dark:text-gray-400">{product.description}</p>
+                    <p className="mt-2 text-gray-600 dark:text-gray-400 line-clamp-3">{product.description}</p>
+                  )}
+                  {/* Show about_url if available */}
+                  {product.about_url && (
+                    <p className="mt-2 text-xs text-blue-600 dark:text-blue-400 truncate">
+                      More info: {product.about_url}
+                    </p>
                   )}
                   <div className="mt-4 flex items-center justify-between">
                     <span className="text-lg font-bold text-gray-900 dark:text-white">${product.price.toFixed(2)}</span>

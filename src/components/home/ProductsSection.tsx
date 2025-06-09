@@ -36,13 +36,24 @@ const ProductsSection = () => {
   }, []);
 
   const handleAddToCart = (product: ProductType) => {
-    // Add the product to cart with description
+    // Add the product to cart with ALL fields including description and clientpathurl
     addToCart({
       id: product.id,
       name: product.title,
       price: product.price,
       image: product.image,
-      description: product.description, // Pass description to cart
+      description: product.description, // Include description
+      clientpathurl: product.about_url, // Map about_url to clientpathurl
+      quantity: 1,
+    });
+
+    console.log('🛒 Added to cart with all fields:', {
+      id: product.id,
+      name: product.title,
+      price: product.price,
+      image: product.image,
+      description: product.description,
+      clientpathurl: product.about_url,
       quantity: 1,
     });
 
@@ -137,6 +148,13 @@ const ProductsSection = () => {
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-3">
                     {product.description}
                   </p>
+                  
+                  {/* Show about_url if available */}
+                  {product.about_url && (
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mb-3 truncate">
+                      More info: {product.about_url}
+                    </p>
+                  )}
                   
                   {/* Buttons at the bottom of the card */}
                   <div className="pt-3 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-2 justify-end items-center">

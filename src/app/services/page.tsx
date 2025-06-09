@@ -46,11 +46,24 @@ export default function ServicesPage() {
   }, []);
 
   const handleAddToCart = (product: ProductType) => {
+    // Add the product to cart with ALL fields including description and clientpathurl
     addToCart({
       id: product.id,
-      name: product.title, // Use 'title' from ProductType
+      name: product.title,
       price: product.price,
       image: product.image,
+      description: product.description, // Include description
+      clientpathurl: product.about_url, // Map about_url to clientpathurl
+      quantity: quantities[product.id] || 1,
+    });
+
+    console.log('🛒 Added to cart with all fields from services page:', {
+      id: product.id,
+      name: product.title,
+      price: product.price,
+      image: product.image,
+      description: product.description,
+      clientpathurl: product.about_url,
       quantity: quantities[product.id] || 1,
     });
 
@@ -60,7 +73,6 @@ export default function ServicesPage() {
       setAddedToCart((prev) => ({ ...prev, [product.id]: false }));
     }, 2000);
   };
-
 
   const filteredProducts = selectedCategory
     ? products.filter(
@@ -112,7 +124,7 @@ export default function ServicesPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-7xl mx-auto">
             <h1 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-4">
-              Products
+              Products & Services
             </h1>
             <p className="text-center text-gray-600 dark:text-gray-400 mb-8 max-w-3xl mx-auto">
               Aero Tech Labs offers a comprehensive range of aerosol filling
@@ -177,8 +189,16 @@ export default function ServicesPage() {
                         {product.description || "No description available."}
                       </p>
 
+                      {/* Show about_url if available */}
+                      {product.about_url && (
+                        <div className="mb-4">
+                          <p className="text-xs text-blue-600 dark:text-blue-400 truncate">
+                            More info: {product.about_url}
+                          </p>
+                        </div>
+                      )}
+
                       <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-2 justify-end items-center">
-                
                         <button
                           onClick={() => handleAddToCart(product)}
                           className={`w-full sm:w-auto px-4 py-2 text-sm rounded transition-colors ${
