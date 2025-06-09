@@ -1,11 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
 
+interface OrderItem {
+  product_id: string;
+  product_name: string;
+  product_description?: string;
+  product_image?: string;
+  quantity: number | string;
+  unit_price: number | string;
+  total_price: number | string;
+}
+
+interface OrderRequest {
+  customer_email: string;
+  customer_name: string;
+  customer_phone?: string;
+  shipping_line1?: string;
+  shipping_line2?: string;
+  shipping_city?: string;
+  shipping_state?: string;
+  shipping_postal_code?: string;
+  shipping_country?: string;
+  subtotal: number | string;
+  shipping_cost?: number | string;
+  tax_amount?: number | string;
+  total_amount: number | string;
+  currency?: string;
+  status?: string;
+  items: OrderItem[];
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log('📝 Creating new order...');
     
-    const body = await request.json();
+    const body: OrderRequest = await request.json();
     console.log('Request body:', JSON.stringify(body, null, 2));
     
     const {
@@ -47,10 +76,10 @@ export async function POST(request: NextRequest) {
       shipping_state,
       shipping_postal_code,
       shipping_country,
-      subtotal: parseFloat(subtotal),
-      shipping_cost: parseFloat(shipping_cost),
-      tax_amount: parseFloat(tax_amount),
-      total_amount: parseFloat(total_amount),
+      subtotal: parseFloat(subtotal.toString()),
+      shipping_cost: parseFloat(shipping_cost.toString()),
+      tax_amount: parseFloat(tax_amount.toString()),
+      total_amount: parseFloat(total_amount.toString()),
       currency,
       status
     };
@@ -75,15 +104,15 @@ export async function POST(request: NextRequest) {
     console.log('✅ Order created with ID:', order.id);
 
     // Insert order items
-    const orderItems = items.map((item: any) => ({
+    const orderItems = items.map((item: OrderItem) => ({
       order_id: order.id,
       product_id: item.product_id,
       product_name: item.product_name,
       product_description: item.product_description,
       product_image: item.product_image,
-      quantity: parseInt(item.quantity),
-      unit_price: parseFloat(item.unit_price),
-      total_price: parseFloat(item.total_price)
+      quantity: parseInt(item.quantity.toString()),
+      unit_price: parseFloat(item.unit_price.toString()),
+      total_price: parseFloat(item.total_price.toString())
     }));
 
     console.log('📦 Inserting order items:', orderItems);

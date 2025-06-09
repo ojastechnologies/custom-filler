@@ -32,27 +32,27 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 // Helper function to validate and clean image URLs
-function getValidImageUrl(imageUrl?: string): string | undefined {
-  if (!imageUrl || imageUrl.trim() === '') return undefined;
+// function getValidImageUrl(imageUrl?: string): string | undefined {
+//   if (!imageUrl || imageUrl.trim() === '') return undefined;
   
-  const cleanUrl = imageUrl.trim();
+//   const cleanUrl = imageUrl.trim();
   
-  // Skip placeholder images
-  if (cleanUrl === '/placeholder-product.jpg' || cleanUrl.includes('placeholder')) {
-    return undefined;
-  }
+//   // Skip placeholder images
+//   if (cleanUrl === '/placeholder-product.jpg' || cleanUrl.includes('placeholder')) {
+//     return undefined;
+//   }
   
-  // Check if it's a valid URL
-  try {
-    new URL(cleanUrl);
-    return cleanUrl;
-  } catch {
-    // If it's not a valid URL, it might be a relative path
-    // For now, we'll skip it to avoid Stripe errors
-    console.warn('Invalid image URL detected:', cleanUrl);
-    return undefined;
-  }
-}
+//   // Check if it's a valid URL
+//   try {
+//     new URL(cleanUrl);
+//     return cleanUrl;
+//   } catch {
+//     // If it's not a valid URL, it might be a relative path
+//     // For now, we'll skip it to avoid Stripe errors
+//     console.warn('Invalid image URL detected:', cleanUrl);
+//     return undefined;
+//   }
+// }
 
 // Use localStorage to persist cart data
 const loadCartFromStorage = (): CartItem[] => {

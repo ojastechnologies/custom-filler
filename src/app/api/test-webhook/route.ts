@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import {  NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
 
 export async function GET() {
@@ -52,9 +52,9 @@ export async function GET() {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
-    const body = await request.json();
+    // const body = await request.json();
     
     // Test creating a sample order
     const sampleOrder = {

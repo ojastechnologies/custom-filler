@@ -214,7 +214,7 @@ export const updateOrderStatus = async (
   status: Order['status']
 ): Promise<Order> => {
   try {
-    const updateData: any = { status };
+    const updateData: Partial<Order> = { status };
     
     // Set timestamps based on status
     if (status === 'shipped') {

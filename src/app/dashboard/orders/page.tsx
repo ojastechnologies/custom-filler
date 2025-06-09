@@ -9,6 +9,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { fetchOrders, updateOrderStatus, getOrderStats, Order, OrderStats } from '@/services/ordersService';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import Image from 'next/image';
 
 export default function OrdersPage() {
   const { user, loading, isAdmin } = useAuth();
@@ -365,11 +366,13 @@ export default function OrdersPage() {
                                 <td className="px-4 py-2">
                                   <div className="flex items-center">
                                     {item.product_image && (
-                                      <img
-                                        src={item.product_image}
-                                        alt={item.product_name}
-                                        className="w-10 h-10 object-cover rounded mr-3"
-                                      />
+                                        <Image
+                                          src={item.product_image}
+                                          alt={item.product_name}
+                                          fill
+                                          className="object-cover rounded"
+                                          sizes="40px"
+                                        />
                                     )}
                                     <div>
                                       <p className="text-sm font-medium text-gray-900 dark:text-white">{item.product_name}</p>

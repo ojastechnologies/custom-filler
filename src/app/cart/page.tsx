@@ -6,69 +6,24 @@ import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
-import { createOrderInDatabase } from '@/services/ordersService';
 
 export default function CartPage() {
   const { items, removeFromCart, updateQuantity, clearCart, totalItems, totalPrice, proceedToCheckout, isCheckingOut } = useCart();
   const [customerEmail, setCustomerEmail] = useState('');
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
   const [checkoutError, setCheckoutError] = useState('');
-  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   
   const handleCheckout = async () => {
     try {
       setCheckoutError('');
-      setIsCreatingOrder(true);
-      
-      console.log('🚀 STARTING ORDER CREATION PROCESS');
-      console.log('Cart items with all fields:', items);
-
-      // First, create the order in our database with ALL product fields
-      const orderData = {
-        customer_email: customerEmail || 'test@example.com',
-        customer_name: customerName || 'Test Customer',
-        customer_phone: customerPhone || undefined,
-        shipping_line1: '123 Test Street',
-        shipping_city: 'Test City',
-        shipping_state: 'TS',
-        shipping_postal_code: '12345',
-        shipping_country: 'US',
-        subtotal: totalPrice,
-        shipping_cost: 0,
-        tax_amount: 0,
-        total_amount: totalPrice,
-        currency: 'usd',
-        items: items.map(item => ({
-          product_id: item.id,
-          product_name: item.name,
-          product_description: item.description || `Product: ${item.name}`, // Include description
-          product_image: item.image || null,
-          product_clientpathurl: item.clientpathurl || null, // Include clientpathurl
-          quantity: item.quantity,
-          unit_price: item.price,
-          total_price: item.price * item.quantity
-        }))
-      };
-
-      console.log('📝 Creating order with ALL FIELDS:', orderData);
-
-      // Create order in database
-      const createdOrder = await createOrderInDatabase(orderData);
-      console.log('✅ ORDER CREATED IN DATABASE WITH ALL FIELDS:', createdOrder.id);
-
-      // Now proceed with Stripe checkout
-      console.log('💳 Proceeding to Stripe checkout...');
+      console.log('Starting checkout with items:', items);
       await proceedToCheckout(customerEmail);
-      
     } catch (error) {
-      console.error('❌ Checkout failed:', error);
+      console.error('Checkout failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Checkout failed. Please try again.';
       setCheckoutError(errorMessage);
-    } finally {
-      setIsCreatingOrder(false);
     }
-  };  
+  };
+  
   return (
     <>
       <Header />
@@ -99,10 +54,10 @@ export default function CartPage() {
                   Your cart is empty
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Looks like you haven't added any products to your cart yet.
+                  Looks like you haven&apos;t added any products to your cart yet.
                 </p>
                 <Link 
-                  href="/products" 
+                  href="/services" 
                   className="inline-block px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
                 >
                   Browse Products
@@ -110,11 +65,11 @@ export default function CartPage() {
               </div>
             ) : (
               <>
-                {/* Debug info in development - showing ALL fields */}
+                {/* Debug info in development */}
                 {process.env.NODE_ENV === 'development' && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                    <h3 className="font-semibold text-blue-800 mb-2">Debug Info - Cart Items with ALL Fields:</h3>
-                    <pre className="text-xs text-blue-700 overflow-auto max-h-40">
+                    <h3 className="font-semibold text-blue-800 mb-2">Debug Info:</h3>
+                    <pre className="text-xs text-blue-700 overflow-auto">
                       {JSON.stringify(items, null, 2)}
                     </pre>
                   </div>
@@ -147,7 +102,7 @@ export default function CartPage() {
                               />
                             ) : (
                               <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                                <span className="text-xs text-gray-500 dark:text-gray-400">No Image</span>
+                                {/* <span className="text-xs text-gray-500 dark:text-gray-400">Product Image</span> */}
                               </div>
                             )}
                           </div>
@@ -159,18 +114,6 @@ export default function CartPage() {
                             <p className="text-sm text-gray-600 dark:text-gray-400">
                               ${item.price.toFixed(2)} each
                             </p>
-                            {/* Show description if available */}
-                            {item.description && (
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
-                                {item.description}
-                              </p>
-                            )}
-                            {/* Show clientpathurl if available */}
-                            {item.clientpathurl && (
-                              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                                URL: {item.clientpathurl}
-                              </p>
-                            )}
                           </div>
                           
                           <div className="flex items-center space-x-2">
@@ -224,11 +167,11 @@ export default function CartPage() {
                   </div>
                   <div className="flex justify-between mb-2">
                     <span className="text-gray-600 dark:text-gray-400">Shipping</span>
-                    <span className="text-gray-900 dark:text-white font-medium">Free</span>
+                    <span className="text-gray-900 dark:text-white font-medium">Calculated at checkout</span>
                   </div>
                   <div className="flex justify-between mb-2">
                     <span className="text-gray-600 dark:text-gray-400">Tax</span>
-                    <span className="text-gray-900 dark:text-white font-medium">$0.00</span>
+                    <span className="text-gray-900 dark:text-white font-medium">Calculated at checkout</span>
                   </div>
                   <div className="border-t border-gray-200 dark:border-gray-700 my-4"></div>
                   <div className="flex justify-between">
@@ -237,60 +180,30 @@ export default function CartPage() {
                   </div>
                 </div>
 
-                {/* Customer Information Section */}
+                {/* Checkout Section */}
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    Customer Information
+                    Checkout Information
                   </h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="customerName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Full Name *
-                      </label>
-                      <input
-                        type="text"
-                        id="customerName"
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        placeholder="John Doe"
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="customerEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Email Address *
-                      </label>
-                      <input
-                        type="email"
-                        id="customerEmail"
-                        value={customerEmail}
-                        onChange={(e) => setCustomerEmail(e.target.value)}
-                        placeholder="john@example.com"
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="md:col-span-2">
-                      <label htmlFor="customerPhone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Phone Number (Optional)
-                      </label>
-                      <input
-                        type="tel"
-                        id="customerPhone"
-                        value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value)}
-                        placeholder="+1 (555) 123-4567"
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                      />
-                    </div>
+                  <div className="mb-4">
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Email Address (Optional)
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      value={customerEmail}
+                      onChange={(e) => setCustomerEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      We&apos;ll send your receipt to this email address
+                    </p>
                   </div>
                   
                   {checkoutError && (
-                    <div className="mt-4 p-3 bg-red-100 dark:bg-red-900 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 rounded-md">
+                    <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 rounded-md">
                       {checkoutError}
                     </div>
                   )}
@@ -298,17 +211,17 @@ export default function CartPage() {
                 
                 <div className="flex flex-col sm:flex-row justify-between gap-4">
                   <Link 
-                    href="/products" 
+                    href="/services" 
                     className="inline-block px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-center"
                   >
                     Continue Shopping
                   </Link>
                   <button
                     onClick={handleCheckout}
-                    disabled={isCheckingOut || isCreatingOrder}
+                    disabled={isCheckingOut}
                     className="inline-block px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-center disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isCreatingOrder ? 'Creating Order...' : isCheckingOut ? 'Processing...' : 'Create Order & Checkout'}
+                    {isCheckingOut ? 'Processing...' : 'Proceed to Stripe Checkout'}
                   </button>
                 </div>
               </>
