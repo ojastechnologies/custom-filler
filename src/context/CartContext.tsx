@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-// Update the Product type to include all the properties you need
+// Update the Product type to include all fields
 export interface Product {
   id: string;
   name: string;
@@ -10,7 +10,7 @@ export interface Product {
   quantity?: number;
   image?: string;
   description?: string;
-  clientpathurl?: string; // Add this field as you requested
+  clientpathurl?: string;
 }
 
 interface CartItem extends Product {
@@ -25,8 +25,8 @@ interface CartContextType {
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
-  proceedToCheckout: (customerEmail?: string) => Promise<void>;
-  isCheckingOut: boolean;
+  proceedToCheckout: (customerEmail?: string) => Promise<void>; // RESTORED
+  isCheckingOut: boolean; // RESTORED
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -80,7 +80,7 @@ const saveCartToStorage = (items: CartItem[]) => {
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false); // RESTORED
 
   // Load cart from localStorage on initial render
   useEffect(() => {
@@ -101,20 +101,22 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const existingItemIndex = prevItems.findIndex(item => item.id === product.id);
       
       if (existingItemIndex >= 0) {
-        // If it exists, update the quantity
+        // If it exists, update the quantity but preserve all fields
         const updatedItems = [...prevItems];
         const newQuantity = (prevItems[existingItemIndex].quantity || 0) + (product.quantity || 1);
         updatedItems[existingItemIndex] = {
           ...prevItems[existingItemIndex],
+          ...product, // Update with any new field values
           quantity: newQuantity
         };
         return updatedItems;
       } else {
-        // If it doesn't exist, add it to the cart with ALL properties preserved
-        return [...prevItems, { 
+        // If it doesn't exist, add it to the cart with ALL fields
+        const newItem = { 
           ...product, 
           quantity: product.quantity || 1 
-        }];
+        };
+        return [...prevItems, newItem];
       }
     });
   };
@@ -137,10 +139,17 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const clearCart = () => {
+    console.log('🧹 CLEARING CART');
     setItems([]);
+    
+    // Also clear localStorage immediately
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('cart');
+      console.log('🧹 CART CLEARED - localStorage also cleared');
+    }
   };
 
-  // Updated Stripe checkout function with better URL handling
+  // RESTORED: Updated Stripe checkout function with better URL handling
   const proceedToCheckout = async (customerEmail?: string) => {
     if (items.length === 0) {
       throw new Error('Cart is empty');
@@ -217,8 +226,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       clearCart,
       totalItems,
       totalPrice,
-      proceedToCheckout,
-      isCheckingOut
+      proceedToCheckout, // RESTORED
+      isCheckingOut // RESTORED
     }}>
       {children}
     </CartContext.Provider>

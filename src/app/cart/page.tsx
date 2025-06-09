@@ -28,7 +28,7 @@ export default function CartPage() {
       const orderData = {
         customer_email: customerEmail || 'test@example.com',
         customer_name: customerName || 'Test Customer',
-        customer_phone: customerPhone || null,
+        customer_phone: customerPhone || undefined,
         shipping_line1: '123 Test Street',
         shipping_city: 'Test City',
         shipping_state: 'TS',
@@ -57,9 +57,6 @@ export default function CartPage() {
       const createdOrder = await createOrderInDatabase(orderData);
       console.log('✅ ORDER CREATED IN DATABASE WITH ALL FIELDS:', createdOrder.id);
 
-      // Show success message
-      alert(`🎉 Order created successfully! Order ID: ${createdOrder.id.slice(0, 8)}\n\nCheck your Supabase database now!`);
-
       // Now proceed with Stripe checkout
       console.log('💳 Proceeding to Stripe checkout...');
       await proceedToCheckout(customerEmail);
@@ -71,8 +68,7 @@ export default function CartPage() {
     } finally {
       setIsCreatingOrder(false);
     }
-  };
-  
+  };  
   return (
     <>
       <Header />
