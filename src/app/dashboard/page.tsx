@@ -586,7 +586,19 @@ export default function DashboardPage() {
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                 Quick Actions
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                {isAdmin && (
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push('/dashboard/orders')}
+                    className="flex items-center justify-center py-3"
+                  >
+                    <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                    Manage Orders
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   onClick={() => router.push('/services')}

@@ -47,13 +47,27 @@ export default function ProductsPage() {
   }, []);
 
   const handleAddToCart = (product: ProductType) => {
+    // Add the product to cart with ALL fields including description and clientpathurl
     addToCart({
       id: product.id,
-      name: product.title, // Use 'title' from ProductType
+      name: product.title,
       price: product.price,
       image: product.image,
+      description: product.description, // Include description
+      clientpathurl: product.about_url, // Map about_url to clientpathurl
       quantity: quantities[product.id] || 1,
     });
+
+    console.log('🛒 Added to cart with all fields:', {
+      id: product.id,
+      name: product.title,
+      price: product.price,
+      image: product.image,
+      description: product.description,
+      clientpathurl: product.about_url,
+      quantity: quantities[product.id] || 1,
+    });
+
     setAddedToCart((prev) => ({ ...prev, [product.id]: true }));
     setTimeout(() => {
       setAddedToCart((prev) => ({ ...prev, [product.id]: false }));
@@ -175,20 +189,19 @@ export default function ProductsPage() {
                         {product.description || "No description available."}
                       </p>
 
-                      <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between gap-2">
-                        {/* Learn More Link */}
-                        {product.clientpathurl && (
-                          <Link href={`/${product.clientpathurl}`}>
-                            <button className="px-4 py-2 text-sm font-medium text-primary-600 bg-primary-50 border border-primary-200 rounded hover:bg-primary-100 hover:text-primary-700 dark:bg-primary-900/20 dark:text-primary-400 dark:border-primary-800 dark:hover:bg-primary-900/30 transition-colors">
-                              Learn More
-                            </button>
-                          </Link>
-                        )}
-                        
-                        {/* Add to Cart Button */}
+                      {/* Show about_url if available */}
+                      {product.about_url && (
+                        <div className="mb-4">
+                          <p className="text-xs text-blue-600 dark:text-blue-400 truncate">
+                            More info: {product.about_url}
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-2 justify-end items-center">
                         <button
                           onClick={() => handleAddToCart(product)}
-                          className={`px-4 py-2 text-sm rounded transition-colors ${
+                          className={`w-full sm:w-auto px-4 py-2 text-sm rounded transition-colors ${
                             addedToCart[product.id]
                               ? "bg-green-600 hover:bg-green-700 text-white"
                               : "bg-primary-600 hover:bg-primary-700 text-white"

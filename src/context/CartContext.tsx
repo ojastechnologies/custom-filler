@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-// Update the Product type to include the new field
+// Update the Product type to include all the properties you need
 export interface Product {
   id: string;
   name: string;
@@ -10,7 +10,7 @@ export interface Product {
   quantity?: number;
   image?: string;
   description?: string;
-  clientpathurl?: string; // Add this field
+  clientpathurl?: string; // Add this field as you requested
 }
 
 interface CartItem extends Product {
@@ -110,7 +110,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
         return updatedItems;
       } else {
-        // If it doesn't exist, add it to the cart
+        // If it doesn't exist, add it to the cart with ALL properties preserved
         return [...prevItems, { 
           ...product, 
           quantity: product.quantity || 1 
@@ -149,27 +149,22 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsCheckingOut(true);
     
     try {
-      // Convert cart items to match the expected format from your original API route
-      const checkoutItems = items.map(item => {
-        const validImageUrl = getValidImageUrl(item.image);
-        
-        return {
-          product: {
-            id: item.id,
-            name: item.name,
-            price: item.price,
-            // Provide a meaningful description or omit if empty
-            description: item.description && item.description.trim() !== '' 
-              ? item.description.trim() 
-              : `${item.name} - Quality aerosol product`,
-            image_url: validImageUrl, // Only include valid URLs
-            clientpathurl: item.clientpathurl, // Include the service category path
-          },
-          quantity: item.quantity,
-        };
-      });
+      console.log('🛒 Starting checkout process...');
+      console.log('Cart items:', items);
+      
+      // Transform cart items to match the expected format for Stripe
+      const checkoutItems = items.map(item => ({
+        product: {
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          description: item.description || `Product: ${item.name}`, // Use the actual description
+          image_url: item.image || null
+        },
+        quantity: item.quantity
+      }));
 
-      console.log('Sending checkout data:', { items: checkoutItems, customer_email: customerEmail });
+      console.log('💳 Checkout items prepared:', checkoutItems);
 
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
@@ -178,36 +173,28 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         },
         body: JSON.stringify({
           items: checkoutItems,
-          customer_email: customerEmail,
+          customer_email: customerEmail || undefined,
         }),
       });
 
-      console.log('Response status:', response.status);
+      const data = await response.json();
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Error Response:', errorText);
-        
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch {
-          errorData = { error: errorText };
-        }
-        
-        throw new Error(errorData.error || `HTTP ${response.status}: Failed to create checkout session`);
+        console.error('❌ Checkout session creation failed:', data);
+        throw new Error(data.error || 'Failed to create checkout session');
       }
 
-      const responseData = await response.json();
-      console.log('Checkout session response:', responseData);
+      console.log('✅ Checkout session created:', data.sessionId);
       
-      if (responseData.url) {
-        window.location.href = responseData.url;
+      if (data.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = data.url;
       } else {
-        throw new Error('No checkout URL received from Stripe');
+        throw new Error('No checkout URL received');
       }
+      
     } catch (error) {
-      console.error('Checkout error:', error);
+      console.error('❌ Checkout failed:', error);
       throw error;
     } finally {
       setIsCheckingOut(false);
