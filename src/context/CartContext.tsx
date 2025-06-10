@@ -1,6 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { validateDealCode } from '@/services/dealService';
 
 // Update the Product type to include all fields
 export interface Product {
@@ -17,6 +18,47 @@ interface CartItem extends Product {
   quantity: number;
 }
 
+interface Deal {
+  id: string;
+  code: string;
+  description: string;
+  discount_type: 'percentage' | 'fixed_amount';
+  discount_value: number;
+  minimum_order_amount?: number;
+  maximum_discount_amount?: number;
+  usage_limit?: number;
+  usage_count: number;
+  expires_at?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface AppliedDeal {
+  deal: Deal;
+  discountAmount: number;
+}
+
+// Define the request body type for checkout
+interface CheckoutRequestBody {
+  items: Array<{
+    product: {
+      id: string;
+      name: string;
+      price: number;
+      description: string;
+      image_url: string | null;
+    };
+    quantity: number;
+  }>;
+  customer_email?: string;
+  deal?: {
+    id: string;
+    code: string;
+    discount_amount: number;
+  };
+}
+
 interface CartContextType {
   items: CartItem[];
   addToCart: (product: Product) => void;
@@ -25,34 +67,16 @@ interface CartContextType {
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
-  proceedToCheckout: (customerEmail?: string) => Promise<void>; // RESTORED
-  isCheckingOut: boolean; // RESTORED
+  subtotal: number;
+  finalTotal: number;
+  appliedDeal: AppliedDeal | null;
+  applyDeal: (code: string) => Promise<{ success: boolean; message: string }>;
+  removeDeal: () => void;
+  proceedToCheckout: (customerEmail?: string) => Promise<void>;
+  isCheckingOut: boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
-
-// Helper function to validate and clean image URLs
-// function getValidImageUrl(imageUrl?: string): string | undefined {
-//   if (!imageUrl || imageUrl.trim() === '') return undefined;
-  
-//   const cleanUrl = imageUrl.trim();
-  
-//   // Skip placeholder images
-//   if (cleanUrl === '/placeholder-product.jpg' || cleanUrl.includes('placeholder')) {
-//     return undefined;
-//   }
-  
-//   // Check if it's a valid URL
-//   try {
-//     new URL(cleanUrl);
-//     return cleanUrl;
-//   } catch {
-//     // If it's not a valid URL, it might be a relative path
-//     // For now, we'll skip it to avoid Stripe errors
-//     console.warn('Invalid image URL detected:', cleanUrl);
-//     return undefined;
-//   }
-// }
 
 // Use localStorage to persist cart data
 const loadCartFromStorage = (): CartItem[] => {
@@ -77,41 +101,98 @@ const saveCartToStorage = (items: CartItem[]) => {
   }
 };
 
+const loadDealFromStorage = (): AppliedDeal | null => {
+  if (typeof window === 'undefined') return null;
+  
+  try {
+    const storedDeal = localStorage.getItem('appliedDeal');
+    return storedDeal ? JSON.parse(storedDeal) : null;
+  } catch (error) {
+    console.error('Failed to load deal from localStorage:', error);
+    return null;
+  }
+};
+
+const saveDealToStorage = (deal: AppliedDeal | null) => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    if (deal) {
+      localStorage.setItem('appliedDeal', JSON.stringify(deal));
+    } else {
+      localStorage.removeItem('appliedDeal');
+    }
+  } catch (error) {
+    console.error('Failed to save deal to localStorage:', error);
+  }
+};
+
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [appliedDeal, setAppliedDeal] = useState<AppliedDeal | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [isCheckingOut, setIsCheckingOut] = useState(false); // RESTORED
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
-  // Load cart from localStorage on initial render
+  // Use useCallback to memoize the recalculateDeal function
+  const recalculateDeal = useCallback(async () => {
+    if (!appliedDeal) return;
+    
+    try {
+      const validation = await validateDealCode(appliedDeal.deal.code, items);
+      if (validation.isValid && validation.deal && validation.discountAmount !== undefined) {
+        setAppliedDeal({
+          deal: validation.deal,
+          discountAmount: validation.discountAmount
+        });
+      } else {
+        // Deal no longer valid, remove it
+        setAppliedDeal(null);
+      }
+    } catch (error) {
+      console.error('Error recalculating deal:', error);
+      setAppliedDeal(null);
+    }
+  }, [appliedDeal, items]);
+
+  // Load cart and deal from localStorage on initial render
   useEffect(() => {
     setItems(loadCartFromStorage());
+    setAppliedDeal(loadDealFromStorage());
     setIsInitialized(true);
   }, []);
 
-  // Save cart to localStorage whenever it changes
+  // Save cart to localStorage whenever it changes and recalculate deal
   useEffect(() => {
     if (isInitialized) {
       saveCartToStorage(items);
+      // Recalculate deal when cart changes
+      if (appliedDeal) {
+        recalculateDeal();
+      }
     }
-  }, [items, isInitialized]);
+  }, [items, isInitialized, appliedDeal, recalculateDeal]);
+
+  // Save deal to localStorage whenever it changes
+  useEffect(() => {
+    if (isInitialized) {
+      saveDealToStorage(appliedDeal);
+    }
+  }, [appliedDeal, isInitialized]);
 
   const addToCart = (product: Product) => {
     setItems(prevItems => {
-      // Check if the product is already in the cart
       const existingItemIndex = prevItems.findIndex(item => item.id === product.id);
       
       if (existingItemIndex >= 0) {
-        // If it exists, update the quantity but preserve all fields
         const updatedItems = [...prevItems];
         const newQuantity = (prevItems[existingItemIndex].quantity || 0) + (product.quantity || 1);
         updatedItems[existingItemIndex] = {
           ...prevItems[existingItemIndex],
-          ...product, // Update with any new field values
+          ...product,
           quantity: newQuantity
         };
         return updatedItems;
       } else {
-        // If it doesn't exist, add it to the cart with ALL fields
         const newItem = { 
           ...product, 
           quantity: product.quantity || 1 
@@ -141,15 +222,49 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const clearCart = () => {
     console.log('🧹 CLEARING CART');
     setItems([]);
+    setAppliedDeal(null);
     
     // Also clear localStorage immediately
     if (typeof window !== 'undefined') {
       localStorage.removeItem('cart');
+      localStorage.removeItem('appliedDeal');
       console.log('🧹 CART CLEARED - localStorage also cleared');
     }
   };
 
-  // RESTORED: Updated Stripe checkout function with better URL handling
+  const applyDeal = async (code: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const validation = await validateDealCode(code, items);
+      
+      if (validation.isValid && validation.deal && validation.discountAmount !== undefined) {
+        setAppliedDeal({
+          deal: validation.deal,
+          discountAmount: validation.discountAmount
+        });
+        return {
+          success: true,
+          message: validation.message || `Deal "${code}" applied successfully!`
+        };
+      } else {
+        return {
+          success: false,
+          message: validation.message || 'Invalid deal code'
+        };
+      }
+    } catch (error) {
+      console.error('Error applying deal:', error);
+      return {
+        success: false,
+        message: 'Error applying deal. Please try again.'
+      };
+    }
+  };
+
+  const removeDeal = () => {
+    setAppliedDeal(null);
+  };
+
+  // Updated Stripe checkout function with deal support
   const proceedToCheckout = async (customerEmail?: string) => {
     if (items.length === 0) {
       throw new Error('Cart is empty');
@@ -160,6 +275,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       console.log('🛒 Starting checkout process...');
       console.log('Cart items:', items);
+      console.log('Applied deal:', appliedDeal);
       
       // Transform cart items to match the expected format for Stripe
       const checkoutItems = items.map(item => ({
@@ -167,7 +283,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           id: item.id,
           name: item.name,
           price: item.price,
-          description: item.description || `Product: ${item.name}`, // Use the actual description
+          description: item.description || `Product: ${item.name}`,
           image_url: item.image || null
         },
         quantity: item.quantity
@@ -175,15 +291,28 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       console.log('💳 Checkout items prepared:', checkoutItems);
 
+      // Use proper typing instead of 'any'
+      const requestBody: CheckoutRequestBody = {
+        items: checkoutItems,
+        customer_email: customerEmail || undefined,
+      };
+
+      // Add deal information if applied
+      if (appliedDeal) {
+        requestBody.deal = {
+          id: appliedDeal.deal.id,
+          code: appliedDeal.deal.code,
+          discount_amount: appliedDeal.discountAmount
+        };
+        console.log('🎫 Deal included in checkout:', requestBody.deal);
+      }
+
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          items: checkoutItems,
-          customer_email: customerEmail || undefined,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
@@ -211,11 +340,9 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const totalItems = items.reduce((total, item) => total + item.quantity, 0);
-  
-  const totalPrice = items.reduce(
-    (total, item) => total + item.price * item.quantity, 
-    0
-  );
+  const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0);
+  const discountAmount = appliedDeal ? appliedDeal.discountAmount : 0;
+  const finalTotal = Math.max(0, subtotal - discountAmount);
 
   return (
     <CartContext.Provider value={{
@@ -225,9 +352,14 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       updateQuantity,
       clearCart,
       totalItems,
-      totalPrice,
-      proceedToCheckout, // RESTORED
-      isCheckingOut // RESTORED
+      totalPrice: subtotal, // Keep for backward compatibility
+      subtotal,
+      finalTotal,
+      appliedDeal,
+      applyDeal,
+      removeDeal,
+      proceedToCheckout,
+      isCheckingOut
     }}>
       {children}
     </CartContext.Provider>
