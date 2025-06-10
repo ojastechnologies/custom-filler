@@ -1,10 +1,20 @@
 import React from 'react';
 import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
+import DealInput from './DealInput';
 import Link from 'next/link';
 
 export default function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { items, removeFromCart, totalItems, totalPrice, proceedToCheckout, isCheckingOut } = useCart();
+  const { 
+    items, 
+    removeFromCart, 
+    totalItems, 
+    subtotal, 
+    finalTotal, 
+    appliedDeal,
+    proceedToCheckout, 
+    isCheckingOut 
+  } = useCart();
 
   const handleCheckout = async () => {
     try {
@@ -28,7 +38,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
       />
       {/* Drawer */}
       <aside
-        className={`absolute right-0 top-0 h-full w-full max-w-md bg-white dark:bg-gray-900 shadow-xl transform transition-transform duration-300 ${
+        className={`absolute right-0 top-0 h-full w-full max-w-md bg-white dark:bg-gray-900 shadow-xl transform transition-transform duration-300 flex flex-col ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -41,50 +51,79 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
             </svg>
           </button>
         </div>
-        <div className="p-4 flex-1 overflow-y-auto">
+        
+        <div className="flex-1 overflow-y-auto p-4">
           {items.length === 0 ? (
             <div className="text-center text-gray-500 dark:text-gray-400 mt-12">
               Your cart is empty.
             </div>
           ) : (
-            <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-              {items.map(item => (
-                <li key={item.id} className="py-4 flex items-center">
-                  {item.image && (
-                    <div className="relative w-12 h-12 mr-3 flex-shrink-0">
-                      <Image
-                        src={item.image}
-                        alt={item.name}
-                        fill
-                        sizes="48px"
-                        className="object-cover rounded"
-                      />
+            <>
+              <ul className="divide-y divide-gray-200 dark:divide-gray-700 mb-6">
+                {items.map(item => (
+                  <li key={item.id} className="py-4 flex items-center">
+                    {item.image && (
+                      <div className="relative w-12 h-12 mr-3 flex-shrink-0">
+                        <Image
+                          src={item.image}
+                          alt={item.name}
+                          fill
+                          sizes="48px"
+                          className="object-cover rounded"
+                        />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">{item.name}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        ${item.price.toFixed(2)} x {item.quantity}
+                      </div>
+                      <div className="text-sm font-medium">
+                        ${(item.price * item.quantity).toFixed(2)}
+                      </div>
                     </div>
-                  )}
-                  <div className="flex-1">
-                    <div className="font-medium">{item.name}</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">${item.price.toFixed(2)} x {item.quantity}</div>
-                  </div>
-                  <button
-                    onClick={() => removeFromCart(item.id)}
-                    className="ml-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                  >
-                    Remove
-                  </button>
-                </li>
-              ))}
-            </ul>
+                    <button
+                      onClick={() => removeFromCart(item.id)}
+                      className="ml-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+
+              {/* Deal Input */}
+              <div className="mb-6">
+                <DealInput />
+              </div>
+            </>
           )}
         </div>
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex justify-between mb-2">
-            <span>Subtotal</span>
-            <span>${totalPrice.toFixed(2)}</span>
+        
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          <div className="space-y-2 mb-4">
+            <div className="flex justify-between text-sm">
+              <span>Subtotal</span>
+              <span>${subtotal.toFixed(2)}</span>
+            </div>
+            {appliedDeal && (
+              <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                <span>Discount ({appliedDeal.deal.code})</span>
+                <span>-${appliedDeal.discountAmount.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex justify-between font-semibold">
+              <span>Total</span>
+              <span>${finalTotal.toFixed(2)}</span>
+            </div>
           </div>
+          
           <div className="flex gap-2">
             <Link
               href="/cart"
-              className="flex-1 px-4 py-2 bg-primary-600 text-white rounded text-center hover:bg-primary-700"
+              className="flex-1 px-4 py-2 bg-primary-600 text-white rounded text-center hover:bg-primary-700 text-sm"
               onClick={onClose}
             >
               View Cart
@@ -92,7 +131,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
             <button
               onClick={handleCheckout}
               disabled={isCheckingOut || items.length === 0}
-              className="flex-1 px-4 py-2 bg-green-600 text-white rounded text-center hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 bg-green-600 text-white rounded text-center hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               {isCheckingOut ? 'Processing...' : 'Checkout'}
             </button>

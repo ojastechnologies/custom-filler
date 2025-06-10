@@ -10,6 +10,7 @@ import Button from '@/components/ui/Button';
 import Image from 'next/image';
 import { fetchProducts, createProduct, updateProduct, deleteProduct, uploadProductImage } from '@/services/productsService';
 import ImageUploader from '@/components/admin/ImageUploader';
+import DealManagement from '@/components/admin/DealManagement';
 import { ProductType } from '@/types/product';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -29,6 +30,7 @@ export default function DashboardPage() {
   const [products, setProducts] = useState<ProductType[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'products' | 'deals'>('products');
   
   // For product form
   const [showForm, setShowForm] = useState(false);
@@ -42,7 +44,7 @@ export default function DashboardPage() {
     category: '',
     quantity: 1,
     about_url: '',
-    clientpathurl: '' // Add this field
+    clientpathurl: ''
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -115,7 +117,7 @@ export default function DashboardPage() {
   // Fetch products
   useEffect(() => {
     // Only check session for dashboard, not for public product fetches
-    if (!loading && user) {
+    if (!loading && user && activeTab === 'products') {
       const checkAndLoadProducts = async () => {
         const { data } = await supabase.auth.getSession();
         if (data?.session) {
@@ -126,7 +128,7 @@ export default function DashboardPage() {
       };
       checkAndLoadProducts();
     }
-  }, [user, loading, loadProducts]);
+  }, [user, loading, loadProducts, activeTab]);
 
   // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -165,7 +167,7 @@ export default function DashboardPage() {
           image: imageUrl,
           category: formData.category,
           about_url: formData.about_url,
-          clientpathurl: formData.clientpathurl, // Add this field
+          clientpathurl: formData.clientpathurl,
           imageFile: selectedFile || undefined,
         });
         setProducts((prev) =>
@@ -183,7 +185,7 @@ export default function DashboardPage() {
           imageFile: selectedFile || undefined,
           category: formData.category,
           about_url: formData.about_url,
-          clientpathurl: formData.clientpathurl, // Add this field
+          clientpathurl: formData.clientpathurl,
         });
         setProducts([...products, { ...result }]);
       }
@@ -242,7 +244,7 @@ export default function DashboardPage() {
       category: '',
       quantity: 1,
       about_url: '',
-      clientpathurl: '' // Add this field
+      clientpathurl: ''
     });
     setEditingProduct(null);
     setSelectedFile(null);
@@ -306,280 +308,316 @@ export default function DashboardPage() {
                       Admin Access
                     </h2>
                     <p className="text-gray-600 dark:text-gray-400">
-                      You have administrator privileges. You can manage products directly from this dashboard.
+                      You have administrator privileges. You can manage products and deals directly from this dashboard.
                     </p>
-                  </div>
-                  <div className="ml-auto">
-                    <Button
-                      variant="primary"
-                      onClick={() => setShowForm(!showForm)}
-                    >
-                      {showForm ? 'Cancel' : 'Add New Product'}
-                    </Button>
                   </div>
                 </div>
               </Card>
             )}
-            
-            {/* Product Form for Admins */}
-            {isAdmin && showForm && (
-              <Card className="p-6 mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                  {editingProduct ? 'Edit Product' : 'Add New Product'}
-                </h2>
-                
-                <form onSubmit={handleSubmit}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div>
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Product Name
-                      </label>
-                      <input
-                        id="name"
-                        name="title"
-                        type="text"
-                        value={formData.title}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="unit_price" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Price ($)
-                      </label>
-                      <input
-                        id="unit_price"
-                        name="price"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={formData.price}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                        required
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="mb-6">
-                    <label htmlFor="clientpathurl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Service Category
-                    </label>
-                    <select
-                      id="clientpathurl"
-                      name="clientpathurl"
-                      value={formData.clientpathurl}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                    >
-                      <option value="">Select a service category</option>
-                      {SERVICE_CATEGORIES.map((category) => (
-                        <option key={category.path} value={category.path}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div className="mb-6">
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Description
-                    </label>
-                    <textarea
-                      id="description"
-                      name="description"
-                      rows={3}
-                      value={formData.description}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                    />
-                  </div>
-                  
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Product Image
-                    </label>
-                    <ImageUploader 
-                      currentImage={formData.image || ''} 
-                      onImageSelected={handleImageSelected} 
-                    />
-                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                      Recommended size: 800x800px. Max file size: 2MB.
-                    </p>
-                  </div>
-                  
-                  <div className="flex justify-end space-x-3">
-                    <Button
-                      variant="outline"
-                      onClick={resetForm}
-                      type="button"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      variant="primary"
-                      type="submit"
-                      disabled={isUploading}
-                    >
-                      {isUploading 
-                        ? 'Uploading...' 
-                        : editingProduct 
-                          ? 'Update Product' 
-                          : 'Add Product'}
-                    </Button>
-                  </div>
-                </form>
-              </Card>
-            )}
-            
-            {/* Error Message */}
-            {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-                <p className="font-medium">Error</p>
-                <p>{error}</p>
-                <div className="flex items-center space-x-2 mt-2">
-                  <button 
-                    onClick={() => setError(null)} 
-                    className="text-sm underline"
+
+            {/* Tab Navigation */}
+            {isAdmin && (
+              <div className="mb-8">
+                <nav className="flex space-x-8" aria-label="Tabs">
+                  <button
+                    onClick={() => setActiveTab('products')}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === 'products'
+                        ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                    }`}
                   >
-                    Dismiss
+                    Products
                   </button>
                   <button
-                    onClick={loadProducts}
-                    className="text-sm underline text-primary-700 font-semibold"
+                    onClick={() => setActiveTab('deals')}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === 'deals'
+                        ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                    }`}
                   >
-                    Retry
+                    Deals & Promotions
                   </button>
-                </div>
+                </nav>
               </div>
             )}
-            
-            {/* Products List */}
-            <Card className="p-6 mb-8">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Products
-                </h2>
-              </div>
-              
-              {loadingProducts ? (
-                <div className="flex flex-col justify-center items-center h-32">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600 mb-2"></div>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">Loading products...</p>
-                  {error && (
-                    <button
-                      onClick={loadProducts}
-                      className="mt-2 text-sm underline text-primary-700 font-semibold"
-                    >
-                      Retry
-                    </button>
-                  )}
-                </div>
-              ) : products.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-500 dark:text-gray-400">No products found.</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
-                    <colgroup>
-                      <col style={{ width: '280px' }}/>
-                      <col style={{ width: '120px' }}/>
-                      <col style={{ width: '200px' }}/>
-                      {isAdmin && <col style={{ width: '160px' }}/>}
-                    </colgroup>
-                    <thead className="bg-gray-50 dark:bg-gray-700">
-                      <tr>
-                        <th
-                          scope="col"
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                        >
-                          Product
-                        </th>
-                        <th
-                          scope="col"
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                        >
-                          Price
-                        </th>
-                        <th
-                          scope="col"
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                        >
+
+            {/* Tab Content */}
+            {activeTab === 'products' ? (
+              <>
+                {/* Product Form for Admins */}
+                {isAdmin && showForm && (
+                  <Card className="p-6 mb-8">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                      {editingProduct ? 'Edit Product' : 'Add New Product'}
+                    </h2>
+                    
+                    <form onSubmit={handleSubmit}>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                          <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Product Name
+                          </label>
+                          <input
+                            id="name"
+                            name="title"
+                            type="text"
+                            value={formData.title}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                            required
+                          />
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="unit_price" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Price ($)
+                          </label>
+                          <input
+                            id="unit_price"
+                            name="price"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={formData.price}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                            required
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="mb-6">
+                        <label htmlFor="clientpathurl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Service Category
-                        </th>
-                        {isAdmin && (
-                          <th
-                            scope="col"
-                            className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                          >
-                            Actions
-                          </th>
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                      {products.map((product) => (
-                        <tr key={product.id}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="h-10 w-10 flex-shrink-0 relative">
-                                <Image
-                                  src={product.image || "/placeholder-product.jpg"}
-                                  alt={product.title}
-                                  fill
-                                  className="object-cover rounded-md"
-                                  onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    target.src = "/placeholder-product.jpg";
-                                  }}
-                                />
-                              </div>
-                              <div className="ml-4 min-w-0">
-                                <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                  {product.title}
-                                </div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400 overflow-hidden text-ellipsis break-normal">
-                                  {product.description || "No description"}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900 dark:text-white">
-                              ${product.price?.toFixed(2) || "0.00"}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900 dark:text-white">
-                              {product.clientpathurl ? getServiceCategoryName(product.clientpathurl) : 'No category'}
-                            </div>
-                          </td>
-                          {isAdmin && (
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                              <button
-                                onClick={() => handleEdit(product)}
-                                className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-4"
+                        </label>
+                        <select
+                          id="clientpathurl"
+                          name="clientpathurl"
+                          value={formData.clientpathurl}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                        >
+                          <option value="">Select a service category</option>
+                          {SERVICE_CATEGORIES.map((category) => (
+                            <option key={category.path} value={category.path}>
+                              {category.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      <div className="mb-6">
+                        <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Description
+                        </label>
+                        <textarea
+                          id="description"
+                          name="description"
+                          rows={3}
+                          value={formData.description}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                        />
+                      </div>
+                      
+                      <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Product Image
+                        </label>
+                        <ImageUploader 
+                          currentImage={formData.image || ''} 
+                          onImageSelected={handleImageSelected} 
+                        />
+                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                          Recommended size: 800x800px. Max file size: 2MB.
+                        </p>
+                      </div>
+                      
+                      <div className="flex justify-end space-x-3">
+                        <Button
+                          variant="outline"
+                          onClick={resetForm}
+                          type="button"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="primary"
+                          type="submit"
+                          disabled={isUploading}
+                        >
+                          {isUploading 
+                            ? 'Uploading...' 
+                            : editingProduct 
+                              ? 'Update Product' 
+                              : 'Add Product'}
+                        </Button>
+                      </div>
+                    </form>
+                  </Card>
+                )}
+                
+                {/* Error Message */}
+                {error && (
+                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+                    <p className="font-medium">Error</p>
+                    <p>{error}</p>
+                    <div className="flex items-center space-x-2 mt-2">
+                      <button 
+                        onClick={() => setError(null)} 
+                        className="text-sm underline"
+                      >
+                        Dismiss
+                      </button>
+                      <button
+                        onClick={loadProducts}
+                        className="text-sm underline text-primary-700 font-semibold"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Products List */}
+                <Card className="p-6 mb-8">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                      Products
+                    </h2>
+                    {isAdmin && (
+                      <Button
+                        variant="primary"
+                        onClick={() => setShowForm(!showForm)}
+                      >
+                        {showForm ? 'Cancel' : 'Add New Product'}
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {loadingProducts ? (
+                    <div className="flex flex-col justify-center items-center h-32">
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600 mb-2"></div>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">Loading products...</p>
+                      {error && (
+                        <button
+                          onClick={loadProducts}
+                          className="mt-2 text-sm underline text-primary-700 font-semibold"
+                        >
+                          Retry
+                        </button>
+                      )}
+                    </div>
+                  ) : products.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500 dark:text-gray-400">No products found.</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
+                        <colgroup>
+                          <col style={{ width: '280px' }}/>
+                          <col style={{ width: '120px' }}/>
+                          <col style={{ width: '200px' }}/>
+                          {isAdmin && <col style={{ width: '160px' }}/>}
+                        </colgroup>
+                        <thead className="bg-gray-50 dark:bg-gray-700">
+                          <tr>
+                            <th
+                              scope="col"
+                              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                            >
+                              Product
+                            </th>
+                            <th
+                              scope="col"
+                              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                            >
+                              Price
+                            </th>
+                            <th
+                              scope="col"
+                              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                            >
+                              Service Category
+                            </th>
+                            {isAdmin && (
+                              <th
+                                scope="col"
+                                className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                               >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleDelete(product.id)}
-                                className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                              >
-                                Delete
-                              </button>
-                            </td>
-                          )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </Card>
+                                Actions
+                              </th>
+                            )}
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                          {products.map((product) => (
+                            <tr key={product.id}>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <div className="h-10 w-10 flex-shrink-0 relative">
+                                    <Image
+                                      src={product.image || "/placeholder-product.jpg"}
+                                      alt={product.title}
+                                      fill
+                                      className="object-cover rounded-md"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.src = "/placeholder-product.jpg";
+                                      }}
+                                    />
+                                  </div>
+                                  <div className="ml-4 min-w-0">
+                                    <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                      {product.title}
+                                    </div>
+                                    <div className="text-sm text-gray-500 dark:text-gray-400 overflow-hidden text-ellipsis break-normal">
+                                      {product.description || "No description"}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-900 dark:text-white">
+                                  ${product.price?.toFixed(2) || "0.00"}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-900 dark:text-white">
+                                  {product.clientpathurl ? getServiceCategoryName(product.clientpathurl) : 'No category'}
+                                </div>
+                              </td>
+                              {isAdmin && (
+                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                  <button
+                                    onClick={() => handleEdit(product)}
+                                    className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-4"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(product.id)}
+                                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                  >
+                                    Delete
+                                  </button>
+                                </td>
+                              )}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </Card>
+              </>
+            ) : (
+              /* Deals Tab Content */
+              isAdmin && <DealManagement />
+            )}
             
             {/* Quick Actions */}
             <Card className="p-6">
@@ -628,6 +666,16 @@ export default function DashboardPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   FAQs
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => router.push('/cart')}
+                  className="flex items-center justify-center py-3"
+                >
+                  <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m0 0h8" />
+                  </svg>
+                  View Cart
                 </Button>
               </div>
             </Card>

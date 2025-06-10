@@ -22,6 +22,9 @@ interface OrderUpdateData {
   shipping_cost?: number;
   tax_amount?: number;
   total_amount?: number;
+  deal_id?: string | null;
+  deal_code?: string | null;
+  discount_amount?: number;
 }
 
 interface OrderItemData {
@@ -119,7 +122,6 @@ async function updateExistingOrder(orderId: string, session: Stripe.Checkout.Ses
   try {
     console.log('📝 Updating existing order with Stripe details...');
     
-    // Type assertion to access properties that might not be in the base type
     const sessionData = session as Stripe.Checkout.Session & {
       shipping_details?: {
         address?: {
@@ -144,13 +146,11 @@ async function updateExistingOrder(orderId: string, session: Stripe.Checkout.Ses
       stripe_payment_intent_id: typeof sessionData.payment_intent === 'string' 
         ? sessionData.payment_intent 
         : sessionData.payment_intent?.id || null,
-      status: 'processing', // Update status to processing after payment
+      status: 'processing',
       
-      // Update customer details if provided by Stripe
       customer_name: sessionData.customer_details?.name || null,
       customer_phone: sessionData.customer_details?.phone || null,
       
-      // Update shipping address if provided
       shipping_line1: sessionData.shipping_details?.address?.line1 || null,
       shipping_line2: sessionData.shipping_details?.address?.line2 || null,
       shipping_city: sessionData.shipping_details?.address?.city || null,
@@ -158,12 +158,20 @@ async function updateExistingOrder(orderId: string, session: Stripe.Checkout.Ses
       shipping_postal_code: sessionData.shipping_details?.address?.postal_code || null,
       shipping_country: sessionData.shipping_details?.address?.country || null,
       
-      // Update totals from Stripe (in case of discounts, etc.)
       subtotal: (sessionData.amount_subtotal || 0) / 100,
       shipping_cost: (sessionData.shipping_cost?.amount_total || 0) / 100,
       tax_amount: (sessionData.total_details?.amount_tax || 0) / 100,
       total_amount: (sessionData.amount_total || 0) / 100,
     };
+
+    // Add deal information from metadata if present
+    if (sessionData.metadata?.deal_id) {
+      updateData.deal_id = sessionData.metadata.deal_id;
+      updateData.deal_code = sessionData.metadata.deal_code || null;
+      updateData.discount_amount = sessionData.metadata.discount_amount 
+        ? parseFloat(sessionData.metadata.discount_amount) 
+        : 0;
+    }
 
     const { error: updateError } = await supabase
       .from('orders')
@@ -186,7 +194,6 @@ async function createOrderFromStripe(session: Stripe.Checkout.Session) {
   try {
     console.log('🆕 Creating new order from Stripe session...');
     
-    // Type assertion to access properties that might not be in the base type
     const sessionData = session as Stripe.Checkout.Session & {
       shipping_details?: {
         address?: {
@@ -216,7 +223,6 @@ async function createOrderFromStripe(session: Stripe.Checkout.Session) {
       customer_name: sessionData.customer_details?.name || null,
       customer_phone: sessionData.customer_details?.phone || null,
       
-      // Shipping Address
       shipping_line1: sessionData.shipping_details?.address?.line1 || null,
       shipping_line2: sessionData.shipping_details?.address?.line2 || null,
       shipping_city: sessionData.shipping_details?.address?.city || null,
@@ -224,14 +230,22 @@ async function createOrderFromStripe(session: Stripe.Checkout.Session) {
       shipping_postal_code: sessionData.shipping_details?.address?.postal_code || null,
       shipping_country: sessionData.shipping_details?.address?.country || null,
       
-      // Order totals (convert from cents to dollars)
       subtotal: (sessionData.amount_subtotal || 0) / 100,
       shipping_cost: (sessionData.shipping_cost?.amount_total || 0) / 100,
       tax_amount: (sessionData.total_details?.amount_tax || 0) / 100,
       total_amount: (sessionData.amount_total || 0) / 100,
       
-      status: 'processing' // Set to processing since payment is completed
+      status: 'processing'
     };
+
+    // Add deal information from metadata if present
+    if (sessionData.metadata?.deal_id) {
+      orderData.deal_id = sessionData.metadata.deal_id;
+      orderData.deal_code = sessionData.metadata.deal_code || null;
+      orderData.discount_amount = sessionData.metadata.discount_amount 
+        ? parseFloat(sessionData.metadata.discount_amount) 
+        : 0;
+    }
 
     // Insert order
     const { data: order, error: orderError } = await supabase

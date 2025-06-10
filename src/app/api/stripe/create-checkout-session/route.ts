@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
+import { supabase } from '@/lib/supabaseClient';
 
 interface CartItem {
   product: {
@@ -10,6 +11,12 @@ interface CartItem {
     image_url?: string;
   };
   quantity: number;
+}
+
+interface DealInfo {
+  id: string;
+  code: string;
+  discount_amount: number;
 }
 
 interface StripeProductData {
@@ -35,7 +42,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('Request body:', JSON.stringify(body, null, 2));
     
-    const { items, customer_email } = body;
+    const { items, customer_email, deal } = body;
 
     // Validate items
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -68,17 +75,14 @@ export async function POST(request: NextRequest) {
 
     // Create line items for Stripe
     const lineItems = items.map((item: CartItem) => {
-      // Build product_data object with proper typing
       const productData: StripeProductData = {
         name: item.product.name,
       };
 
-      // Only add description if it exists and is not empty
       if (item.product.description && item.product.description.trim() !== '') {
         productData.description = item.product.description.trim();
       }
 
-      // Only add images if image_url exists, is not empty, and is a valid URL
       if (item.product.image_url && 
           item.product.image_url.trim() !== '' && 
           item.product.image_url !== '/placeholder-product.jpg' &&
@@ -95,7 +99,7 @@ export async function POST(request: NextRequest) {
         price_data: {
           currency: 'usd',
           product_data: productData,
-          unit_amount: Math.round(item.product.price * 100), // Convert to cents
+          unit_amount: Math.round(item.product.price * 100),
         },
         quantity: item.quantity,
       };
@@ -106,8 +110,8 @@ export async function POST(request: NextRequest) {
 
     console.log('Creating Stripe session with line items:', lineItems.length);
 
-    // Create Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
+    // Prepare session configuration
+    const sessionConfig: any = {
       payment_method_types: ['card'],
       line_items: lineItems,
       mode: 'payment',
@@ -125,7 +129,68 @@ export async function POST(request: NextRequest) {
       phone_number_collection: {
         enabled: true,
       },
-    });
+    };
+
+    // Add deal information to metadata and apply discount if present
+    if (deal && deal.id && deal.code && deal.discount_amount) {
+      console.log('Adding deal to session:', deal);
+      sessionConfig.metadata.deal_id = deal.id;
+      sessionConfig.metadata.deal_code = deal.code;
+      sessionConfig.metadata.discount_amount = deal.discount_amount.toString();
+
+      // Apply discount using Stripe coupons
+      try {
+        const coupon = await stripe.coupons.create({
+          amount_off: Math.round(deal.discount_amount * 100), // Convert to cents
+          currency: 'usd',
+          duration: 'once',
+          name: `Deal: ${deal.code}`,
+          max_redemptions: 1,
+        });
+
+        sessionConfig.discounts = [{
+          coupon: coupon.id,
+        }];
+
+        console.log('Created Stripe coupon:', coupon.id);
+
+        // Track deal usage
+        if (customer_email) {
+          try {
+            await supabase
+              .from('deal_usage')
+              .insert([{
+                deal_id: deal.id,
+                customer_email: customer_email,
+                discount_amount: deal.discount_amount,
+              }]);
+
+            // Increment usage count
+            await supabase
+              .from('deals')
+              .update({ 
+                usage_count: supabase.raw('usage_count + 1'),
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', deal.id);
+
+            console.log('Deal usage tracked successfully');
+          } catch (usageError) {
+            console.error('Error tracking deal usage:', usageError);
+            // Continue with checkout even if usage tracking fails
+          }
+        }
+
+      } catch (couponError) {
+        console.error('Error creating coupon:', couponError);
+        // Continue without coupon - we'll handle discount in our system
+      }
+    }
+
+    console.log('Creating Stripe session with config:', JSON.stringify(sessionConfig, null, 2));
+
+    // Create Stripe checkout session
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     console.log('Stripe session created successfully:', session.id);
     console.log('Session URL:', session.url);
