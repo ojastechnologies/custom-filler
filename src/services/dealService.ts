@@ -16,19 +16,25 @@ export interface Deal {
   updated_at: string;
 }
 
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-}
-
 interface DealValidationResult {
   isValid: boolean;
   message: string;
   deal?: Deal;
   discountAmount?: number;
+  error?: string;
 }
+
+ 
+export interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image?: string;
+  description?: string;
+  clientpathurl?: string;
+}
+
 
 export const fetchDeals = async (): Promise<Deal[]> => {
   try {
@@ -99,7 +105,18 @@ export const updateDeal = async (id: string, updates: Partial<Omit<Deal, 'id' | 
     console.log('📝 Updating deal:', id, updates);
     
     // Prepare the update data
-    const updateData: any = {};
+    const updateData:  Partial<{
+      code: string;
+      description: string;
+      discount_type: 'percentage' | 'fixed_amount';
+      discount_value: number;
+      minimum_order_amount: number | null;
+      maximum_discount_amount: number | null;
+      usage_limit: number | null;
+      expires_at: string | null;
+      is_active: boolean;
+      usage_count: number;
+    }> = {};
     
     if (updates.code !== undefined) updateData.code = updates.code.toUpperCase().trim();
     if (updates.description !== undefined) updateData.description = updates.description.trim();

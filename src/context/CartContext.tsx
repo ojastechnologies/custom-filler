@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { validateDealCode } from '@/services/dealService';
 
 // Update the Product type to include all fields
@@ -37,6 +37,26 @@ interface Deal {
 interface AppliedDeal {
   deal: Deal;
   discountAmount: number;
+}
+
+// Define the request body type for checkout
+interface CheckoutRequestBody {
+  items: Array<{
+    product: {
+      id: string;
+      name: string;
+      price: number;
+      description: string;
+      image_url: string | null;
+    };
+    quantity: number;
+  }>;
+  customer_email?: string;
+  deal?: {
+    id: string;
+    code: string;
+    discount_amount: number;
+  };
 }
 
 interface CartContextType {
@@ -113,32 +133,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isInitialized, setIsInitialized] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
-  // Load cart and deal from localStorage on initial render
-  useEffect(() => {
-    setItems(loadCartFromStorage());
-    setAppliedDeal(loadDealFromStorage());
-    setIsInitialized(true);
-  }, []);
-
-  // Save cart to localStorage whenever it changes
-  useEffect(() => {
-    if (isInitialized) {
-      saveCartToStorage(items);
-      // Recalculate deal when cart changes
-      if (appliedDeal) {
-        recalculateDeal();
-      }
-    }
-  }, [items, isInitialized]);
-
-  // Save deal to localStorage whenever it changes
-  useEffect(() => {
-    if (isInitialized) {
-      saveDealToStorage(appliedDeal);
-    }
-  }, [appliedDeal, isInitialized]);
-
-  const recalculateDeal = async () => {
+  // Use useCallback to memoize the recalculateDeal function
+  const recalculateDeal = useCallback(async () => {
     if (!appliedDeal) return;
     
     try {
@@ -156,7 +152,32 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('Error recalculating deal:', error);
       setAppliedDeal(null);
     }
-  };
+  }, [appliedDeal, items]);
+
+  // Load cart and deal from localStorage on initial render
+  useEffect(() => {
+    setItems(loadCartFromStorage());
+    setAppliedDeal(loadDealFromStorage());
+    setIsInitialized(true);
+  }, []);
+
+  // Save cart to localStorage whenever it changes and recalculate deal
+  useEffect(() => {
+    if (isInitialized) {
+      saveCartToStorage(items);
+      // Recalculate deal when cart changes
+      if (appliedDeal) {
+        recalculateDeal();
+      }
+    }
+  }, [items, isInitialized, appliedDeal, recalculateDeal]);
+
+  // Save deal to localStorage whenever it changes
+  useEffect(() => {
+    if (isInitialized) {
+      saveDealToStorage(appliedDeal);
+    }
+  }, [appliedDeal, isInitialized]);
 
   const addToCart = (product: Product) => {
     setItems(prevItems => {
@@ -222,12 +243,12 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
         return {
           success: true,
-          message: validation.message
+          message: validation.message || `Deal "${code}" applied successfully!`
         };
       } else {
         return {
           success: false,
-          message: validation.message
+          message: validation.message || 'Invalid deal code'
         };
       }
     } catch (error) {
@@ -270,7 +291,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       console.log('💳 Checkout items prepared:', checkoutItems);
 
-      const requestBody: any = {
+      // Use proper typing instead of 'any'
+      const requestBody: CheckoutRequestBody = {
         items: checkoutItems,
         customer_email: customerEmail || undefined,
       };
@@ -318,12 +340,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const totalItems = items.reduce((total, item) => total + item.quantity, 0);
-  
-  const subtotal = items.reduce(
-    (total, item) => total + item.price * item.quantity, 
-    0
-  );
-
+  const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0);
   const discountAmount = appliedDeal ? appliedDeal.discountAmount : 0;
   const finalTotal = Math.max(0, subtotal - discountAmount);
 

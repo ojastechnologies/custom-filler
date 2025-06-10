@@ -28,6 +28,7 @@ export default function DealInput() {
       }
     } catch (error) {
       setMessage('Error applying deal. Please try again.');
+      console.error('Error applying deal:', error);
     } finally {
       setIsApplying(false);
     }

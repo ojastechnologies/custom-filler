@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { supabase } from '@/lib/supabaseClient';
+import Stripe from 'stripe';
+// import Stripe from 'stripe';
 
 interface CartItem {
   product: {
@@ -12,18 +14,24 @@ interface CartItem {
   };
   quantity: number;
 }
-
-interface DealInfo {
-  id: string;
-  code: string;
-  discount_amount: number;
-}
+ 
 
 interface StripeProductData {
   name: string;
   description?: string;
   images?: string[];
 }
+
+
+type StripeSessionConfig = Partial<Stripe.Checkout.SessionCreateParams> & {
+  payment_method_types: string[];
+  line_items: Stripe.Checkout.SessionCreateParams.LineItem[];
+  mode: 'payment' | 'setup' | 'subscription';
+  success_url: string;
+  cancel_url: string;
+  metadata: Record<string, string>;
+};
+
 
 // Helper function to validate URL
 function isValidUrl(string: string): boolean {
@@ -111,7 +119,7 @@ export async function POST(request: NextRequest) {
     console.log('Creating Stripe session with line items:', lineItems.length);
 
     // Prepare session configuration
-    const sessionConfig: any = {
+    const sessionConfig: StripeSessionConfig = {
       payment_method_types: ['card'],
       line_items: lineItems,
       mode: 'payment',
@@ -165,11 +173,11 @@ export async function POST(request: NextRequest) {
                 discount_amount: deal.discount_amount,
               }]);
 
-            // Increment usage count
+            // Increment usage count using SQL expression
             await supabase
               .from('deals')
               .update({ 
-                usage_count: supabase.raw('usage_count + 1'),
+                usage_count: "usage_count + 1",
                 updated_at: new Date().toISOString()
               })
               .eq('id', deal.id);

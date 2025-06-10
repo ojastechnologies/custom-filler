@@ -4,13 +4,15 @@ import { supabase } from '@/lib/supabaseClient';
 // GET - Fetch single deal
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    
     const { data: deal, error } = await supabase
       .from('deals')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (error) throw error;
@@ -35,9 +37,10 @@ export async function GET(
 // PUT - Update deal
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const dealData = await request.json();
 
     const { data: deal, error } = await supabase
@@ -47,7 +50,7 @@ export async function PUT(
         code: dealData.code.toUpperCase(),
         updated_at: new Date().toISOString()
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single();
 
@@ -81,13 +84,15 @@ export async function PUT(
 // DELETE - Delete deal
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    
     const { error } = await supabase
       .from('deals')
       .delete()
-      .eq('id', params.id);
+      .eq('id', id);
 
     if (error) throw error;
 

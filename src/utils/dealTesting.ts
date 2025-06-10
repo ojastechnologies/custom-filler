@@ -17,7 +17,7 @@ export const testDealValidation = async () => {
   for (const code of testCodes) {
     console.log(`\n--- Testing code: ${code} ---`);
     try {
-      const result = await validateDealCode(code, testCartItems, 'test@example.com');
+      const result = await validateDealCode(code, testCartItems);
       console.log('Result:', result);
     } catch (error) {
       console.error('Error:', error);
@@ -26,6 +26,6 @@ export const testDealValidation = async () => {
 };
 
 // Run in browser console: testDealValidation()
-if (typeof window !== 'undefined') {
-  (window as any).testDealValidation = testDealValidation;
-}
+// if (typeof window !== 'undefined') {
+//   (window).testDealValidation = testDealValidation;
+// }

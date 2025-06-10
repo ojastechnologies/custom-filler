@@ -66,7 +66,7 @@ export default function CartPage() {
                   Your cart is empty
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Looks like you haven't added any products to your cart yet.
+                  Looks like you haven&apos;ßt added any products to your cart yet.
                 </p>
                 <Link 
                   href="/services" 
@@ -240,7 +240,7 @@ export default function CartPage() {
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
                         />
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          We'll send your receipt to this email address
+                          We&apos;ll send your receipt to this email address
                         </p>
                       </div>
                       

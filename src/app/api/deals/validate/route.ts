@@ -8,25 +8,7 @@ interface CartItem {
   quantity: number;
 }
 
-interface Deal {
-  id: string;
-  code: string;
-  name: string;
-  description?: string;
-  type: 'percentage' | 'fixed_amount' | 'buy_x_get_y';
-  percentage_off?: number;
-  fixed_amount_off?: number;
-  buy_quantity?: number;
-  get_quantity?: number;
-  minimum_order_amount: number;
-  maximum_discount_amount?: number;
-  usage_limit?: number;
-  usage_count: number;
-  per_customer_limit: number;
-  start_date: string;
-  end_date?: string;
-  is_active: boolean;
-}
+
 
 export async function POST(request: NextRequest) {
   try {
