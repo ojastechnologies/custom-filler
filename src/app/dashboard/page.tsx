@@ -11,8 +11,10 @@ import Image from 'next/image';
 import { fetchProducts, createProduct, updateProduct, deleteProduct, uploadProductImage } from '@/services/productsService';
 import ImageUploader from '@/components/admin/ImageUploader';
 import DealManagement from '@/components/admin/DealManagement';
+import DealForm from '@/components/admin/DealForm';
 import { ProductType } from '@/types/product';
 import { supabase } from '@/lib/supabaseClient';
+import { fetchActiveDeals, createDeal, Deal } from '@/services/dealService';
 
 import { debugStorageBucket } from '@/services/productsService';
 
@@ -49,16 +51,33 @@ export default function DashboardPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
+  // Deal assignment state
+  const [dealAssignmentType, setDealAssignmentType] = useState<'none' | 'existing' | 'new'>('none');
+  const [deals, setDeals] = useState<Deal[]>([]);
+  const [loadingDeals, setLoadingDeals] = useState(false);
+  const [dealError, setDealError] = useState<string | null>(null);
+  
+  // New deal form data
+  const [newDealData, setNewDealData] = useState({
+    code: '',
+    description: '',
+    discount_type: 'percentage' as 'percentage' | 'fixed_amount',
+    discount_value: '',
+    minimum_order_amount: '',
+    maximum_discount_amount: '',
+    usage_limit: '',
+    expires_at: '',
+    is_active: true
+  });
+
   debugStorageBucket();
 
   useEffect(() => {
     // Redirect if not logged in
     if (!loading && !user) {
-      // If Supabase thinks there is a session but AuthContext does not, clear it
       supabase.auth.getSession().then(({ data }) => {
         if (data?.session) {
           supabase.auth.signOut();
-          // Remove legacy keys if present
           localStorage.removeItem('supabase.auth.token');
           localStorage.removeItem('supabase.auth.refresh_token');
           localStorage.removeItem('supabase.auth.access_token');
@@ -68,19 +87,15 @@ export default function DashboardPage() {
     }
   }, [user, loading, router]);
 
-  // Robust session sync: Wait for both Supabase and AuthContext to resolve before redirecting or fetching
   useEffect(() => {
-    if (loading) return; // Wait for AuthContext to finish loading
+    if (loading) return;
     supabase.auth.getSession().then(({ data }) => {
       const supabaseSession = !!data?.session;
       if (!user && !supabaseSession) {
-        // No session anywhere: redirect
         router.push('/auth/enter-portal-9f3b2');
       } else if (!user && supabaseSession) {
-        // Supabase has session but AuthContext does not: force reload to sync context
         window.location.reload();
       }
-      // else: user is present, do nothing (normal flow)
     });
   }, [user, loading, router]);
 
@@ -114,9 +129,33 @@ export default function DashboardPage() {
     }
   }, [fetchProductsWithTimeout]);
 
+  // Load deals when deal assignment type changes to existing
+  const loadDeals = useCallback(async () => {
+    if (dealAssignmentType !== 'existing') return;
+    
+    try {
+      setLoadingDeals(true);
+      setDealError(null);
+      const data = await fetchActiveDeals();
+      setDeals(data);
+    } catch (err: unknown) {
+      console.error('Error fetching deals:', err);
+      if (err instanceof Error) {
+        setDealError(err.message || 'Failed to load deals');
+      } else {
+        setDealError('Failed to load deals');
+      }
+    } finally {
+      setLoadingDeals(false);
+    }
+  }, [dealAssignmentType]);
+
+  useEffect(() => {
+    loadDeals();
+  }, [loadDeals]);
+
   // Fetch products
   useEffect(() => {
-    // Only check session for dashboard, not for public product fetches
     if (!loading && user && activeTab === 'products') {
       const checkAndLoadProducts = async () => {
         const { data } = await supabase.auth.getSession();
@@ -135,8 +174,45 @@ export default function DashboardPage() {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'unit_price' ? parseFloat(value) || 0 : value
+      [name]: name === 'price' ? parseFloat(value) || 0 : value
     }));
+  };
+
+  // Handle deal assignment type change
+  const handleDealAssignmentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value as 'none' | 'existing' | 'new';
+    setDealAssignmentType(value);
+    setDealError(null);
+    
+    // Reset deal-related form data
+    if (value === 'none') {
+      setFormData(prev => ({ ...prev, deal_id: undefined }));
+    } else if (value === 'new') {
+      // Reset new deal form
+      setNewDealData({
+        code: '',
+        description: '',
+        discount_type: 'percentage',
+        discount_value: '',
+        minimum_order_amount: '',
+        maximum_discount_amount: '',
+        usage_limit: '',
+        expires_at: '',
+        is_active: true
+      });
+    }
+  };
+
+  // Handle existing deal selection
+  const handleExistingDealChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const dealId = e.target.value;
+    setFormData(prev => ({ ...prev, deal_id: dealId || undefined }));
+  };
+
+  // Handle new deal form data change
+  const handleNewDealDataChange = (data: typeof newDealData) => {
+    setNewDealData(data);
+    setDealError(null);
   };
 
   // Handle image selection
@@ -148,18 +224,70 @@ export default function DashboardPage() {
     setSelectedFile(file);
   };
 
+  // Validate deal data
+  const validateDealData = (dealData: typeof newDealData): string | null => {
+    if (!dealData.code.trim()) return 'Deal code is required';
+    if (!dealData.description.trim()) return 'Deal description is required';
+    if (!dealData.discount_value) return 'Discount value is required';
+    
+    const discountValue = Number(dealData.discount_value);
+    if (discountValue <= 0) return 'Discount value must be greater than 0';
+    
+    if (dealData.discount_type === 'percentage' && discountValue > 100) {
+      return 'Percentage discount cannot exceed 100%';
+    }
+    
+    return null;
+  };
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAdmin) return;
+    
     try {
       setIsUploading(true);
+      setError(null);
+      setDealError(null);
+      
+      let dealId: string | undefined = undefined;
+      
+      // Handle deal creation if needed
+      if (dealAssignmentType === 'new') {
+        const dealValidationError = validateDealData(newDealData);
+        if (dealValidationError) {
+          setDealError(dealValidationError);
+          return;
+        }
+        
+        console.log('Creating new deal:', newDealData);
+        const newDeal = await createDeal({
+          code: newDealData.code,
+          description: newDealData.description,
+          discount_type: newDealData.discount_type,
+          discount_value: Number(newDealData.discount_value),
+          minimum_order_amount: newDealData.minimum_order_amount ? Number(newDealData.minimum_order_amount) : undefined,
+          maximum_discount_amount: newDealData.maximum_discount_amount ? Number(newDealData.maximum_discount_amount) : undefined,
+          usage_limit: newDealData.usage_limit ? Number(newDealData.usage_limit) : undefined,
+          expires_at: newDealData.expires_at || undefined,
+          is_active: newDealData.is_active
+        });
+        
+        dealId = newDeal.id;
+        console.log('Deal created successfully:', newDeal);
+      } else if (dealAssignmentType === 'existing') {
+        dealId = formData.deal_id;
+      }
+      
+      // Handle image upload
       let imageUrl = formData.image;
       if (selectedFile) {
         imageUrl = await uploadProductImage(selectedFile);
       }
+      
+      // Create or update product
       if (editingProduct) {
-        // Update existing product using the service
+        console.log('Updating product with deal_id:', dealId);
         const result = await updateProduct(editingProduct.id, {
           title: formData.title,
           description: formData.description,
@@ -168,6 +296,7 @@ export default function DashboardPage() {
           category: formData.category,
           about_url: formData.about_url,
           clientpathurl: formData.clientpathurl,
+          deal_id: dealId,
           imageFile: selectedFile || undefined,
         });
         setProducts((prev) =>
@@ -176,7 +305,7 @@ export default function DashboardPage() {
           )
         );
       } else {
-        // Create new product using the service
+        console.log('Creating product with deal_id:', dealId);
         const result = await createProduct({
           name: formData.title,
           description: formData.description,
@@ -186,9 +315,11 @@ export default function DashboardPage() {
           category: formData.category,
           about_url: formData.about_url,
           clientpathurl: formData.clientpathurl,
+          deal_id: dealId,
         });
         setProducts([...products, { ...result }]);
       }
+      
       resetForm();
     } catch (err: unknown) {
       console.error('Error saving product:', err);
@@ -210,6 +341,14 @@ export default function DashboardPage() {
     setFormData({
       ...product
     });
+    
+    // Set deal assignment type based on existing product
+    if (product.deal_id) {
+      setDealAssignmentType('existing');
+    } else {
+      setDealAssignmentType('none');
+    }
+    
     setSelectedFile(null);
     setShowForm(true);
   };
@@ -249,12 +388,36 @@ export default function DashboardPage() {
     setEditingProduct(null);
     setSelectedFile(null);
     setShowForm(false);
+    setDealAssignmentType('none');
+    setNewDealData({
+      code: '',
+      description: '',
+      discount_type: 'percentage',
+      discount_value: '',
+      minimum_order_amount: '',
+      maximum_discount_amount: '',
+      usage_limit: '',
+      expires_at: '',
+      is_active: true
+    });
+    setDealError(null);
   };
 
   // Helper function to get service category name from path
   const getServiceCategoryName = (path: string) => {
     const category = SERVICE_CATEGORIES.find(cat => cat.path === path);
     return category ? category.name : path;
+  };
+
+  // Helper function to get deal display
+  const getDealDisplay = (product: ProductType) => {
+    if (product.deal) {
+      const discount = product.deal.discount_type === 'percentage' 
+        ? `${product.deal.discount_value}%` 
+        : `$${product.deal.discount_value}`;
+      return `${product.deal.code} (${discount})`;
+    }
+    return 'No deal';
   };
 
   if (loading) {
@@ -272,7 +435,7 @@ export default function DashboardPage() {
   }
 
   if (!user) {
-    return null; // Will redirect in useEffect
+    return null;
   }
 
   return (
@@ -365,7 +528,7 @@ export default function DashboardPage() {
                             type="text"
                             value={formData.title}
                             onChange={handleInputChange}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
                             required
                           />
                         </div>
@@ -407,6 +570,63 @@ export default function DashboardPage() {
                           ))}
                         </select>
                       </div>
+
+                      {/* Deal Assignment Section */}
+                      <div className="mb-6">
+                        <label htmlFor="deal_assignment" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Deal Assignment (Optional)
+                        </label>
+                        <select
+                          id="deal_assignment"
+                          value={dealAssignmentType}
+                          onChange={handleDealAssignmentChange}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                        >
+                          <option value="none">No deal</option>
+                          <option value="existing">Assign existing deal</option>
+                          <option value="new">Create new deal with this product</option>
+                        </select>
+                      </div>
+
+                      {/* Existing Deal Selection */}
+                      {dealAssignmentType === 'existing' && (
+                        <div className="mb-6">
+                          <label htmlFor="existing_deal" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Select Deal
+                          </label>
+                          {loadingDeals ? (
+                            <div className="flex items-center justify-center py-4">
+                              <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary-600"></div>
+                              <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">Loading deals...</span>
+                            </div>
+                          ) : dealError ? (
+                            <div className="bg-red-100 dark:bg-red-900 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 px-4 py-3 rounded-md">
+                              <p className="text-sm">{dealError}</p>
+                              <button 
+                                type="button"
+                                onClick={loadDeals} 
+                                className="text-sm underline mt-1"
+                              >
+                                Retry
+                              </button>
+                            </div>
+                          ) : (
+                            <select
+                              id="existing_deal"
+                              value={formData.deal_id || ''}
+                              onChange={handleExistingDealChange}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                            >
+                              <option value="">Select a deal</option>
+                              {deals.filter(deal => deal.is_active).map((deal) => (
+                                <option key={deal.id} value={deal.id}>
+                                  {deal.code} - {deal.description} ({deal.discount_type === 'percentage' ? `${deal.discount_value}%` : `$${deal.discount_value}`})
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                      )}
                       
                       <div className="mb-6">
                         <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -434,6 +654,15 @@ export default function DashboardPage() {
                           Recommended size: 800x800px. Max file size: 2MB.
                         </p>
                       </div>
+
+                      {/* New Deal Form - Only show when creating new deal */}
+                      {dealAssignmentType === 'new' && (
+                        <DealForm
+                          formData={newDealData}
+                          onFormDataChange={handleNewDealDataChange}
+                          error={dealError}
+                        />
+                      )}
                       
                       <div className="flex justify-end space-x-3">
                         <Button
@@ -449,10 +678,10 @@ export default function DashboardPage() {
                           disabled={isUploading}
                         >
                           {isUploading 
-                            ? 'Uploading...' 
+                            ? 'Saving...' 
                             : editingProduct 
-                              ? 'Update Product' 
-                              : 'Add Product'}
+                              ? (dealAssignmentType === 'new' ? 'Update Product & Create Deal' : 'Update Product')
+                              : (dealAssignmentType === 'new' ? 'Create Product & Deal' : 'Create Product')}
                         </Button>
                       </div>
                     </form>
@@ -521,6 +750,7 @@ export default function DashboardPage() {
                           <col style={{ width: '280px' }}/>
                           <col style={{ width: '120px' }}/>
                           <col style={{ width: '200px' }}/>
+                          <col style={{ width: '180px' }}/>
                           {isAdmin && <col style={{ width: '160px' }}/>}
                         </colgroup>
                         <thead className="bg-gray-50 dark:bg-gray-700">
@@ -542,6 +772,12 @@ export default function DashboardPage() {
                               className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                             >
                               Service Category
+                            </th>
+                            <th
+                              scope="col"
+                              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                            >
+                              Deal
                             </th>
                             {isAdmin && (
                               <th
@@ -590,11 +826,24 @@ export default function DashboardPage() {
                                   {product.clientpathurl ? getServiceCategoryName(product.clientpathurl) : 'No category'}
                                 </div>
                               </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-900 dark:text-white">
+                                  {getDealDisplay(product)}
+                                </div>
+                                {product.deal && (
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                                    {product.deal.is_active ? 'Active' : 'Inactive'}
+                                    {product.deal.expires_at && (
+                                      <span> • Expires: {new Date(product.deal.expires_at).toLocaleDateString()}</span>
+                                    )}
+                                  </div>
+                                )}
+                              </td>
                               {isAdmin && (
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                   <button
                                     onClick={() => handleEdit(product)}
-                                    className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-4"
+                                                                        className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-4"
                                   >
                                     Edit
                                   </button>

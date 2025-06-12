@@ -5,7 +5,16 @@ export const fetchProducts = async (): Promise<ProductType[]> => {
   try {
     const { data, error } = await supabase
       .from('products')
-      .select('*');
+      .select(`
+        *,
+        deals:deal_id (
+          id,
+          code,
+          description,
+          discount_type,
+          discount_value
+        )
+      `);
       
     if (error) throw error;
     if (!data || data.length === 0) return [];
@@ -19,6 +28,14 @@ export const fetchProducts = async (): Promise<ProductType[]> => {
       category: item.category || undefined,
       about_url: item.about_url || undefined,
       clientpathurl: item.clientpathurl || undefined,
+      deal_id: item.deal_id || undefined,
+      deal: item.deals ? {
+        id: item.deals.id,
+        code: item.deals.code,
+        description: item.deals.description,
+        discount_type: item.deals.discount_type,
+        discount_value: item.deals.discount_value
+      } : undefined,
     }));
   } catch (err) {
     console.error('Error fetching products:', err);
@@ -178,6 +195,7 @@ export const createProduct = async (product: {
   category?: string;
   about_url?: string;
   clientpathurl?: string;
+  deal_id?: string; // New field
 }): Promise<ProductType> => {
   try {
     let imageUrl = product.thumbnail_url;
@@ -201,6 +219,7 @@ export const createProduct = async (product: {
       thumbnail_url: imageUrl,
       about_url: product.about_url,
       clientpathurl: product.clientpathurl,
+      deal_id: product.deal_id,
     });
     
     const { data, error } = await supabase
@@ -213,9 +232,19 @@ export const createProduct = async (product: {
           thumbnail_url: imageUrl,
           about_url: product.about_url,
           clientpathurl: product.clientpathurl,
+          deal_id: product.deal_id || null,
         },
       ])
-      .select();
+      .select(`
+        *,
+        deals:deal_id (
+          id,
+          code,
+          description,
+          discount_type,
+          discount_value
+        )
+      `);
       
     if (error) {
       console.error('[createProduct] Supabase insert error:', error);
@@ -235,15 +264,24 @@ export const createProduct = async (product: {
       throw new Error('No data returned from insert');
     }
     
+    const item = data[0];
     return {
-      id: data[0].id,
-      title: data[0].name,
-      price: data[0].unit_price,
-      image: data[0].thumbnail_url,
-      description: data[0].description,
-      category: data[0].category,
-      about_url: data[0].about_url,
-      clientpathurl: data[0].clientpathurl,
+      id: item.id,
+      title: item.name,
+      price: item.unit_price,
+      image: item.thumbnail_url,
+      description: item.description || 'No description available',
+      category: item.category || undefined,
+      about_url: item.about_url || undefined,
+      clientpathurl: item.clientpathurl || undefined,
+      deal_id: item.deal_id,
+      deal: item.deals ? {
+        id: item.deals.id,
+        code: item.deals.code,
+        description: item.deals.description,
+        discount_type: item.deals.discount_type,
+        discount_value: item.deals.discount_value
+      } : undefined,
     };
   } catch (err) {
     console.error('[createProduct] Caught error:', err);
@@ -294,7 +332,8 @@ export const updateProduct = async (
       unit_price: updates.price,
       thumbnail_url: imageUrl,
       about_url: updates.about_url,
-      clientpathurl: updates.clientpathurl
+      clientpathurl: updates.clientpathurl,
+      deal_id: updates.deal_id
     });
     
     const { data, error } = await supabase
@@ -305,10 +344,20 @@ export const updateProduct = async (
         unit_price: updates.price,
         thumbnail_url: imageUrl,
         about_url: updates.about_url,
-        clientpathurl: updates.clientpathurl
+        clientpathurl: updates.clientpathurl,
+        deal_id: updates.deal_id || null
       })
       .eq('id', id)
-      .select();
+      .select(`
+        *,
+        deals:deal_id (
+          id,
+          code,
+          description,
+          discount_type,
+          discount_value
+        )
+      `);
       
     if (error) {
       console.error('[updateProduct] Update failed:', error);
@@ -333,15 +382,24 @@ export const updateProduct = async (
     
     console.log('[updateProduct] Product updated successfully:', data[0].name);
     
+    const item = data[0];
     return {
-      id: data[0].id,
-      title: data[0].name,
-      price: data[0].unit_price,
-      image: data[0].thumbnail_url,
-      description: data[0].description,
-      category: data[0].category,
-      about_url: data[0].about_url,
-      clientpathurl: data[0].clientpathurl
+      id: item.id,
+      title: item.name,
+      price: item.unit_price,
+      image: item.thumbnail_url,
+      description: item.description || 'No description available',
+      category: item.category,
+      about_url: item.about_url,
+      clientpathurl: item.clientpathurl,
+      deal_id: item.deal_id,
+      deal: item.deals ? {
+        id: item.deals.id,
+        code: item.deals.code,
+        description: item.deals.description,
+        discount_type: item.deals.discount_type,
+        discount_value: item.deals.discount_value
+      } : undefined,
     };
   } catch (err) {
     console.error('[updateProduct] Error during update:', err);

@@ -9,4 +9,18 @@ export interface ProductType {
   quantity?: number;
   about_url?: string;
   clientpathurl?: string;
+  deal_id?: string;
+  deal?: {
+    id: string;
+    code: string;
+    description: string;
+    discount_type: 'percentage' | 'fixed_amount';
+    discount_value: number;
+    minimum_order_amount?: number;
+    maximum_discount_amount?: number;
+    usage_limit?: number;
+    usage_count: number;
+    expires_at?: string;
+    is_active: boolean;
+  };
 }

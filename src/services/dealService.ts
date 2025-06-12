@@ -57,6 +57,28 @@ export const fetchDeals = async (): Promise<Deal[]> => {
   }
 };
 
+export const fetchActiveDeals = async (): Promise<Deal[]> => {
+  try {
+    console.log('🔍 Fetching active deals...');
+    const { data, error } = await supabase
+      .from('deals')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('❌ Error fetching active deals:', error);
+      throw error;
+    }
+    
+    console.log('✅ Active deals fetched successfully:', data?.length || 0);
+    return data || [];
+  } catch (err) {
+    console.error('❌ Error in fetchActiveDeals:', err);
+    throw err;
+  }
+};
+
 export const createDeal = async (dealData: Omit<Deal, 'id' | 'usage_count' | 'created_at' | 'updated_at'>): Promise<Deal> => {
   try {
     console.log('🆕 Creating deal:', dealData);
