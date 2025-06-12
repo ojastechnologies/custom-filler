@@ -365,7 +365,7 @@ export default function OrdersPage() {
                               <tr key={item.id}>
                                 <td className="px-4 py-2">
                                   <div className="flex items-center">
-                                    {item.product_image && (
+                                    {/* {item.product_image && (
                                         <Image
                                           src={item.product_image}
                                           alt={item.product_name}
@@ -373,7 +373,7 @@ export default function OrdersPage() {
                                           className="object-cover rounded"
                                           sizes="40px"
                                         />
-                                    )}
+                                    )} */}
                                     <div>
                                       <p className="text-sm font-medium text-gray-900 dark:text-white">{item.product_name}</p>
                                       {item.product_description && (
