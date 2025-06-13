@@ -2,26 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { supabase } from '@/lib/supabaseClient';
 import Stripe from 'stripe';
-// import Stripe from 'stripe';
 
 interface CartItem {
-  product: {
-    id: string;
-    name: string;
-    price: number;
-    description?: string;
-    image_url?: string;
-  };
+  id: string;
+  name: string;
+  price: number;
   quantity: number;
+  image?: string;
+  description?: string;
+  clientpathurl?: string;
 }
- 
 
 interface StripeProductData {
   name: string;
   description?: string;
   images?: string[];
+  metadata?: Record<string, string>;
 }
-
 
 type StripeSessionConfig = Partial<Stripe.Checkout.SessionCreateParams> & {
   payment_method_types: string[];
@@ -31,7 +28,6 @@ type StripeSessionConfig = Partial<Stripe.Checkout.SessionCreateParams> & {
   cancel_url: string;
   metadata: Record<string, string>;
 };
-
 
 // Helper function to validate URL
 function isValidUrl(string: string): boolean {
@@ -64,7 +60,7 @@ export async function POST(request: NextRequest) {
     // Validate each item
     for (let i = 0; i < items.length; i++) {
       const item = items[i] as CartItem;
-      if (!item.product || !item.product.name || !item.product.price || !item.quantity) {
+      if (!item.name || !item.price || !item.quantity) {
         console.error(`Invalid item at index ${i}:`, item);
         return NextResponse.json(
           { error: `Invalid item structure at index ${i}` },
@@ -72,10 +68,10 @@ export async function POST(request: NextRequest) {
         );
       }
       
-      if (typeof item.product.price !== 'number' || item.product.price <= 0) {
-        console.error(`Invalid price for item ${i}:`, item.product.price);
+      if (typeof item.price !== 'number' || item.price <= 0) {
+        console.error(`Invalid price for item ${i}:`, item.price);
         return NextResponse.json(
-          { error: `Invalid price for item: ${item.product.name}` },
+          { error: `Invalid price for item: ${item.name}` },
           { status: 400 }
         );
       }
@@ -84,30 +80,34 @@ export async function POST(request: NextRequest) {
     // Create line items for Stripe
     const lineItems = items.map((item: CartItem) => {
       const productData: StripeProductData = {
-        name: item.product.name,
+        name: item.name,
+        metadata: {
+          product_id: item.id,
+          clientpathurl: item.clientpathurl || ''
+        }
       };
 
-      if (item.product.description && item.product.description.trim() !== '') {
-        productData.description = item.product.description.trim();
+      if (item.description && item.description.trim() !== '') {
+        productData.description = item.description.trim();
       }
 
-      if (item.product.image_url && 
-          item.product.image_url.trim() !== '' && 
-          item.product.image_url !== '/placeholder-product.jpg' &&
-          !item.product.image_url.includes('placeholder') &&
-          isValidUrl(item.product.image_url)) {
+      if (item.image && 
+          item.image.trim() !== '' && 
+          item.image !== '/placeholder-product.jpg' &&
+          !item.image.includes('placeholder') &&
+          isValidUrl(item.image)) {
         
-        console.log(`Adding valid image URL for ${item.product.name}:`, item.product.image_url);
-        productData.images = [item.product.image_url];
+        console.log(`Adding valid image URL for ${item.name}:`, item.image);
+        productData.images = [item.image];
       } else {
-        console.log(`Skipping invalid/placeholder image for ${item.product.name}:`, item.product.image_url);
+        console.log(`Skipping invalid/placeholder image for ${item.name}:`, item.image);
       }
 
       const lineItem = {
         price_data: {
           currency: 'usd',
           product_data: productData,
-          unit_amount: Math.round(item.product.price * 100),
+          unit_amount: Math.round(item.price * 100),
         },
         quantity: item.quantity,
       };
@@ -129,6 +129,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         order_type: 'online_purchase',
         items_count: items.length.toString(),
+        customer_email: customer_email || '',
       },
       shipping_address_collection: {
         allowed_countries: ['US', 'CA', 'GB'],
@@ -173,11 +174,11 @@ export async function POST(request: NextRequest) {
                 discount_amount: deal.discount_amount,
               }]);
 
-            // Increment usage count using SQL expression
+            // Increment usage count
             await supabase
               .from('deals')
               .update({ 
-                usage_count: "usage_count + 1",
+                usage_count: deal.usage_count + 1,
                 updated_at: new Date().toISOString()
               })
               .eq('id', deal.id);

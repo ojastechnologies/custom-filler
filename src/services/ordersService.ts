@@ -1,14 +1,27 @@
 import { supabase } from '@/lib/supabaseClient';
 
+export interface OrderItem {
+  id: string;
+  product_id: string;
+  product_name: string;
+  product_description?: string;
+  product_image?: string;
+  product_clientpathurl?: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+}
+
 export interface Order {
   id: string;
+  order_number: string;
   stripe_session_id?: string;
   stripe_payment_intent_id?: string;
   customer_email: string;
   customer_name?: string;
   customer_phone?: string;
   
-  // Shipping Address
+  // Shipping address
   shipping_line1?: string;
   shipping_line2?: string;
   shipping_city?: string;
@@ -16,38 +29,19 @@ export interface Order {
   shipping_postal_code?: string;
   shipping_country?: string;
   
-  // Order Details
+  // Order totals
   subtotal: number;
   shipping_cost: number;
   tax_amount: number;
   total_amount: number;
   currency: string;
   
-  // Order Status
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  
-  // Timestamps
   created_at: string;
   updated_at: string;
-  shipped_at?: string;
-  delivered_at?: string;
   
   // Related data
   order_items?: OrderItem[];
-}
-
-export interface OrderItem {
-  id: string;
-  order_id: string;
-  product_id: string;
-  product_name: string;
-  product_description?: string;
-  product_image?: string;
-  product_clientpathurl?: string; // Added this field
-  quantity: number;
-  unit_price: number;
-  total_price: number;
-  created_at: string;
 }
 
 export interface CreateOrderData {
@@ -65,16 +59,18 @@ export interface CreateOrderData {
   tax_amount: number;
   total_amount: number;
   currency: string;
-  items: {
-    product_id: string;
-    product_name: string;
-    product_description?: string;
-    product_image?: string;
-    product_clientpathurl?: string;
+  deal_id?: string;
+  deal_code?: string;
+  discount_amount?: number;
+  items: Array<{
+    id: string;
+    name: string;
+    price: number;
     quantity: number;
-    unit_price: number;
-    total_price: number;
-  }[];
+    image?: string;
+    description?: string;
+    clientpathurl?: string;
+  }>;
 }
 
 // Create order in database with all fields
@@ -82,11 +78,15 @@ export const createOrderInDatabase = async (orderData: CreateOrderData): Promise
   try {
     console.log('🚀 Creating order in database with data:', orderData);
 
+    // Generate order number
+    const orderNumber = `ORD-${Date.now()}`;
+
     // First, create the order
     const { data: orderResult, error: orderError } = await supabase
       .from('orders')
       .insert([
         {
+          order_number: orderNumber,
           customer_email: orderData.customer_email,
           customer_name: orderData.customer_name,
           customer_phone: orderData.customer_phone,
@@ -95,12 +95,15 @@ export const createOrderInDatabase = async (orderData: CreateOrderData): Promise
           shipping_city: orderData.shipping_city,
           shipping_state: orderData.shipping_state,
           shipping_postal_code: orderData.shipping_postal_code,
-          shipping_country: orderData.shipping_country,
+          shipping_country: orderData.shipping_country || 'US',
           subtotal: orderData.subtotal,
           shipping_cost: orderData.shipping_cost,
           tax_amount: orderData.tax_amount,
           total_amount: orderData.total_amount,
           currency: orderData.currency,
+          deal_id: orderData.deal_id,
+          deal_code: orderData.deal_code,
+          discount_amount: orderData.discount_amount || 0,
           status: 'pending'
         }
       ])
@@ -112,44 +115,111 @@ export const createOrderInDatabase = async (orderData: CreateOrderData): Promise
       throw new Error(`Failed to create order: ${orderError.message}`);
     }
 
-    console.log('✅ Order created successfully:', orderResult);
-
-    // Now create the order items with ALL fields
-    const orderItems = orderData.items.map(item => ({
-      order_id: orderResult.id,
-      product_id: item.product_id,
-      product_name: item.product_name,
-      product_description: item.product_description,
-      product_image: item.product_image,
-      product_clientpathurl: item.product_clientpathurl, // Include this field
-      quantity: item.quantity,
-      unit_price: item.unit_price,
-      total_price: item.total_price
-    }));
-
-    console.log('📝 Creating order items with ALL fields:', orderItems);
-
-    const { data: itemsResult, error: itemsError } = await supabase
-      .from('order_items')
-      .insert(orderItems)
-      .select();
-
-    if (itemsError) {
-      console.error('❌ Error creating order items:', itemsError);
-      // If items creation fails, we should probably delete the order too
-      await supabase.from('orders').delete().eq('id', orderResult.id);
-      throw new Error(`Failed to create order items: ${itemsError.message}`);
+    if (!orderResult) {
+      throw new Error('No order data returned from database');
     }
 
-    console.log('✅ Order items created successfully:', itemsResult);
+    console.log('✅ Order created successfully:', orderResult.order_number);
 
-    return {
-      ...orderResult,
-      order_items: itemsResult
-    };
+    // Create order items
+    if (orderData.items && orderData.items.length > 0) {
+      const orderItems = orderData.items.map(item => ({
+        order_id: orderResult.id,
+        product_id: item.id,
+        product_name: item.name,
+        product_description: item.description || null,
+        product_image: item.image || null,
+        product_clientpathurl: item.clientpathurl || null,
+        quantity: item.quantity,
+        unit_price: item.price,
+        total_price: item.price * item.quantity
+      }));
+
+      console.log('📦 Creating order items:', orderItems);
+
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems);
+
+      if (itemsError) {
+        console.error('❌ Error creating order items:', itemsError);
+        // Try to delete the order if items creation failed
+        await supabase.from('orders').delete().eq('id', orderResult.id);
+        throw new Error(`Failed to create order items: ${itemsError.message}`);
+      }
+
+      console.log('✅ Order items created successfully');
+    }
+
+    // Handle deal usage if applicable
+    if (orderData.deal_id) {
+      try {
+        console.log('📈 Incrementing deal usage for deal:', orderData.deal_id);
+        
+        const { error: dealError } = await supabase.rpc('increment_deal_usage', {
+          deal_id: orderData.deal_id
+        });
+
+        if (dealError) {
+          console.error('❌ Error incrementing deal usage:', dealError);
+        } else {
+          console.log('✅ Deal usage incremented successfully');
+        }
+
+        // Record deal usage
+        await supabase
+          .from('deal_usage')
+          .insert([
+            {
+              deal_id: orderData.deal_id,
+              customer_email: orderData.customer_email,
+              discount_amount: orderData.discount_amount || 0,
+              order_id: orderResult.id
+            }
+          ]);
+
+        console.log('✅ Deal usage recorded');
+      } catch (dealError) {
+        console.error('❌ Error handling deal usage:', dealError);
+        // Don't fail the order creation for deal errors
+      }
+    }
+
+    return orderResult as Order;
 
   } catch (error) {
     console.error('❌ Error in createOrderInDatabase:', error);
+    throw error;
+  }
+};
+
+// Update order with Stripe information after payment
+export const updateOrderWithStripeInfo = async (
+  orderId: string, 
+  stripeSessionId: string, 
+  stripePaymentIntentId?: string
+): Promise<void> => {
+  try {
+    console.log('🔄 Updating order with Stripe info:', { orderId, stripeSessionId });
+
+    const { error } = await supabase
+      .from('orders')
+      .update({
+        stripe_session_id: stripeSessionId,
+        stripe_payment_intent_id: stripePaymentIntentId,
+        status: 'processing',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', orderId);
+
+    if (error) {
+      console.error('❌ Error updating order with Stripe info:', error);
+      throw error;
+    }
+
+    console.log('✅ Order updated with Stripe info successfully');
+  } catch (error) {
+    console.error('❌ Error in updateOrderWithStripeInfo:', error);
     throw error;
   }
 };
@@ -166,109 +236,222 @@ export interface OrderStats {
 
 export const fetchOrders = async (): Promise<Order[]> => {
   try {
+    console.log('🔍 Fetching orders from database...');
+    
     const { data, error } = await supabase
       .from('orders')
       .select(`
         *,
-        order_items (*)
+        order_items (
+          id,
+          product_name,
+          product_description,
+          product_image,
+          product_clientpathurl,
+          quantity,
+          unit_price,
+          total_price
+        )
       `)
       .order('created_at', { ascending: false });
-
+      
     if (error) {
-      console.error('Error fetching orders:', error);
+      console.error('❌ Error fetching orders:', error);
       throw error;
     }
-
+    
+    console.log('✅ Orders fetched successfully:', data?.length || 0);
     return data || [];
-  } catch (error) {
-    console.error('Error in fetchOrders:', error);
-    throw error;
+  } catch (err) {
+    console.error('❌ Error in fetchOrders:', err);
+    throw err;
   }
 };
 
 export const fetchOrderById = async (orderId: string): Promise<Order | null> => {
   try {
-    const { data, error } = await supabase
-      .from('orders')
-      .select(`
-        *,
-        order_items (*)
-      `)
-      .eq('id', orderId)
-      .single();
-
-    if (error) {
-      console.error('Error fetching order:', error);
-      throw error;
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Error in fetchOrderById:', error);
-    throw error;
-  }
-};
-
-export const updateOrderStatus = async (
-  orderId: string, 
-  status: Order['status']
-): Promise<Order> => {
-  try {
-    const updateData: Partial<Order> = { status };
+    console.log('🔍 Fetching order by ID:', orderId);
     
-    // Set timestamps based on status
-    if (status === 'shipped') {
-      updateData.shipped_at = new Date().toISOString();
-    } else if (status === 'delivered') {
-      updateData.delivered_at = new Date().toISOString();
-    }
-
     const { data, error } = await supabase
       .from('orders')
-      .update(updateData)
-      .eq('id', orderId)
       .select(`
         *,
-        order_items (*)
+        order_items (
+          id,
+          product_id,
+          product_name,
+          product_description,
+          product_image,
+          product_clientpathurl,
+          quantity,
+          unit_price,
+          total_price
+        )
       `)
+      .eq('id', orderId)
       .single();
 
     if (error) {
-      console.error('Error updating order status:', error);
+      console.error('❌ Error fetching order:', error);
+      throw error;
+    }
+    
+    console.log('✅ Order fetched successfully:', data?.order_number);
+    return data;
+  } catch (err) {
+    console.error('❌ Error in fetchOrderById:', err);
+    throw err;
+  }
+};
+
+export const updateOrderStatus = async (orderId: string, status: string): Promise<void> => {
+  try {
+    console.log('🔄 Updating order status:', { orderId, status });
+
+    const { error } = await supabase
+      .from('orders')
+      .update({
+        status: status,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', orderId);
+
+    if (error) {
+      console.error('❌ Error updating order status:', error);
       throw error;
     }
 
-    return data;
+    console.log('✅ Order status updated successfully');
   } catch (error) {
-    console.error('Error in updateOrderStatus:', error);
+    console.error('❌ Error in updateOrderStatus:', error);
     throw error;
   }
 };
 
-export const getOrderStats = async (): Promise<OrderStats> => {
+export const createOrder = async (orderData: Omit<Order, 'id' | 'order_number' | 'created_at' | 'updated_at'>): Promise<Order> => {
   try {
+    console.log('🆕 Creating order:', orderData);
+    
     const { data, error } = await supabase
       .from('orders')
-      .select('status, total_amount');
+      .insert([orderData])
+      .select()
+      .single();
 
     if (error) {
-      console.error('Error fetching order stats:', error);
+      console.error('❌ Error creating order:', error);
       throw error;
     }
+    
+    console.log('✅ Order created successfully:', data.order_number);
+    return data;
+  } catch (err) {
+    console.error('❌ Error in createOrder:', err);
+    throw err;
+  }
+};
 
-    const stats: OrderStats = {
-      total_orders: data.length,
-      total_revenue: data.reduce((sum, order) => sum + order.total_amount, 0),
-      pending_orders: data.filter(order => order.status === 'pending').length,
-      processing_orders: data.filter(order => order.status === 'processing').length,
-      shipped_orders: data.filter(order => order.status === 'shipped').length,
-      delivered_orders: data.filter(order => order.status === 'delivered').length,
-      cancelled_orders: data.filter(order => order.status === 'cancelled').length,
+export const deleteOrder = async (orderId: string): Promise<void> => {
+  try {
+    console.log('🗑️ Deleting order:', orderId);
+    
+    const { error } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', orderId);
+
+    if (error) {
+      console.error('❌ Error deleting order:', error);
+      throw error;
+    }
+    
+    console.log('✅ Order deleted successfully');
+  } catch (err) {
+    console.error('❌ Error in deleteOrder:', err);
+    throw err;
+  }
+};
+
+export const fetchOrdersByCustomerEmail = async (email: string): Promise<Order[]> => {
+  try {
+    console.log('🔍 Fetching orders for customer:', email);
+    
+    const { data, error } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        order_items (
+          id,
+          product_id,
+          product_name,
+          product_description,
+          product_image,
+          product_clientpathurl,
+          quantity,
+          unit_price,
+          total_price
+        )
+      `)
+      .eq('customer_email', email)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('❌ Error fetching customer orders:', error);
+      throw error;
+    }
+    
+    console.log('✅ Customer orders fetched successfully:', data?.length || 0);
+    return data || [];
+  } catch (err) {
+    console.error('❌ Error in fetchOrdersByCustomerEmail:', err);
+    throw err;
+  }
+};
+
+export const getOrderStats = async () => {
+  try {
+    console.log('📊 Fetching order statistics...');
+    
+    // Get total orders count
+    const { count: totalOrders, error: countError } = await supabase
+      .from('orders')
+      .select('*', { count: 'exact', head: true });
+
+    if (countError) throw countError;
+
+    // Get orders by status
+    const { data: statusData, error: statusError } = await supabase
+      .from('orders')
+      .select('status')
+      .order('status');
+
+    if (statusError) throw statusError;
+
+    // Get total revenue
+    const { data: revenueData, error: revenueError } = await supabase
+      .from('orders')
+      .select('total_amount')
+      .neq('status', 'cancelled');
+
+    if (revenueError) throw revenueError;
+
+    const totalRevenue = revenueData?.reduce((sum, order) => sum + order.total_amount, 0) || 0;
+
+    // Count orders by status
+    const statusCounts = statusData?.reduce((acc, order) => {
+      acc[order.status] = (acc[order.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>) || {};
+
+    console.log('✅ Order statistics fetched successfully');
+    
+    return {
+      totalOrders: totalOrders || 0,
+      totalRevenue,
+      statusCounts,
     };
-
-    return stats;
-  } catch (error) {
-    console.error('Error in getOrderStats:', error);
-    throw error;
+  } catch (err) {
+    console.error('❌ Error in getOrderStats:', err);
+    throw err;
   }
 };

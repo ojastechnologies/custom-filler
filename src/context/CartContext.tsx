@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { validateDealCode } from '@/services/dealService';
+import { createOrderInDatabase, updateOrderWithStripeInfo, CreateOrderData } from '@/services/ordersService';
 
 // Update the Product type to include all fields
 export interface Product {
@@ -14,8 +15,15 @@ export interface Product {
   clientpathurl?: string;
 }
 
-interface CartItem extends Product {
+interface CartItem {
+  id: string;
+  name: string;
+  price: number;
   quantity: number;
+  image?: string;
+  description?: string;
+  clientpathurl?: string;
+  deal?: Deal; // Add this line
 }
 
 interface Deal {
@@ -39,25 +47,25 @@ interface AppliedDeal {
   discountAmount: number;
 }
 
-// Define the request body type for checkout
-interface CheckoutRequestBody {
-  items: Array<{
-    product: {
-      id: string;
-      name: string;
-      price: number;
-      description: string;
-      image_url: string | null;
-    };
-    quantity: number;
-  }>;
-  customer_email?: string;
-  deal?: {
-    id: string;
-    code: string;
-    discount_amount: number;
-  };
-}
+// // Define the request body type for checkout
+// interface CheckoutRequestBody {
+//   items: Array<{
+//     product: {
+//       id: string;
+//       name: string;
+//       price: number;
+//       description: string;
+//       image_url: string | null;
+//     };
+//     quantity: number;
+//   }>;
+//   customer_email?: string;
+//   deal?: {
+//     id: string;
+//     code: string;
+//     discount_amount: number;
+//   };
+// }
 
 interface CartContextType {
   items: CartItem[];
@@ -219,18 +227,22 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     );
   };
 
-  const clearCart = () => {
-    console.log('🧹 CLEARING CART');
+
+
+  const clearCart = useCallback(() => {
     setItems([]);
     setAppliedDeal(null);
-    
-    // Also clear localStorage immediately
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('cart');
-      localStorage.removeItem('appliedDeal');
-      console.log('🧹 CART CLEARED - localStorage also cleared');
-    }
-  };
+
+
+
+
+
+
+
+
+    localStorage.removeItem('cart-items');
+    localStorage.removeItem('applied-deal');
+  }, []);
 
   const applyDeal = async (code: string): Promise<{ success: boolean; message: string }> => {
     try {
@@ -265,80 +277,103 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Updated Stripe checkout function with deal support
-  const proceedToCheckout = async (customerEmail?: string) => {
-    if (items.length === 0) {
-      throw new Error('Cart is empty');
-    }
-
-    setIsCheckingOut(true);
-    
+  const proceedToCheckout = useCallback(async (customerEmail?: string) => {
     try {
-      console.log('🛒 Starting checkout process...');
-      console.log('Cart items:', items);
-      console.log('Applied deal:', appliedDeal);
+      setIsCheckingOut(true);
       
-      // Transform cart items to match the expected format for Stripe
-      const checkoutItems = items.map(item => ({
-        product: {
+      console.log('🛒 Starting checkout with items:', items);
+      console.log('🎫 Applied deal:', appliedDeal);
+
+      if (items.length === 0) {
+        throw new Error('Cart is empty');
+      }
+
+      // Calculate totals
+      const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const discountAmount = appliedDeal ? appliedDeal.discountAmount : 0;
+      const finalTotal = subtotal - discountAmount;
+
+      // 🔥 CREATE ORDER IN DATABASE FIRST 🔥
+      const orderData: CreateOrderData = {
+        customer_email: customerEmail || 'guest@example.com',
+        customer_name: undefined,
+        customer_phone: undefined,
+        subtotal: subtotal,
+        shipping_cost: 0,
+        tax_amount: 0,
+        total_amount: finalTotal,
+        currency: 'usd',
+        deal_id: appliedDeal?.deal?.id,
+        deal_code: appliedDeal?.deal?.code,
+        discount_amount: discountAmount,
+        items: items.map(item => ({
           id: item.id,
           name: item.name,
           price: item.price,
-          description: item.description || `Product: ${item.name}`,
-          image_url: item.image || null
-        },
-        quantity: item.quantity
-      }));
-
-      console.log('💳 Checkout items prepared:', checkoutItems);
-
-      // Use proper typing instead of 'any'
-      const requestBody: CheckoutRequestBody = {
-        items: checkoutItems,
-        customer_email: customerEmail || undefined,
+          quantity: item.quantity,
+          image: item.image,
+          description: item.description,
+          clientpathurl: item.clientpathurl
+        }))
       };
 
-      // Add deal information if applied
-      if (appliedDeal) {
-        requestBody.deal = {
-          id: appliedDeal.deal.id,
-          code: appliedDeal.deal.code,
-          discount_amount: appliedDeal.discountAmount
-        };
-        console.log('🎫 Deal included in checkout:', requestBody.deal);
-      }
+      console.log('📝 Creating order in database:', orderData);
+      const createdOrder = await createOrderInDatabase(orderData);
+      console.log('✅ Order created in database:', createdOrder.order_number);
 
-      const response = await fetch('/api/stripe/create-checkout-session', {
+      // Now proceed to Stripe checkout
+      const checkoutData = {
+        orderId: createdOrder.id, // Include order ID
+        items: items.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.image,
+          description: item.description,
+          clientpathurl: item.clientpathurl
+        })),
+        appliedDeal: appliedDeal,
+        customerEmail: customerEmail || undefined,
+        successUrl: `${window.location.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order_id=${createdOrder.id}`,
+        cancelUrl: `${window.location.origin}/cart`
+      };
+
+      console.log('📤 Sending checkout data to Stripe:', checkoutData);
+
+      const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify(checkoutData),
       });
 
-      const data = await response.json();
-      
       if (!response.ok) {
-        console.error('❌ Checkout session creation failed:', data);
-        throw new Error(data.error || 'Failed to create checkout session');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Checkout failed');
       }
 
-      console.log('✅ Checkout session created:', data.sessionId);
+      const { url, sessionId } = await response.json();
       
-      if (data.url) {
-        // Redirect to Stripe Checkout
-        window.location.href = data.url;
+      // Update order with Stripe session ID
+      if (sessionId) {
+        await updateOrderWithStripeInfo(createdOrder.id, sessionId);
+        console.log('✅ Order updated with Stripe session ID');
+      }
+      
+      if (url) {
+        window.location.href = url;
       } else {
         throw new Error('No checkout URL received');
       }
-      
     } catch (error) {
-      console.error('❌ Checkout failed:', error);
+      console.error('❌ Checkout error:', error);
       throw error;
     } finally {
       setIsCheckingOut(false);
     }
-  };
-
+  }, [items, appliedDeal]);
   const totalItems = items.reduce((total, item) => total + item.quantity, 0);
   const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0);
   const discountAmount = appliedDeal ? appliedDeal.discountAmount : 0;
