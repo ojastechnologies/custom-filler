@@ -3,25 +3,26 @@ import { ProductType } from '@/types/product';
 
 export const fetchProducts = async (): Promise<ProductType[]> => {
   try {
+    console.log('🔍 Fetching products from database...');
+    
     const { data, error } = await supabase
       .from('products')
-      .select(`
-        *,
-        deals:deal_id (
-          id,
-          code,
-          description,
-          discount_type,
-          discount_value,
-          usage_count,
-          is_active
-        )
-      `);
+      .select('*')
+      .order('created_at', { ascending: false });
       
-    if (error) throw error;
-    if (!data || data.length === 0) return [];
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      throw error;
+    }
     
-    return data.map(item => ({
+    console.log('✅ Raw data from Supabase:', data);
+    
+    if (!data || data.length === 0) {
+      console.log('ℹ️ No products found in database');
+      return [];
+    }
+    
+    const mappedProducts = data.map(item => ({
       id: item.id,
       title: item.name,
       price: item.unit_price || 0,
@@ -30,19 +31,14 @@ export const fetchProducts = async (): Promise<ProductType[]> => {
       category: item.category || undefined,
       about_url: item.about_url || undefined,
       clientpathurl: item.clientpathurl || undefined,
-      deal_id: item.deal_id || undefined,
-      deal: item.deals ? {
-        id: item.deals.id,
-        code: item.deals.code,
-        description: item.deals.description,
-        discount_type: item.deals.discount_type as "percentage" | "fixed_amount",
-        discount_value: item.deals.discount_value,
-        usage_count: item.deals.usage_count,
-        is_active: item.deals.is_active
-      } : undefined,
     }));
+    
+    console.log('✅ Mapped products:', mappedProducts);
+    return mappedProducts;
+    
   } catch (err) {
-    console.error('Error fetching products:', err);
+    console.error('❌ Error fetching products:', err);
+    console.error('❌ Error details:', JSON.stringify(err, null, 2));
     throw err;
   }
 };

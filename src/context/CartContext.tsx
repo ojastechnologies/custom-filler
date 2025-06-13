@@ -68,6 +68,7 @@ interface CartContextType {
   totalItems: number;
   totalPrice: number;
   subtotal: number;
+  discountAmount: number;
   finalTotal: number;
   appliedDeal: AppliedDeal | null;
   applyDeal: (code: string) => Promise<{ success: boolean; message: string }>;
@@ -359,6 +360,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       applyDeal,
       removeDeal,
       proceedToCheckout,
+      discountAmount,
       isCheckingOut
     }}>
       {children}
