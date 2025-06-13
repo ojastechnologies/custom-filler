@@ -51,7 +51,7 @@ export default function DealInput() {
         });
 
         try {
-          const result = await applyDeal(bestDeal.code);
+          // const result = await applyDeal(bestDeal.code);
           setMessage(`Auto-applied best deal: ${bestDeal.code}`);
         } catch (error) {
           console.error('Error auto-applying deal:', error);
