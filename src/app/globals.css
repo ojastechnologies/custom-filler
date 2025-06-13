@@ -34,3 +34,34 @@ html {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }
+
+/* Add these styles for better PDF generation */
+.invoice-content {
+  font-family: 'Arial', sans-serif;
+}
+
+.invoice-content table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.invoice-content th,
+.invoice-content td {
+  border: 1px solid #e5e7eb;
+  padding: 8px 12px;
+}
+
+.invoice-content th {
+  background-color: #f9fafb;
+  font-weight: 600;
+}
+
+/* PDF-specific styles */
+@media print {
+  .invoice-content {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 20px !important;
+  }
+}

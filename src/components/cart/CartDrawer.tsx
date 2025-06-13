@@ -18,10 +18,20 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
 
   const handleCheckout = async () => {
     try {
+      console.log('🛒 CartDrawer: Starting checkout...');
+      console.log('🛒 CartDrawer: Items in cart:', items);
+      console.log('🛒 CartDrawer: Applied deal:', appliedDeal);
+      
       await proceedToCheckout();
     } catch (error) {
-      console.error('Checkout failed:', error);
-      alert('Checkout failed. Please try again.');
+      console.error('❌ CartDrawer: Checkout failed:', error);
+      
+      // Show more specific error message
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Checkout failed. Please try again.';
+      
+      alert(`Checkout Error: ${errorMessage}`);
     }
   };
 
