@@ -304,7 +304,7 @@ function SuccessContent() {
                 Payment Successful!
               </h1>
               <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
-                Thank you for your order. We've received your payment and will process your order shortly.
+                Thank you for your order. We&apos;ve received your payment and will process your order shortly.
               </p>
 
               {/* Order Summary */}
