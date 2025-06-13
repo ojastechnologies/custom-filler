@@ -125,7 +125,7 @@ function SuccessContent() {
           try {
             orderData = await fetchOrderById(orderId);
           } catch (error) {
-            console.log('⚠️ Could not fetch by order ID, trying session ID...');
+            console.log('⚠️ Could not fetch by order ID, trying session ID...',error);
           }
         }
 
@@ -134,7 +134,7 @@ function SuccessContent() {
           try {
             orderData = await fetchOrderBySessionId(sessionId);
           } catch (error) {
-            console.log('⚠️ Could not fetch by session ID either');
+            console.log('⚠️ Could not fetch by session ID either',error);
           }
         }
 
@@ -257,7 +257,7 @@ function SuccessContent() {
                 Payment Successful!
               </h1>
               <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
-                Thank you for your order. We've received your payment and will process your order shortly.
+                Thank you for your order. We&apos;ve received your payment and will process your order shortly.
               </p>
 
               {order && (
@@ -319,9 +319,9 @@ function SuccessContent() {
                     What happens next?
                   </h3>
                   <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                    <li>• You'll receive an order confirmation email shortly</li>
-                    <li>• We'll process and prepare your order</li>
-                    <li>• You'll get shipping updates via email</li>
+                    <li>• You&apos;ll receive an order confirmation email shortly</li>
+                    <li>• We&apos;ll process and prepare your order</li>
+                    <li>• You&apos;ll get shipping updates via email</li>
                     <li>• Track your order in the customer dashboard</li>
                   </ul>
                 </div>

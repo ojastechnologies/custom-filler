@@ -62,18 +62,16 @@ const Products = () => {
       price: product.price,
       image: product.image,
       description: product.description,
-      clientpathurl: product.about_url,
-      deal: product.deal, // Include deal information
+      clientpathurl: product.about_url
     });
 
-    console.log('🛒 Added to cart with all fields including deal:', {
+    console.log('🛒 Added to cart with all fields:', {
       id: product.id,
       name: product.title,
       price: product.price,
       image: product.image,
       description: product.description,
-      clientpathurl: product.about_url,
-      deal: product.deal,
+      clientpathurl: product.about_url
     });
    
     setAddedToCart(prev => ({ ...prev, [product.id]: true }));
@@ -82,16 +80,15 @@ const Products = () => {
       setAddedToCart(prev => ({ ...prev, [product.id]: false }));
     }, 2000);
   };
-
   // Helper function to check if deal is valid
-  const isDealValid = (deal: any) => {
+  const isDealValid = (deal: { is_active: boolean; expires_at?: string; usage_limit?: number; usage_count?: number }) => {
     if (!deal || !deal.is_active) return false;
     
     // Check expiration
     if (deal.expires_at && new Date(deal.expires_at) < new Date()) return false;
     
     // Check usage limit
-    if (deal.usage_limit && deal.usage_count >= deal.usage_limit) return false;
+    if (deal.usage_limit && deal.usage_count! >= deal.usage_limit) return false;
     
     return true;
   };

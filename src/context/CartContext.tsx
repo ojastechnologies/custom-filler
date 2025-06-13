@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { validateDealCode, incrementDealUsage } from '@/services/dealService';
+import { validateDealCode } from '@/services/dealService';
 import { createOrderInDatabase, updateOrderWithStripeInfo, CreateOrderData } from '@/services/ordersService';
 
 // Update the Product type to include all fields
@@ -47,25 +47,25 @@ interface AppliedDeal {
   discountAmount: number;
 }
 
-// Define the request body type for checkout
-interface CheckoutRequestBody {
-  items: Array<{
-    product: {
-      id: string;
-      name: string;
-      price: number;
-      description: string;
-      image_url: string | null;
-    };
-    quantity: number;
-  }>;
-  customer_email?: string;
-  deal?: {
-    id: string;
-    code: string;
-    discount_amount: number;
-  };
-}
+// // Define the request body type for checkout
+// interface CheckoutRequestBody {
+//   items: Array<{
+//     product: {
+//       id: string;
+//       name: string;
+//       price: number;
+//       description: string;
+//       image_url: string | null;
+//     };
+//     quantity: number;
+//   }>;
+//   customer_email?: string;
+//   deal?: {
+//     id: string;
+//     code: string;
+//     discount_amount: number;
+//   };
+// }
 
 interface CartContextType {
   items: CartItem[];
@@ -296,8 +296,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // 🔥 CREATE ORDER IN DATABASE FIRST 🔥
       const orderData: CreateOrderData = {
         customer_email: customerEmail || 'guest@example.com',
-        customer_name: null,
-        customer_phone: null,
+        customer_name: undefined,
+        customer_phone: undefined,
         subtotal: subtotal,
         shipping_cost: 0,
         tax_amount: 0,
@@ -374,7 +374,6 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsCheckingOut(false);
     }
   }, [items, appliedDeal]);
-
   const totalItems = items.reduce((total, item) => total + item.quantity, 0);
   const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0);
   const discountAmount = appliedDeal ? appliedDeal.discountAmount : 0;

@@ -13,12 +13,12 @@ export async function POST(req: NextRequest) {
     console.log('🎫 Applied deal:', appliedDeal);
 
     // Calculate totals
-    const subtotal = items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+    // const subtotal = items.reduce((sum: number, item: { price: number; quantity: number }) => sum + (item.price * item.quantity), 0);
     const discountAmount = appliedDeal ? appliedDeal.discountAmount : 0;
-    const finalTotal = Math.max(0, subtotal - discountAmount);
+    // const finalTotal = Math.max(0, subtotal - discountAmount);
 
     // Create line items for Stripe
-    const lineItems = items.map((item: any) => ({
+    const lineItems = items.map((item: { name: string; description?: string; image?: string; price: number; quantity: number }) => ({
       price_data: {
         currency: 'usd',
         product_data: {
