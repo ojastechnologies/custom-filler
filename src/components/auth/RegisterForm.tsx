@@ -30,7 +30,7 @@ export default function RegisterForm() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/enter-portal-9f3b2`,
+          emailRedirectTo: `${window.location.origin}/`, // Redirects to home page
         }
       });
       

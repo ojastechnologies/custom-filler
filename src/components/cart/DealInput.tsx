@@ -23,7 +23,7 @@ export default function DealInput() {
       const result = await applyDeal(dealCode.trim());
       setMessage(result.message);
       
-      if (result.success) {
+      if (result.isValid) {
         setDealCode('');
       }
     } catch (error) {
@@ -33,7 +33,6 @@ export default function DealInput() {
       setIsApplying(false);
     }
   };
-
   const handleRemoveDeal = () => {
     removeDeal();
     setMessage('');

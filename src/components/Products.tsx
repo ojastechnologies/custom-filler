@@ -62,7 +62,8 @@ const Products = () => {
       price: product.price,
       image: product.image,
       description: product.description,
-      clientpathurl: product.about_url
+      clientpathurl: product.about_url,
+      quantity: 0
     });
 
     console.log('🛒 Added to cart with all fields:', {

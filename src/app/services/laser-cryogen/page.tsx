@@ -4,19 +4,19 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useAuth } from '@/context/AuthContext';
-import { useCart } from '@/context/CartContext';
+import { CartItem, useCart } from '@/context/CartContext';
 import { fetchLaserCryogenContent, updateLaserCryogenContent } from '../../../services/laserCryogenService';
 import { fetchProducts } from '../../../services/productsService';
 import { ProductType } from '@/types/product'; // Import the actual ProductType
 
 // Define the Product interface to match your CartContext
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  quantity?: number;
-  image?: string;
-}
+// interface Product {
+//   id: string;
+//   name: string;
+//   price: number;
+//   quantity?: number;
+//   image?: string;
+// }
 
 const defaultContent = `
   <div class="max-w-4xl mx-auto">
@@ -174,11 +174,12 @@ const LaserCryogenPage = () => {
     if (!product) return;
 
     // Convert ProductType to Product format for cart
-    const cartProduct: Product = {
+    const cartProduct: CartItem = {
       id: product.id,
       name: product.title,
       price: product.price,
       image: product.image || '/placeholder-product.jpg', // Handle undefined image
+      quantity: 1 // Add default quantity of 1
     };
 
     addToCart(cartProduct);
@@ -190,9 +191,7 @@ const LaserCryogenPage = () => {
     setTimeout(() => {
       updateOrderNowButton(false);
     }, 2000);
-  }, [addToCart]);
-
-  // Update the ORDER NOW button appearance
+  }, [addToCart]);  // Update the ORDER NOW button appearance
   const updateOrderNowButton = (isAdded: boolean) => {
     const button = document.getElementById('order-now-btn');
     if (button) {

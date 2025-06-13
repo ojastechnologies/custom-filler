@@ -8,7 +8,7 @@ import Footer from '@/components/layout/Footer';
 import { useCart } from '@/context/CartContext';
 
 export default function CheckoutPage() {
-  const { items, totalPrice, clearCart, proceedToCheckout, isCheckingOut } = useCart();
+  const { items, finalTotal, clearCart, proceedToCheckout, isCheckingOut } = useCart();
   const [customerInfo, setCustomerInfo] = useState({
     email: '',
     name: '',
@@ -79,10 +79,10 @@ export default function CheckoutPage() {
         shipping_country: customerInfo.address.country || 'US',
         
         // Order totals
-        subtotal: totalPrice,
+        subtotal: finalTotal,
         shipping_cost: 0, // You can calculate shipping cost here
         tax_amount: 0, // You can calculate tax here
-        total_amount: totalPrice,
+        total_amount: finalTotal,
         currency: 'usd',
         status: 'pending',
         
@@ -356,7 +356,7 @@ export default function CheckoutPage() {
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
-                    <span className="text-gray-900 dark:text-white">${totalPrice.toFixed(2)}</span>
+                    <span className="text-gray-900 dark:text-white">${finalTotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-400">Shipping</span>
@@ -369,7 +369,7 @@ export default function CheckoutPage() {
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
                     <div className="flex justify-between">
                       <span className="text-lg font-semibold text-gray-900 dark:text-white">Total</span>
-                      <span className="text-lg font-bold text-gray-900 dark:text-white">${totalPrice.toFixed(2)}</span>
+                      <span className="text-lg font-bold text-gray-900 dark:text-white">${finalTotal.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
