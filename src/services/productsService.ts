@@ -12,7 +12,9 @@ export const fetchProducts = async (): Promise<ProductType[]> => {
           code,
           description,
           discount_type,
-          discount_value
+          discount_value,
+          usage_count,
+          is_active
         )
       `);
       
@@ -33,8 +35,10 @@ export const fetchProducts = async (): Promise<ProductType[]> => {
         id: item.deals.id,
         code: item.deals.code,
         description: item.deals.description,
-        discount_type: item.deals.discount_type,
-        discount_value: item.deals.discount_value
+        discount_type: item.deals.discount_type as "percentage" | "fixed_amount",
+        discount_value: item.deals.discount_value,
+        usage_count: item.deals.usage_count,
+        is_active: item.deals.is_active
       } : undefined,
     }));
   } catch (err) {
@@ -42,7 +46,6 @@ export const fetchProducts = async (): Promise<ProductType[]> => {
     throw err;
   }
 };
-
 export const uploadProductImage = async (file: File): Promise<string> => {
   console.log('[uploadProductImage] Called with file:', file?.name, file?.size);
   const timestamp = Date.now();
@@ -242,7 +245,9 @@ export const createProduct = async (product: {
           code,
           description,
           discount_type,
-          discount_value
+          discount_value,
+          usage_count,
+          is_active
         )
       `);
       
@@ -280,7 +285,9 @@ export const createProduct = async (product: {
         code: item.deals.code,
         description: item.deals.description,
         discount_type: item.deals.discount_type,
-        discount_value: item.deals.discount_value
+        discount_value: item.deals.discount_value,
+        usage_count: item.deals.usage_count,
+        is_active: item.deals.is_active
       } : undefined,
     };
   } catch (err) {
@@ -288,7 +295,6 @@ export const createProduct = async (product: {
     throw err;
   }
 };
-
 export const updateProduct = async (
   id: string,
   updates: Partial<Omit<ProductType, 'id'>> & { imageFile?: File }
@@ -355,7 +361,9 @@ export const updateProduct = async (
           code,
           description,
           discount_type,
-          discount_value
+          discount_value,
+          usage_count,
+          is_active
         )
       `);
       
@@ -398,7 +406,9 @@ export const updateProduct = async (
         code: item.deals.code,
         description: item.deals.description,
         discount_type: item.deals.discount_type,
-        discount_value: item.deals.discount_value
+        discount_value: item.deals.discount_value,
+        usage_count: item.deals.usage_count,
+        is_active: item.deals.is_active
       } : undefined,
     };
   } catch (err) {
@@ -406,7 +416,6 @@ export const updateProduct = async (
     throw err;
   }
 };
-
 export const deleteProduct = async (id: string) => {
   try {
     console.log(`[deleteProduct] Starting deletion for product ID: ${id}`);

@@ -9,7 +9,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { fetchOrders, updateOrderStatus, getOrderStats, Order, OrderStats } from '@/services/ordersService';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import Image from 'next/image';
+// import Image from 'next/image';
 
 export default function OrdersPage() {
   const { user, loading, isAdmin } = useAuth();
