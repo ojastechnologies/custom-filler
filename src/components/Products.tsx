@@ -55,23 +55,25 @@ const Products = () => {
   }, []);
 
   const handleAddToCart = (product: ProductType) => {
-    // Add the product to cart with ALL fields including description and clientpathurl
+    // Add the product to cart with ALL fields including deal information
     addToCart({
-      id: product.id,
-      name: product.title,
-      price: product.price,
-      image: product.image,
-      description: product.description, // Include description
-      clientpathurl: product.about_url, // Map about_url to clientpathurl
-    });
-
-    console.log('🛒 Added to cart with all fields from Products component:', {
       id: product.id,
       name: product.title,
       price: product.price,
       image: product.image,
       description: product.description,
       clientpathurl: product.about_url,
+      deal: product.deal, // Include deal information
+    });
+
+    console.log('🛒 Added to cart with all fields including deal:', {
+      id: product.id,
+      name: product.title,
+      price: product.price,
+      image: product.image,
+      description: product.description,
+      clientpathurl: product.about_url,
+      deal: product.deal,
     });
    
     setAddedToCart(prev => ({ ...prev, [product.id]: true }));
@@ -79,6 +81,19 @@ const Products = () => {
     setTimeout(() => {
       setAddedToCart(prev => ({ ...prev, [product.id]: false }));
     }, 2000);
+  };
+
+  // Helper function to check if deal is valid
+  const isDealValid = (deal: any) => {
+    if (!deal || !deal.is_active) return false;
+    
+    // Check expiration
+    if (deal.expires_at && new Date(deal.expires_at) < new Date()) return false;
+    
+    // Check usage limit
+    if (deal.usage_limit && deal.usage_count >= deal.usage_limit) return false;
+    
+    return true;
   };
 
   if (loading) {
@@ -129,20 +144,53 @@ const Products = () => {
                       priority={false}
                     />
                   )}
+                  
+                  {/* Deal Badge */}
+                  {product.deal && isDealValid(product.deal) && (
+                    <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                      {product.deal.discount_type === 'percentage' 
+                        ? `${product.deal.discount_value}% OFF` 
+                        : `$${product.deal.discount_value} OFF`
+                      }
+                    </div>
+                  )}
                 </div>
                 <div className="p-6">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{product.title}</h3>
                   {product.description && (
                     <p className="mt-2 text-gray-600 dark:text-gray-400 line-clamp-3">{product.description}</p>
                   )}
+                  
+                  {/* Deal Information */}
+                  {product.deal && isDealValid(product.deal) && (
+                    <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded">
+                      <p className="text-xs text-green-700 dark:text-green-300 font-medium">
+                        🎉 Deal: {product.deal.code}
+                      </p>
+                      <p className="text-xs text-green-600 dark:text-green-400">
+                        {product.deal.description}
+                      </p>
+                    </div>
+                  )}
+                  
                   {/* Show about_url if available */}
                   {product.about_url && (
                     <p className="mt-2 text-xs text-blue-600 dark:text-blue-400 truncate">
                       More info: {product.about_url}
                     </p>
                   )}
+                  
                   <div className="mt-4 flex items-center justify-between">
-                    <span className="text-lg font-bold text-gray-900 dark:text-white">${product.price.toFixed(2)}</span>
+                    <div className="flex flex-col">
+                      <span className="text-lg font-bold text-gray-900 dark:text-white">
+                        ${product.price.toFixed(2)}
+                      </span>
+                      {product.deal && isDealValid(product.deal) && (
+                        <span className="text-xs text-green-600 dark:text-green-400">
+                          Deal price applies at checkout
+                        </span>
+                      )}
+                    </div>
                     <Button
                       variant={addedToCart[product.id] ? 'secondary' : 'primary'}
                       size="sm"
