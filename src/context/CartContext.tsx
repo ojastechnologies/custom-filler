@@ -290,14 +290,28 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       // Calculate totals
       const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      const discountAmount = appliedDeal ? appliedDeal.discountAmount : 0;
-      const finalTotal = subtotal - discountAmount;
+      let discountAmount = appliedDeal ? appliedDeal.discountAmount : 0;
+      
+      // 🔥 SAFETY CHECK: Ensure discount doesn't exceed subtotal
+      if (discountAmount >= subtotal) {
+        console.warn('⚠️ Discount amount exceeds subtotal, capping discount');
+        discountAmount = Math.max(0, subtotal - 0.50); // Leave at least $0.50
+      }
+      
+      const finalTotal = Math.max(0.50, subtotal - discountAmount);
+
+      console.log('💰 Checkout totals:', { subtotal, discountAmount, finalTotal });
+
+      // Validate final total
+      if (finalTotal < 0.50) {
+        throw new Error('Order total must be at least $0.50');
+      }
 
       // 🔥 CREATE ORDER IN DATABASE FIRST 🔥
       const orderData: CreateOrderData = {
         customer_email: customerEmail || 'guest@example.com',
-        customer_name: undefined,
-        customer_phone: undefined,
+        customer_name: null,
+        customer_phone: null,
         subtotal: subtotal,
         shipping_cost: 0,
         tax_amount: 0,
@@ -333,7 +347,10 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           description: item.description,
           clientpathurl: item.clientpathurl
         })),
-        appliedDeal: appliedDeal,
+        appliedDeal: appliedDeal ? {
+          ...appliedDeal,
+          discountAmount: discountAmount // Use corrected discount amount
+        } : undefined,
         customerEmail: customerEmail || undefined,
         successUrl: `${window.location.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order_id=${createdOrder.id}`,
         cancelUrl: `${window.location.origin}/cart`
@@ -349,12 +366,26 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         body: JSON.stringify(checkoutData),
       });
 
+      console.log('📡 Stripe API response status:', response.status);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Checkout failed');
+        const errorText = await response.text();
+        console.error('❌ Stripe API error response:', errorText);
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText || 'Unknown error from Stripe API' };
+        }
+        
+        throw new Error(errorData.error || `Checkout failed with status ${response.status}`);
       }
 
-      const { url, sessionId } = await response.json();
+      const responseData = await response.json();
+      console.log('✅ Stripe API success response:', responseData);
+
+      const { url, sessionId } = responseData;
       
       // Update order with Stripe session ID
       if (sessionId) {
@@ -363,9 +394,10 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       
       if (url) {
+        console.log('🔄 Redirecting to Stripe checkout:', url);
         window.location.href = url;
       } else {
-        throw new Error('No checkout URL received');
+        throw new Error('No checkout URL received from Stripe');
       }
     } catch (error) {
       console.error('❌ Checkout error:', error);
@@ -373,8 +405,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } finally {
       setIsCheckingOut(false);
     }
-  }, [items, appliedDeal]);
-  const totalItems = items.reduce((total, item) => total + item.quantity, 0);
+  }, [items, appliedDeal]);  const totalItems = items.reduce((total, item) => total + item.quantity, 0);
   const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0);
   const discountAmount = appliedDeal ? appliedDeal.discountAmount : 0;
   const finalTotal = Math.max(0, subtotal - discountAmount);

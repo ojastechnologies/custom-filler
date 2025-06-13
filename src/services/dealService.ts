@@ -183,6 +183,7 @@ export const deleteDeal = async (id: string): Promise<void> => {
 export const validateDealCode = async (code: string, cartItems: CartItem[]): Promise<DealValidationResult> => {
   try {
     console.log('🔍 Validating deal code:', code);
+    console.log('🛒 Cart items for validation:', cartItems);
     
     // Fetch the deal by code
     const { data: deal, error } = await supabase
@@ -227,6 +228,7 @@ export const validateDealCode = async (code: string, cartItems: CartItem[]): Pro
 
     // Calculate cart total
     const cartTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+    console.log('💰 Cart total for deal validation:', cartTotal);
 
     // Check minimum order amount
     if (deal.minimum_order_amount && cartTotal < deal.minimum_order_amount) {
@@ -249,10 +251,26 @@ export const validateDealCode = async (code: string, cartItems: CartItem[]): Pro
       discountAmount = deal.maximum_discount_amount;
     }
 
-    // Ensure discount doesn't exceed cart total
-    discountAmount = Math.min(discountAmount, cartTotal);
+    // 🔥 IMPORTANT: Ensure discount doesn't exceed cart total (leave at least $0.50)
+    const maxAllowedDiscount = Math.max(0, cartTotal - 0.50);
+    discountAmount = Math.min(discountAmount, maxAllowedDiscount);
 
-    console.log('✅ Deal validation successful:', { discountAmount });
+    // Ensure discount is not negative
+    discountAmount = Math.max(0, discountAmount);
+
+    console.log('✅ Deal validation successful:', { 
+      cartTotal, 
+      discountAmount, 
+      finalTotal: cartTotal - discountAmount 
+    });
+
+    // Check if discount results in a meaningful savings
+    if (discountAmount < 0.01) {
+      return {
+        isValid: false,
+        message: 'This deal does not provide any discount for your current cart'
+      };
+    }
 
     return {
       isValid: true,

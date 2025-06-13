@@ -1,20 +1,48 @@
 import { NextResponse } from 'next/server';
+import Stripe from 'stripe';
 
 export async function GET() {
   try {
-    const hasStripeKey = !!process.env.STRIPE_SECRET_KEY;
-    const hasPublicKey = !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-    
-    return NextResponse.json({
-      message: 'Stripe test endpoint',
-      hasStripeSecretKey: hasStripeKey,
-      hasStripePublicKey: hasPublicKey,
-      stripeKeyPrefix: process.env.STRIPE_SECRET_KEY?.substring(0, 10) + '...',
-      publicKeyPrefix: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.substring(0, 10) + '...',
+    // Check if environment variables are set
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return NextResponse.json(
+        { error: 'STRIPE_SECRET_KEY not configured' },
+        { status: 500 }
+      );
+    }
+
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2025-05-28.basil',
     });
+
+    // Test Stripe connection by listing payment methods
+    const paymentMethods = await stripe.paymentMethods.list({
+      limit: 1,
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Stripe connection successful',
+      stripeConnected: true,
+      testMode: process.env.STRIPE_SECRET_KEY.startsWith('sk_test_'),
+    });
+
   } catch (error) {
+    console.error('❌ Stripe test error:', error);
+    
+    if (error instanceof Stripe.errors.StripeError) {
+      return NextResponse.json(
+        { 
+          error: 'Stripe connection failed',
+          details: error.message,
+          type: error.type 
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Test failed', details: String(error) },
+      { error: 'Failed to test Stripe connection' },
       { status: 500 }
     );
   }
