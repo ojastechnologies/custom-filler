@@ -100,6 +100,28 @@ const Products = () => {
     return Math.max(0.01, originalPrice - discountAmount);
   };
 
+  useEffect(() => {
+    console.log('🔍 Products Debug - User Status:', {
+      isLoggedIn: 'Check your auth state here',
+      productsCount: products.length,
+      productsWithDeals: products.filter(p => p.deal).length,
+      productsWithValidDeals: products.filter(p => p.deal && isDealValid(p.deal)).length
+    });
+
+    // Log each product's deal status
+    products.forEach(product => {
+      if (product.deal) {
+        console.log(`📦 Product "${product.title}":`, {
+          hasDeal: !!product.deal,
+          dealCode: product.deal.code,
+          dealActive: product.deal.is_active,
+          dealValid: isDealValid(product.deal),
+          dealExpired: product.deal.expires_at ? new Date(product.deal.expires_at) < new Date() : false
+        });
+      }
+    });
+  }, [products]);
+
   if (loading) {
     return (
       <section className="py-12 bg-white dark:bg-gray-800">

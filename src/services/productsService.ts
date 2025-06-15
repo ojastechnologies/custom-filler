@@ -90,23 +90,27 @@ export const fetchProducts = async (): Promise<ProductType[]> => {
 
     console.log('[fetchProducts] 🎫 Products with deals:', dealIds.length);
 
-    // Fetch deals if any exist (gracefully handle if deals table doesn't exist)
+    // Fetch deals - this should work for guests now
     let dealsData: Deal[] = [];
     if (dealIds.length > 0) {
       try {
+        console.log('[fetchProducts] 🔄 Fetching deals for guest/user...');
+        
         const { data: fetchedDeals, error: dealsError } = await supabase
           .from('deals')
           .select('*')
-          .in('id', dealIds);
+          .in('id', dealIds)
+          .eq('is_active', true); // Only fetch active deals
 
         if (dealsError) {
-          console.warn('[fetchProducts] ⚠️ Could not fetch deals (table might not exist):', dealsError?.message);
+          console.error('[fetchProducts] ❌ Error fetching deals:', dealsError);
+          console.error('[fetchProducts] This might be an RLS policy issue for guests');
         } else {
           dealsData = fetchedDeals || [];
-          console.log('[fetchProducts] ✅ Fetched', dealsData.length, 'deals');
+          console.log('[fetchProducts] ✅ Fetched', dealsData.length, 'active deals');
         }
       } catch (dealsException) {
-        console.warn('[fetchProducts] ⚠️ Deals table not accessible:', dealsException);
+        console.error('[fetchProducts] ❌ Exception fetching deals:', dealsException);
       }
     }
 
@@ -133,6 +137,8 @@ export const fetchProducts = async (): Promise<ProductType[]> => {
     });
 
     console.log('[fetchProducts] 🎉 Successfully mapped', products.length, 'products');
+    console.log('[fetchProducts] 🎫 Products with deals attached:', products.filter(p => p.deal).length);
+    
     return products;
 
   } catch (err) {
@@ -291,7 +297,7 @@ export const createProduct = async (
     console.log('[createProduct] 🚀 Starting product creation');
     
     // 🔥 DEBUG: Log the incoming productData in detail
-    console.log('[createProduct] � DEBUGGING INCOMING DATA:');
+    console.log('[createProduct] DEBUGGING INCOMING DATA:');
     console.log('[createProduct] productData type:', typeof productData);
     console.log('[createProduct] productData keys:', Object.keys(productData || {}));
     console.log('[createProduct] productData.title:', productData?.title);
@@ -343,7 +349,7 @@ export const createProduct = async (
     };
 
     // 🔥 DEBUG: Log the insert data
-    console.log('[createProduct] � DEBUGGING INSERT DATA:');
+    console.log('[createProduct] DEBUGGING INSERT DATA:');
     console.log('[createProduct] insertData.name:', insertData.name);
     console.log('[createProduct] insertData.name type:', typeof insertData.name);
     console.log('[createProduct] insertData.name length:', insertData.name?.length);
