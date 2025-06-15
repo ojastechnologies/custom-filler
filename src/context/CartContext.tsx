@@ -299,18 +299,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         customer_email: customerEmail || 'guest@example.com',
         customer_name: undefined,
         customer_phone: undefined,
-        subtotal: subtotal + productDiscountTotal, // Original subtotal before any discounts
+        subtotal: subtotal + productDiscountTotal,
         shipping_cost: 0,
         tax_amount: 0,
         total_amount: finalTotal,
         currency: 'usd',
         deal_id: appliedDeal?.deal?.id,
         deal_code: appliedDeal?.deal?.code,
-        discount_amount: cartDiscountAmount + productDiscountTotal, // Total of all discounts
+        discount_amount: cartDiscountAmount + productDiscountTotal,
         items: safeItems.map(item => ({
           id: item.id,
           name: item.name,
-          price: item.originalPrice || item.price, // Use original price for order record
+          price: item.originalPrice || item.price,
           quantity: item.quantity,
           image: item.image,
           description: item.description,
@@ -324,26 +324,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const createdOrder = await createOrderInDatabase(orderData);
       console.log('✅ Order created in database:', createdOrder.order_number);
 
-      // 🔥 FIX: Properly generate URLs
-      const successUrl = `/checkout/success?session_id={CHECKOUT_SESSION_ID}&order_id=${createdOrder.id}`;
-      const cancelUrl = `/cart`;
+      // 🔥 FIX: Construct URLs properly
+      const baseUrl = typeof window !== 'undefined' 
+        ? `${window.location.protocol}//${window.location.host}`
+        : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
-      console.log('🔗 Using relative URLs:');
+      const successUrl = `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order_id=${createdOrder.id}`;
+      const cancelUrl = `${baseUrl}/cart`;
+
+      console.log('🔗 Constructed URLs:');
       console.log('- Success URL:', successUrl);
       console.log('- Cancel URL:', cancelUrl);
 
-      // 🔥 VALIDATE URLs before sending
-      try {
-        // Test the URLs by creating URL objects
-        new URL(successUrl.replace('{CHECKOUT_SESSION_ID}', 'test_session_123'));
-        new URL(cancelUrl);
-        console.log('✅ URLs validated successfully');
-      } catch (urlError) {
-        console.error('❌ Invalid URL generated:', urlError);
-        throw new Error(`Invalid checkout URL: ${urlError instanceof Error ? urlError.message : 'Unknown URL error'}`);
-      }
-
-      // Prepare checkout data for Stripe
+      // Prepare checkout data for Stripe - 🔥 INCLUDE ALL REQUIRED FIELDS
       const checkoutData = {
         orderId: createdOrder.id,
         items: safeItems.map(item => ({
@@ -358,22 +351,26 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           productDiscountAmount: item.productDiscountAmount
         })),
         appliedDeal: appliedDeal ? {
-          ...appliedDeal,
+          deal: {
+            id: appliedDeal.deal.id,
+            code: appliedDeal.deal.code,
+            description: appliedDeal.deal.description
+          },
           discountAmount: cartDiscountAmount
         } : undefined,
         customerEmail: customerEmail || undefined,
-        successUrl: successUrl,
-        cancelUrl: cancelUrl
+        successUrl: successUrl, // 🔥 REQUIRED FIELD
+        cancelUrl: cancelUrl    // 🔥 REQUIRED FIELD
       };
 
       console.log('📤 Sending checkout data to Stripe:');
       console.log('- Order ID:', checkoutData.orderId);
       console.log('- Items count:', checkoutData.items.length);
-      console.log('- Success URL:', checkoutData.successUrl);
-      console.log('- Cancel URL:', checkoutData.cancelUrl);
-      console.log('- Customer email:', checkoutData.customerEmail);
+      console.log('- Has applied deal:', !!checkoutData.appliedDeal);
+      console.log('- Success URL present:', !!checkoutData.successUrl);
+      console.log('- Cancel URL present:', !!checkoutData.cancelUrl);
 
-      const response = await fetch('/api/stripe/checkout', {  // 🔥 This should match your working route
+      const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -387,9 +384,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const errorText = await response.text();
         console.error('❌ Stripe API error response:', errorText);
         
-        let errorData;
+        let errorData: { error?: string };
         try {
-          errorData = JSON.parse(errorText);
+          errorData = JSON.parse(errorText) as { error?: string };
         } catch {
           errorData = { error: errorText || 'Unknown error from Stripe API' };
         }
@@ -397,7 +394,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(errorData.error || `Checkout failed with status ${response.status}`);
       }
 
-      const responseData = await response.json();
+      const responseData = await response.json() as { url?: string; sessionId?: string };
       console.log('✅ Stripe API success response:', responseData);
 
       const { url, sessionId } = responseData;

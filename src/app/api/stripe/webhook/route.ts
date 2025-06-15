@@ -58,44 +58,34 @@ async function updateOrderAfterPayment(session: Stripe.Checkout.Session) {
     }
 
     console.log('📝 Updating order:', orderId);
-
-    // 🔥 FIX: Properly type the update data
-    interface OrderUpdateData {
-      stripe_session_id: string;
-      stripe_payment_intent_id: string | null;
-      status: string;
-      updated_at: string;
-      customer_name: string | null;
-      customer_phone: string | null;
-      shipping_line1: string | null;
-      shipping_line2: string | null;
-      shipping_city: string | null;
-      shipping_state: string | null;
-      shipping_postal_code: string | null;
-      shipping_country: string | null;
-    }
-
-    const updateData: OrderUpdateData = {
-      stripe_session_id: session.id,
-      stripe_payment_intent_id: typeof session.payment_intent === 'string' 
-        ? session.payment_intent 
-        : session.payment_intent?.id || null,
-      status: 'processing',
-      updated_at: new Date().toISOString(),
-      customer_name: session.customer_details?.name || null,
-      customer_phone: session.customer_details?.phone || null,
-      shipping_line1: session.customer_details?.address?.line1 || null,
-      shipping_line2: session.customer_details?.address?.line2 || null,
-      shipping_city: session.customer_details?.address?.city || null,
-      shipping_state: session.customer_details?.address?.state || null,
-      shipping_postal_code: session.customer_details?.address?.postal_code || null,
-      shipping_country: session.customer_details?.address?.country || null,
-    };
+    console.log('📋 Session metadata received:', {
+      orderId,
+      itemCount: metadata.itemCount,
+      subtotal: metadata.subtotal,
+      discountAmount: metadata.discountAmount,
+      finalTotal: metadata.finalTotal,
+      dealCode: metadata.dealCode
+    });
 
     // Update order status and add payment information
     const { error: updateError } = await supabase
       .from('orders')
-      .update(updateData)
+      .update({
+        stripe_session_id: session.id,
+        stripe_payment_intent_id: typeof session.payment_intent === 'string' 
+          ? session.payment_intent 
+          : session.payment_intent?.id || null,
+        status: 'processing',
+        updated_at: new Date().toISOString(),
+        customer_name: session.customer_details?.name || null,
+        customer_phone: session.customer_details?.phone || null,
+        shipping_line1: session.customer_details?.address?.line1 || null,
+        shipping_line2: session.customer_details?.address?.line2 || null,
+        shipping_city: session.customer_details?.address?.city || null,
+        shipping_state: session.customer_details?.address?.state || null,
+        shipping_postal_code: session.customer_details?.address?.postal_code || null,
+        shipping_country: session.customer_details?.address?.country || null,
+      })
       .eq('id', orderId);
 
     if (updateError) {
@@ -104,6 +94,15 @@ async function updateOrderAfterPayment(session: Stripe.Checkout.Session) {
     }
 
     console.log('✅ Order updated successfully with payment info');
+
+    // 🔥 OPTIONAL: Log the successful payment details
+    console.log('💰 Payment completed:', {
+      orderId,
+      sessionId: session.id,
+      customerEmail: session.customer_details?.email,
+      amountTotal: session.amount_total ? (session.amount_total / 100) : 'unknown',
+      currency: session.currency
+    });
 
   } catch (error) {
     console.error('❌ Error in updateOrderAfterPayment:', error);
