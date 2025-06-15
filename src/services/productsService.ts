@@ -3,12 +3,65 @@ import { ProductType } from '@/types/product';
 
 export const fetchProducts = async (): Promise<ProductType[]> => {
   try {
+    console.log('🔍 Fetching products with deals...');
+    
+    // First, let's try a simple query without the join to see if basic products work
     const { data, error } = await supabase
       .from('products')
-      .select('*');
+      .select(`
+        *,
+        deals:deal_id (
+          id,
+          code,
+          description,
+          discount_type,
+          discount_value,
+          minimum_order_amount,
+          maximum_discount_amount,
+          usage_limit,
+          usage_count,
+          expires_at,
+          is_active,
+          created_at,
+          updated_at
+        )
+      `);
       
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      
+      // Fallback: Try fetching products without deals if the join fails
+      console.log('🔄 Falling back to products without deals...');
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('products')
+        .select('*');
+        
+      if (fallbackError) {
+        console.error('❌ Fallback query also failed:', fallbackError);
+        throw fallbackError;
+      }
+      
+      if (!fallbackData || fallbackData.length === 0) return [];
+      
+      // Map fallback data without deals
+      return fallbackData.map(item => ({
+        id: item.id,
+        title: item.name,
+        price: item.unit_price || 0,
+        image: item.thumbnail_url || '/placeholder-product.jpg',
+        description: item.description || 'No description available',
+        category: item.category || undefined,
+        about_url: item.about_url || undefined,
+        clientpathurl: item.clientpathurl || undefined,
+        deal_id: item.deal_id || undefined,
+        deal: undefined // No deal information in fallback
+      }));
+    }
+    
     if (!data || data.length === 0) return [];
+    
+    console.log('✅ Products fetched successfully:', data.length);
+    console.log('📊 Sample product with deal:', data[0]);
     
     return data.map(item => ({
       id: item.id,
@@ -19,9 +72,48 @@ export const fetchProducts = async (): Promise<ProductType[]> => {
       category: item.category || undefined,
       about_url: item.about_url || undefined,
       clientpathurl: item.clientpathurl || undefined,
+      deal_id: item.deal_id || undefined,
+      deal: item.deals || undefined // This will be the joined deal data
     }));
   } catch (err) {
-    console.error('Error fetching products:', err);
+    console.error('❌ Error fetching products:', err);
+    console.error('❌ Error details:', JSON.stringify(err, null, 2));
+    throw err;
+  }
+};
+
+// Add this new function for testing
+export const fetchProductsSimple = async (): Promise<ProductType[]> => {
+  try {
+    console.log('🔍 Fetching products (simple version)...');
+    
+    const { data, error } = await supabase
+      .from('products')
+      .select('*');
+      
+    if (error) {
+      console.error('❌ Simple fetch error:', error);
+      throw error;
+    }
+    
+    if (!data || data.length === 0) return [];
+    
+    console.log('✅ Simple products fetched:', data.length);
+    
+    return data.map(item => ({
+      id: item.id,
+      title: item.name,
+      price: item.unit_price || 0,
+      image: item.thumbnail_url || '/placeholder-product.jpg',
+      description: item.description || 'No description available',
+      category: item.category || undefined,
+      about_url: item.about_url || undefined,
+      clientpathurl: item.clientpathurl || undefined,
+      deal_id: item.deal_id || undefined,
+      deal: undefined // No deal for now
+    }));
+  } catch (err) {
+    console.error('❌ Error in simple fetch:', err);
     throw err;
   }
 };
@@ -178,6 +270,7 @@ export const createProduct = async (product: {
   category?: string;
   about_url?: string;
   clientpathurl?: string;
+  deal_id?: string; // NEW: Add deal_id
 }): Promise<ProductType> => {
   try {
     let imageUrl = product.thumbnail_url;
@@ -201,6 +294,7 @@ export const createProduct = async (product: {
       thumbnail_url: imageUrl,
       about_url: product.about_url,
       clientpathurl: product.clientpathurl,
+      deal_id: product.deal_id,
     });
     
     const { data, error } = await supabase
@@ -213,9 +307,13 @@ export const createProduct = async (product: {
           thumbnail_url: imageUrl,
           about_url: product.about_url,
           clientpathurl: product.clientpathurl,
+          deal_id: product.deal_id || null,
         },
       ])
-      .select();
+      .select(`
+        *,
+        deals (*)
+      `);
       
     if (error) {
       console.error('[createProduct] Supabase insert error:', error);
@@ -244,6 +342,8 @@ export const createProduct = async (product: {
       category: data[0].category,
       about_url: data[0].about_url,
       clientpathurl: data[0].clientpathurl,
+      deal_id: data[0].deal_id,
+      deal: data[0].deals,
     };
   } catch (err) {
     console.error('[createProduct] Caught error:', err);
@@ -253,7 +353,7 @@ export const createProduct = async (product: {
 
 export const updateProduct = async (
   id: string,
-  updates: Partial<Omit<ProductType, 'id'>> & { imageFile?: File }
+  updates: Partial<Omit<ProductType, 'id'>> & { imageFile?: File; deal_id?: string }
 ): Promise<ProductType> => {
   try {
     console.log(`[updateProduct] Starting update for product ID: ${id}`);
@@ -294,7 +394,8 @@ export const updateProduct = async (
       unit_price: updates.price,
       thumbnail_url: imageUrl,
       about_url: updates.about_url,
-      clientpathurl: updates.clientpathurl
+      clientpathurl: updates.clientpathurl,
+      deal_id: updates.deal_id
     });
     
     const { data, error } = await supabase
@@ -305,10 +406,14 @@ export const updateProduct = async (
         unit_price: updates.price,
         thumbnail_url: imageUrl,
         about_url: updates.about_url,
-        clientpathurl: updates.clientpathurl
+        clientpathurl: updates.clientpathurl,
+        deal_id: updates.deal_id || null
       })
       .eq('id', id)
-      .select();
+      .select(`
+        *,
+        deals (*)
+      `);
       
     if (error) {
       console.error('[updateProduct] Update failed:', error);
@@ -341,7 +446,9 @@ export const updateProduct = async (
       description: data[0].description,
       category: data[0].category,
       about_url: data[0].about_url,
-      clientpathurl: data[0].clientpathurl
+      clientpathurl: data[0].clientpathurl,
+      deal_id: data[0].deal_id,
+      deal: data[0].deals
     };
   } catch (err) {
     console.error('[updateProduct] Error during update:', err);
@@ -476,4 +583,55 @@ export const testImageUrlParsing = (imageUrl: string) => {
   console.log('=== End Test ===\n');
   
   return filePath;
+};
+
+// Add this debug function
+export const debugDatabaseConnection = async () => {
+  try {
+    console.log('🔍 Testing database connection...');
+    
+    // Test basic connection
+    const { data: testData, error: testError } = await supabase
+      .from('products')
+      .select('count')
+      .limit(1);
+      
+    if (testError) {
+      console.error('❌ Basic connection failed:', testError);
+      return false;
+    }
+    
+    console.log('✅ Basic connection works');
+    
+    // Test deals table
+    const { data: dealsData, error: dealsError } = await supabase
+      .from('deals')
+      .select('count')
+      .limit(1);
+      
+    if (dealsError) {
+      console.error('❌ Deals table access failed:', dealsError);
+      console.log('ℹ️ This might be normal if deals table doesn\'t exist yet');
+    } else {
+      console.log('✅ Deals table accessible');
+    }
+    
+    // Test products with deal_id column
+    const { data: productsData, error: productsError } = await supabase
+      .from('products')
+      .select('id, name, deal_id')
+      .limit(1);
+      
+    if (productsError) {
+      console.error('❌ Products with deal_id failed:', productsError);
+      console.log('ℹ️ deal_id column might not exist yet');
+    } else {
+      console.log('✅ Products with deal_id accessible:', productsData);
+    }
+    
+    return true;
+  } catch (err) {
+    console.error('❌ Database debug failed:', err);
+    return false;
+  }
 };

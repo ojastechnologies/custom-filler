@@ -9,6 +9,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Image from 'next/image';
 import { fetchProducts, createProduct, updateProduct, deleteProduct, uploadProductImage } from '@/services/productsService';
+import { fetchDeals, Deal } from '@/services/dealService'; // NEW: Import deals
 import ImageUploader from '@/components/admin/ImageUploader';
 import DealManagement from '@/components/admin/DealManagement';
 import { ProductType } from '@/types/product';
@@ -28,14 +29,16 @@ export default function DashboardPage() {
   const { user, loading, isAdmin } = useAuth();
   const router = useRouter();
   const [products, setProducts] = useState<ProductType[]>([]);
+  const [deals, setDeals] = useState<Deal[]>([]); // NEW: Add deals state
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [loadingDeals, setLoadingDeals] = useState(false); // NEW: Add loading deals state
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'products' | 'deals'>('products');
   
   // For product form
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<ProductType | null>(null);
-  const [formData, setFormData] = useState<ProductType>({
+  const [formData, setFormData] = useState<ProductType & { deal_id?: string }>({
     id: '',
     title: '',
     description: '',
@@ -44,10 +47,29 @@ export default function DashboardPage() {
     category: '',
     quantity: 1,
     about_url: '',
-    clientpathurl: ''
+    clientpathurl: '',
+    deal_id: '' // NEW: Add deal_id to form data
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  // NEW: Load deals when component mounts
+  useEffect(() => {
+    const loadDeals = async () => {
+      if (isAdmin) {
+        try {
+          setLoadingDeals(true);
+          const dealsData = await fetchDeals();
+          setDeals(dealsData.filter(deal => deal.is_active)); // Only show active deals
+        } catch (err) {
+          console.error('Error loading deals:', err);
+        } finally {
+          setLoadingDeals(false);
+        }
+      }
+    };
+    loadDeals();
+  }, [isAdmin]);
 
   debugStorageBucket();
 
@@ -168,6 +190,7 @@ export default function DashboardPage() {
           category: formData.category,
           about_url: formData.about_url,
           clientpathurl: formData.clientpathurl,
+          deal_id: formData.deal_id || undefined, // NEW: Include deal_id
           imageFile: selectedFile || undefined,
         });
         setProducts((prev) =>
@@ -186,6 +209,7 @@ export default function DashboardPage() {
           category: formData.category,
           about_url: formData.about_url,
           clientpathurl: formData.clientpathurl,
+          deal_id: formData.deal_id || undefined, // NEW: Include deal_id
         });
         setProducts([...products, { ...result }]);
       }
@@ -208,7 +232,8 @@ export default function DashboardPage() {
     
     setEditingProduct(product);
     setFormData({
-      ...product
+      ...product,
+      deal_id: product.deal_id || '' // NEW: Include deal_id
     });
     setSelectedFile(null);
     setShowForm(true);
@@ -244,7 +269,8 @@ export default function DashboardPage() {
       category: '',
       quantity: 1,
       about_url: '',
-      clientpathurl: ''
+      clientpathurl: '',
+      deal_id: '' // NEW: Include deal_id
     });
     setEditingProduct(null);
     setSelectedFile(null);
@@ -388,24 +414,55 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       
-                      <div className="mb-6">
-                        <label htmlFor="clientpathurl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Service Category
-                        </label>
-                        <select
-                          id="clientpathurl"
-                          name="clientpathurl"
-                          value={formData.clientpathurl}
-                          onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                        >
-                          <option value="">Select a service category</option>
-                          {SERVICE_CATEGORIES.map((category) => (
-                            <option key={category.path} value={category.path}>
-                              {category.name}
-                            </option>
-                          ))}
-                        </select>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                          <label htmlFor="clientpathurl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Service Category
+                          </label>
+                          <select
+                            id="clientpathurl"
+                            name="clientpathurl"
+                            value={formData.clientpathurl}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                          >
+                            <option value="">Select a service category</option>
+                            {SERVICE_CATEGORIES.map((category) => (
+                              <option key={category.path} value={category.path}>
+                                {category.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* NEW: Deal Selection Dropdown */}
+                        <div>
+                          <label htmlFor="deal_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Product Deal (Optional)
+                          </label>
+                          <select
+                            id="deal_id"
+                            name="deal_id"
+                            value={formData.deal_id || ''}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                            disabled={loadingDeals}
+                          >
+                            <option value="">No deal</option>
+                            {deals.map((deal) => (
+                              <option key={deal.id} value={deal.id}>
+                                {deal.code} - {deal.description} 
+                                ({deal.discount_type === 'percentage' ? `${deal.discount_value}%` : `$${deal.discount_value}`} off)
+                              </option>
+                            ))}
+                          </select>
+                          {loadingDeals && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Loading deals...</p>
+                          )}
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Select a deal to automatically apply discount to this product
+                          </p>
+                        </div>
                       </div>
                       
                       <div className="mb-6">
@@ -551,6 +608,12 @@ export default function DashboardPage() {
                                 Actions
                               </th>
                             )}
+                            <th
+                              scope="col"
+                              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                            >
+                              Deal
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -606,6 +669,17 @@ export default function DashboardPage() {
                                   </button>
                                 </td>
                               )}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-900 dark:text-white">
+                                  {product.deal ? (
+                                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full">
+                                      {product.deal.code}
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-500 dark:text-gray-400">No deal</span>
+                                  )}
+                                </div>
+                              </td>
                             </tr>
                           ))}
                         </tbody>

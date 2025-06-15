@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import Stripe from 'stripe';
+import { stripe } from '@/lib/stripe'; // 🔥 Use your main Stripe instance
 import { supabase } from '@/lib/supabaseClient';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-05-28.basil',
-});
 export async function POST(req: NextRequest) {
   console.log('🔔 Webhook received');
   
@@ -18,7 +15,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No signature' }, { status: 400 });
   }
 
-  let event: Stripe.Event;
+  let event;
 
   try {
     event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
@@ -30,7 +27,7 @@ export async function POST(req: NextRequest) {
 
   // Handle the checkout.session.completed event
   if (event.type === 'checkout.session.completed') {
-    const session = event.data.object as Stripe.Checkout.Session;
+    const session = event.data.object;
     
     console.log('🎉 Payment successful for session:', session.id);
     console.log('📋 Session metadata:', session.metadata);
@@ -46,7 +43,8 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ received: true });
 }
-async function updateOrderAfterPayment(session: Stripe.Checkout.Session) {
+
+async function updateOrderAfterPayment(session: any) {
   try {
     console.log('🔄 Updating order after successful payment');
     
@@ -65,13 +63,11 @@ async function updateOrderAfterPayment(session: Stripe.Checkout.Session) {
       .from('orders')
       .update({
         stripe_session_id: session.id,
-        stripe_payment_intent_id: session.payment_intent as string || null,
+        stripe_payment_intent_id: session.payment_intent || null,
         status: 'processing',
         updated_at: new Date().toISOString(),
-        // Update customer info from Stripe if available
         customer_name: session.customer_details?.name || null,
         customer_phone: session.customer_details?.phone || null,
-        // Update shipping address from Stripe
         shipping_line1: session.customer_details?.address?.line1 || null,
         shipping_line2: session.customer_details?.address?.line2 || null,
         shipping_city: session.customer_details?.address?.city || null,

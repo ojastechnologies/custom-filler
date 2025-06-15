@@ -1,14 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
-
-// Check if Stripe secret key exists
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY is not set in environment variables');
-}
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2025-05-28.basil',
-});
+import { stripe } from '@/lib/stripe'; // 🔥 Use your main Stripe instance
 
 interface CartItem {
   id: string;
@@ -69,8 +60,8 @@ export async function POST(req: NextRequest) {
 
     // Calculate subtotal
     const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const discountAmount = appliedDeal ? Math.min(appliedDeal.discountAmount, subtotal) : 0; // Cap discount at subtotal
-    const finalTotal = Math.max(0.50, subtotal - discountAmount); // Minimum $0.50 for Stripe
+    const discountAmount = appliedDeal ? Math.min(appliedDeal.discountAmount, subtotal) : 0;
+    const finalTotal = Math.max(0.50, subtotal - discountAmount);
 
     console.log('💰 Calculations:', { subtotal, discountAmount, finalTotal });
 
@@ -82,15 +73,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create line items for Stripe - DON'T add discount as separate line item
-    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map((item: CartItem) => {
-      // Calculate item price after proportional discount
+    // Create line items for Stripe
+    const lineItems = items.map((item: CartItem) => {
       const itemTotal = item.price * item.quantity;
       const itemDiscountRatio = discountAmount > 0 ? (itemTotal / subtotal) : 0;
       const itemDiscount = discountAmount * itemDiscountRatio;
-      const discountedItemPrice = Math.max(0.01, item.price - (itemDiscount / item.quantity)); // Minimum $0.01 per item
+      const discountedItemPrice = Math.max(0.01, item.price - (itemDiscount / item.quantity));
 
-      console.log(`📦 Item: ${item.name}, Original: $${item.price}, Discounted: $${discountedItemPrice.toFixed(2)}`);
+      console.log(`📦 Item: ${item.name}, Original: ${item.price}, Discounted: ${discountedItemPrice.toFixed(2)}`);
 
       return {
         price_data: {
@@ -100,7 +90,7 @@ export async function POST(req: NextRequest) {
             description: item.description || undefined,
             images: item.image && item.image !== '/placeholder-product.jpg' ? [item.image] : undefined,
           },
-          unit_amount: Math.round(discountedItemPrice * 100), // Convert to cents
+          unit_amount: Math.round(discountedItemPrice * 100),
         },
         quantity: item.quantity,
       };
@@ -109,10 +99,10 @@ export async function POST(req: NextRequest) {
     console.log('💰 Line items created:', lineItems.length);
 
     // Create checkout session
-    const sessionParams: Stripe.Checkout.SessionCreateParams = {
+    const sessionParams = {
       payment_method_types: ['card'],
       line_items: lineItems,
-      mode: 'payment',
+      mode: 'payment' as const,
       success_url: successUrl,
       cancel_url: cancelUrl,
       customer_email: customerEmail || undefined,
@@ -142,20 +132,6 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('❌ Error creating checkout session:', error);
     
-    if (error instanceof Stripe.errors.StripeError) {
-      console.error('❌ Stripe error details:', {
-        type: error.type,
-        code: error.code,
-        message: error.message,
-        param: error.param,
-      });
-      
-      return NextResponse.json(
-        { error: `Stripe error: ${error.message}` },
-        { status: 400 }
-      );
-    }
-
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return NextResponse.json(
       { error: `Failed to create checkout session: ${errorMessage}` },

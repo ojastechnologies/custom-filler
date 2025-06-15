@@ -7,6 +7,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import DealInput from '@/components/cart/DealInput';
 import { useCart } from '@/context/CartContext';
+import { testStripeCheckout } from '@/utils/testCheckout';
 
 export default function CartPage() {
   const { 
@@ -17,6 +18,7 @@ export default function CartPage() {
     totalItems, 
     subtotal, 
     finalTotal, 
+    productDiscountTotal, // NEW: Get product discount total
     appliedDeal,
     proceedToCheckout, 
     isCheckingOut 
@@ -36,6 +38,38 @@ export default function CartPage() {
     }
   };
   
+  const testUrls = () => {
+    const baseUrl = window.location.origin;
+    const testSuccessUrl = `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order_id=test-123`;
+    const testCancelUrl = `${baseUrl}/cart`;
+    
+    console.log('🧪 URL Test Results:');
+    console.log('Base URL:', baseUrl);
+    console.log('Success URL:', testSuccessUrl);
+    console.log('Cancel URL:', testCancelUrl);
+    
+    try {
+      new URL(testSuccessUrl.replace('{CHECKOUT_SESSION_ID}', 'test_session'));
+      new URL(testCancelUrl);
+      console.log('✅ URLs are valid');
+      alert('URLs are valid! Check console for details.');
+    } catch (error) {
+      console.error('❌ URL validation failed:', error);
+      alert(`URL validation failed: ${error}`);
+    }
+  };
+  
+  const runTest = async () => {
+    console.log('🧪 Running Stripe checkout test...');
+    const result = await testStripeCheckout();
+    
+    if (result.success) {
+      alert('✅ Test passed! Check console for details.');
+    } else {
+      alert(`❌ Test failed: ${result.error}`);
+    }
+  };
+
   return (
     <>
       <Header />
@@ -66,10 +100,10 @@ export default function CartPage() {
                   Your cart is empty
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Looks like you haven&apos;ßt added any products to your cart yet.
+                  Looks like you haven't added any products to your cart yet.
                 </p>
                 <Link 
-                  href="/services" 
+                  href="/products" 
                   className="inline-block px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
                 >
                   Browse Products
@@ -77,16 +111,6 @@ export default function CartPage() {
               </div>
             ) : (
               <>
-                {/* Debug info in development */}
-                {process.env.NODE_ENV === 'development' && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                    <h3 className="font-semibold text-blue-800 mb-2">Debug Info:</h3>
-                    <pre className="text-xs text-blue-700 overflow-auto">
-                      {JSON.stringify({ items, appliedDeal, subtotal, finalTotal }, null, 2)}
-                    </pre>
-                  </div>
-                )}
-
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   {/* Cart Items */}
                   <div className="lg:col-span-2">
@@ -126,13 +150,41 @@ export default function CartPage() {
                                 <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                                   {item.name}
                                 </p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  ${item.price.toFixed(2)} each
-                                </p>
+                                
+                                {/* NEW: Show pricing with discounts */}
+                                {item.originalPrice && item.productDiscountAmount ? (
+                                  <div className="text-sm">
+                                    <div className="flex items-center space-x-2">
+                                      <span className="text-gray-500 dark:text-gray-400 line-through">
+                                        ${item.originalPrice.toFixed(2)} each
+                                      </span>
+                                      <span className="text-red-600 dark:text-red-400 font-medium">
+                                        ${item.price.toFixed(2)} each
+                                      </span>
+                                    </div>
+                                    <span className="text-xs text-green-600 dark:text-green-400">
+                                      Save ${item.productDiscountAmount.toFixed(2)} per item
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    ${item.price.toFixed(2)} each
+                                  </p>
+                                )}
+                                
                                 {item.description && (
                                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
                                     {item.description}
                                   </p>
+                                )}
+                                
+                                {/* NEW: Show deal badge if item has a deal */}
+                                {item.deal && item.productDiscountAmount && (
+                                  <div className="mt-2">
+                                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full">
+                                      🎉 {item.deal.code} - {item.deal.description}
+                                    </span>
+                                  </div>
                                 )}
                               </div>
                               
@@ -161,9 +213,17 @@ export default function CartPage() {
                               </div>
                               
                               <div className="flex items-center space-x-4">
-                                <span className="text-sm font-semibold text-gray-900 dark:text-white min-w-[4rem] text-right">
-                                  ${(item.price * item.quantity).toFixed(2)}
-                                </span>
+                                <div className="text-right">
+                                  {/* NEW: Show total savings for this item */}
+                                  {item.originalPrice && item.productDiscountAmount && (
+                                    <div className="text-xs text-green-600 dark:text-green-400">
+                                      Save ${(item.productDiscountAmount * item.quantity).toFixed(2)}
+                                    </div>
+                                  )}
+                                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                    ${(item.price * item.quantity).toFixed(2)}
+                                  </span>
+                                </div>
                                 
                                 <button
                                   onClick={() => removeFromCart(item.id)}
@@ -194,9 +254,18 @@ export default function CartPage() {
                           <span className="text-gray-900 dark:text-white font-medium">${subtotal.toFixed(2)}</span>
                         </div>
                         
+                        {/* NEW: Show product-level discounts */}
+                        {productDiscountTotal > 0 && (
+                          <div className="flex justify-between text-green-600 dark:text-green-400">
+                            <span>Product Discounts</span>
+                            <span>-${productDiscountTotal.toFixed(2)}</span>
+                          </div>
+                        )}
+                        
+                        {/* Cart-level discount */}
                         {appliedDeal && (
                           <div className="flex justify-between text-green-600 dark:text-green-400">
-                            <span>Discount ({appliedDeal.deal.code})</span>
+                            <span>Cart Discount ({appliedDeal.deal.code})</span>
                             <span>-${appliedDeal.discountAmount.toFixed(2)}</span>
                           </div>
                         )}
@@ -209,11 +278,28 @@ export default function CartPage() {
                           <span className="text-gray-600 dark:text-gray-400">Tax</span>
                           <span className="text-gray-900 dark:text-white font-medium">Calculated at checkout</span>
                         </div>
+                        
                         <div className="border-t border-gray-200 dark:border-gray-700 my-4"></div>
+                        
                         <div className="flex justify-between">
                           <span className="text-lg font-semibold text-gray-900 dark:text-white">Total</span>
                           <span className="text-lg font-bold text-gray-900 dark:text-white">${finalTotal.toFixed(2)}</span>
                         </div>
+                        
+                        {/* NEW: Show total savings */}
+                        {(productDiscountTotal > 0 || appliedDeal) && (
+                          <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                            <div className="flex justify-between text-green-700 dark:text-green-300 font-medium">
+                              <span>🎉 Total Savings</span>
+                              <span>${(productDiscountTotal + (appliedDeal?.discountAmount || 0)).toFixed(2)}</span>
+                            </div>
+                            {productDiscountTotal > 0 && (
+                              <div className="text-xs text-green-600 dark:text-green-400 mt-1">
+                                Includes ${productDiscountTotal.toFixed(2)} in product discounts
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -240,7 +326,7 @@ export default function CartPage() {
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
                         />
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          We&apos;ll send your receipt to this email address
+                          We'll send your receipt to this email address
                         </p>
                       </div>
                       
@@ -261,7 +347,7 @@ export default function CartPage() {
                     
                     <div className="text-center">
                       <Link 
-                        href="/services" 
+                        href="/products" 
                         className="inline-block px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-center"
                       >
                         Continue Shopping
