@@ -6,7 +6,7 @@ import Card from './ui/Card';
 import Button from './ui/Button';
 import { useCart } from '@/context/CartContext';
 import { fetchProducts } from '@/services/productsService';
-import { ProductType } from '@/types/product';
+import { Deal, ProductType } from '@/types/product';
 
 const Products = () => {
   const { addToCart } = useCart();
@@ -79,7 +79,7 @@ const Products = () => {
   };
 
   // Helper function to calculate discounted price
-  const getDiscountedPrice = (originalPrice: number, deal: any) => {
+  const getDiscountedPrice = (originalPrice: number, deal: Deal) => {
     if (!deal || !isDealValid(deal)) return originalPrice;
     
     let discountAmount = 0;
@@ -137,7 +137,7 @@ const Products = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {products.map((product) => {
               const hasValidDeal = product.deal && isDealValid(product.deal);
-              const discountedPrice = hasValidDeal ? getDiscountedPrice(product.price, product.deal) : product.price;
+              const discountedPrice = hasValidDeal ? getDiscountedPrice(product.price, product.deal!) : product.price;
               
               return (
                 <Card key={product.id} className="h-full">

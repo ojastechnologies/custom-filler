@@ -7,7 +7,6 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import DealInput from '@/components/cart/DealInput';
 import { useCart } from '@/context/CartContext';
-import { testStripeCheckout } from '@/utils/testCheckout';
 
 export default function CartPage() {
   const { 
@@ -37,39 +36,6 @@ export default function CartPage() {
       setCheckoutError(errorMessage);
     }
   };
-  
-  const testUrls = () => {
-    const baseUrl = window.location.origin;
-    const testSuccessUrl = `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order_id=test-123`;
-    const testCancelUrl = `${baseUrl}/cart`;
-    
-    console.log('🧪 URL Test Results:');
-    console.log('Base URL:', baseUrl);
-    console.log('Success URL:', testSuccessUrl);
-    console.log('Cancel URL:', testCancelUrl);
-    
-    try {
-      new URL(testSuccessUrl.replace('{CHECKOUT_SESSION_ID}', 'test_session'));
-      new URL(testCancelUrl);
-      console.log('✅ URLs are valid');
-      alert('URLs are valid! Check console for details.');
-    } catch (error) {
-      console.error('❌ URL validation failed:', error);
-      alert(`URL validation failed: ${error}`);
-    }
-  };
-  
-  const runTest = async () => {
-    console.log('🧪 Running Stripe checkout test...');
-    const result = await testStripeCheckout();
-    
-    if (result.success) {
-      alert('✅ Test passed! Check console for details.');
-    } else {
-      alert(`❌ Test failed: ${result.error}`);
-    }
-  };
-
   return (
     <>
       <Header />
@@ -100,7 +66,7 @@ export default function CartPage() {
                   Your cart is empty
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Looks like you haven't added any products to your cart yet.
+                  Looks like you haven&apos;t added any products to your cart yet.
                 </p>
                 <Link 
                   href="/products" 
@@ -326,7 +292,7 @@ export default function CartPage() {
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
                         />
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          We'll send your receipt to this email address
+                          Wea&pos;ll send your receipt to this email address
                         </p>
                       </div>
                       

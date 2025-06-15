@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { stripe } from '@/lib/stripe'; // 🔥 Use your main Stripe instance
 import { supabase } from '@/lib/supabaseClient';
+import Stripe from 'stripe';
 
 export async function POST(req: NextRequest) {
   console.log('🔔 Webhook received');
@@ -15,7 +16,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No signature' }, { status: 400 });
   }
 
-  let event;
+  let event: Stripe.Event;
 
   try {
     event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
 
   // Handle the checkout.session.completed event
   if (event.type === 'checkout.session.completed') {
-    const session = event.data.object;
+    const session = event.data.object as Stripe.Checkout.Session;
     
     console.log('🎉 Payment successful for session:', session.id);
     console.log('📋 Session metadata:', session.metadata);
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ received: true });
 }
 
-async function updateOrderAfterPayment(session: any) {
+async function updateOrderAfterPayment(session: Stripe.Checkout.Session) {
   try {
     console.log('🔄 Updating order after successful payment');
     
@@ -58,23 +59,43 @@ async function updateOrderAfterPayment(session: any) {
 
     console.log('📝 Updating order:', orderId);
 
+    // 🔥 FIX: Properly type the update data
+    interface OrderUpdateData {
+      stripe_session_id: string;
+      stripe_payment_intent_id: string | null;
+      status: string;
+      updated_at: string;
+      customer_name: string | null;
+      customer_phone: string | null;
+      shipping_line1: string | null;
+      shipping_line2: string | null;
+      shipping_city: string | null;
+      shipping_state: string | null;
+      shipping_postal_code: string | null;
+      shipping_country: string | null;
+    }
+
+    const updateData: OrderUpdateData = {
+      stripe_session_id: session.id,
+      stripe_payment_intent_id: typeof session.payment_intent === 'string' 
+        ? session.payment_intent 
+        : session.payment_intent?.id || null,
+      status: 'processing',
+      updated_at: new Date().toISOString(),
+      customer_name: session.customer_details?.name || null,
+      customer_phone: session.customer_details?.phone || null,
+      shipping_line1: session.customer_details?.address?.line1 || null,
+      shipping_line2: session.customer_details?.address?.line2 || null,
+      shipping_city: session.customer_details?.address?.city || null,
+      shipping_state: session.customer_details?.address?.state || null,
+      shipping_postal_code: session.customer_details?.address?.postal_code || null,
+      shipping_country: session.customer_details?.address?.country || null,
+    };
+
     // Update order status and add payment information
     const { error: updateError } = await supabase
       .from('orders')
-      .update({
-        stripe_session_id: session.id,
-        stripe_payment_intent_id: session.payment_intent || null,
-        status: 'processing',
-        updated_at: new Date().toISOString(),
-        customer_name: session.customer_details?.name || null,
-        customer_phone: session.customer_details?.phone || null,
-        shipping_line1: session.customer_details?.address?.line1 || null,
-        shipping_line2: session.customer_details?.address?.line2 || null,
-        shipping_city: session.customer_details?.address?.city || null,
-        shipping_state: session.customer_details?.address?.state || null,
-        shipping_postal_code: session.customer_details?.address?.postal_code || null,
-        shipping_country: session.customer_details?.address?.country || null,
-      })
+      .update(updateData)
       .eq('id', orderId);
 
     if (updateError) {

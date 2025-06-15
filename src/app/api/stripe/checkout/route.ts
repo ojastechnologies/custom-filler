@@ -100,14 +100,14 @@ export async function POST(req: NextRequest) {
 
     // Create checkout session
     const sessionParams = {
-      payment_method_types: ['card'],
       line_items: lineItems,
+
       mode: 'payment' as const,
       success_url: successUrl,
       cancel_url: cancelUrl,
       customer_email: customerEmail || undefined,
       shipping_address_collection: {
-        allowed_countries: ['US', 'CA'],
+        allowed_countries: ['US', 'CA'] as ('US' | 'CA')[],
       },
       metadata: {
         orderId: orderId,

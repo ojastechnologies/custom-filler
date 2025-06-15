@@ -31,7 +31,6 @@ export default function DashboardPage() {
   const [products, setProducts] = useState<ProductType[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]); // NEW: Add deals state
   const [loadingProducts, setLoadingProducts] = useState(true);
-  const [loadingDeals, setLoadingDeals] = useState(false); // NEW: Add loading deals state
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'products' | 'deals'>('products');
   
@@ -58,13 +57,13 @@ export default function DashboardPage() {
     const loadDeals = async () => {
       if (isAdmin) {
         try {
-          setLoadingDeals(true);
+          // setLoadingDeals(true);
           const dealsData = await fetchDeals();
           setDeals(dealsData.filter(deal => deal.is_active)); // Only show active deals
         } catch (err) {
           console.error('Error loading deals:', err);
         } finally {
-          setLoadingDeals(false);
+          // setLoadingDeals(false);
         }
       }
     };
@@ -182,6 +181,17 @@ export default function DashboardPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // 🔥 STRICT VALIDATION
+    if (!formData.title || formData.title.trim() === '') {
+      setError('Product title is required and cannot be empty');
+      return;
+    }
+
+    if (!formData.price || formData.price <= 0) {
+      setError('Product price must be greater than 0');
+      return;
+    }
+
     console.log('📝 Form submission - deal_id:', formData.deal_id);
     const selectedDeal = deals.find(d => d.id === formData.deal_id);
     console.log('📝 Form submission - selected deal:', selectedDeal);
@@ -213,10 +223,10 @@ export default function DashboardPage() {
       } else {
         // Create new product using the service
         const result = await createProduct({
-          name: formData.title,
+          title: formData.title,
           description: formData.description,
-          unit_price: formData.price,
-          thumbnail_url: imageUrl,
+          price: formData.price,
+          image: imageUrl,
           imageFile: selectedFile || undefined,
           category: formData.category,
           about_url: formData.about_url,
@@ -237,7 +247,6 @@ export default function DashboardPage() {
       setIsUploading(false);
     }
   };
-
   // Handle product edit
   const handleEdit = (product: ProductType) => {
     if (!isAdmin) return;
@@ -288,12 +297,7 @@ export default function DashboardPage() {
     setSelectedFile(null);
     setShowForm(false);
   };
-
-  // Helper function to get service category name from path
-  const getServiceCategoryName = (path: string) => {
-    const category = SERVICE_CATEGORIES.find(cat => cat.path === path);
-    return category ? category.name : path;
-  };
+ 
 
   if (loading) {
     return (
