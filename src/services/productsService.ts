@@ -1,86 +1,103 @@
 import { supabase } from '@/lib/supabaseClient';
 import { ProductType } from '@/types/product';
 
-export const fetchProducts = async (): Promise<ProductType[]> => {
+export const fetchProductsWithDeals = async (): Promise<ProductType[]> => {
   try {
-    console.log('🔍 Fetching products with deals...');
+    console.log('[fetchProductsWithDeals] � Fetching products with deal information');
     
-    // First, let's try a simple query without the join to see if basic products work
-    const { data, error } = await supabase
+    // Fetch products with their assigned deals
+    const { data: productsData, error: productsError } = await supabase
       .from('products')
-      .select(`
-        *,
-        deals:deal_id (
-          id,
-          code,
-          description,
-          discount_type,
-          discount_value,
-          minimum_order_amount,
-          maximum_discount_amount,
-          usage_limit,
-          usage_count,
-          expires_at,
-          is_active,
-          created_at,
-          updated_at
-        )
-      `);
-      
-    if (error) {
-      console.error('❌ Supabase error:', error);
-      
-      // Fallback: Try fetching products without deals if the join fails
-      console.log('🔄 Falling back to products without deals...');
-      const { data: fallbackData, error: fallbackError } = await supabase
-        .from('products')
-        .select('*');
-        
-      if (fallbackError) {
-        console.error('❌ Fallback query also failed:', fallbackError);
-        throw fallbackError;
-      }
-      
-      if (!fallbackData || fallbackData.length === 0) return [];
-      
-      // Map fallback data without deals
-      return fallbackData.map(item => ({
-        id: item.id,
-        title: item.name,
-        price: item.unit_price || 0,
-        image: item.thumbnail_url || '/placeholder-product.jpg',
-        description: item.description || 'No description available',
-        category: item.category || undefined,
-        about_url: item.about_url || undefined,
-        clientpathurl: item.clientpathurl || undefined,
-        deal_id: item.deal_id || undefined,
-        deal: undefined // No deal information in fallback
-      }));
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (productsError) {
+      console.error('[fetchProductsWithDeals] ❌ Error fetching products:', productsError);
+      throw productsError;
     }
-    
-    if (!data || data.length === 0) return [];
-    
-    console.log('✅ Products fetched successfully:', data.length);
-    console.log('📊 Sample product with deal:', data[0]);
-    
-    return data.map(item => ({
-      id: item.id,
-      title: item.name,
-      price: item.unit_price || 0,
-      image: item.thumbnail_url || '/placeholder-product.jpg',
-      description: item.description || 'No description available',
-      category: item.category || undefined,
-      about_url: item.about_url || undefined,
-      clientpathurl: item.clientpathurl || undefined,
-      deal_id: item.deal_id || undefined,
-      deal: item.deals || undefined // This will be the joined deal data
-    }));
+
+    if (!productsData || productsData.length === 0) {
+      console.log('[fetchProductsWithDeals] ℹ️ No products found');
+      return [];
+    }
+
+    console.log('[fetchProductsWithDeals] ✅ Found', productsData.length, 'products');
+
+    // Get all unique deal IDs
+    const dealIds = productsData
+      .map(product => product.assigned_deal_id)
+      .filter(Boolean);
+
+    console.log('[fetchProductsWithDeals] 🎫 Found deal IDs:', dealIds);
+
+    // Fetch deal information if there are any deals
+    let dealsData: any[] = [];
+    if (dealIds.length > 0) {
+      const { data: fetchedDeals, error: dealsError } = await supabase
+        .from('deals')
+        .select('*')
+        .in('id', dealIds);
+
+      if (dealsError) {
+        console.error('[fetchProductsWithDeals] ⚠️ Error fetching deals:', dealsError);
+        // Continue without deals rather than failing completely
+      } else {
+        dealsData = fetchedDeals || [];
+        console.log('[fetchProductsWithDeals] ✅ Fetched', dealsData.length, 'deals');
+      }
+    }
+
+    // Create a map of deals for quick lookup
+    const dealsMap = new Map();
+    dealsData.forEach(deal => {
+      dealsMap.set(deal.id, deal);
+    });
+
+    // Map products with their associated deals
+    const products: ProductType[] = productsData.map(product => {
+      const associatedDeal = product.assigned_deal_id ? dealsMap.get(product.assigned_deal_id) : null;
+      
+      console.log(`[fetchProductsWithDeals] 🔄 Product: ${product.name}, Deal: ${associatedDeal?.code || 'None'}`);
+
+      return {
+        id: product.id,
+        title: product.name,
+        price: product.unit_price,
+        image: product.thumbnail_url,
+        description: product.description,
+        category: product.category,
+        about_url: product.about_url,
+        clientpathurl: product.clientpathurl,
+        deal_id: product.assigned_deal_id,
+        deal: associatedDeal ? {
+          id: associatedDeal.id,
+          code: associatedDeal.code,
+          description: associatedDeal.description,
+          discount_type: associatedDeal.discount_type,
+          discount_value: associatedDeal.discount_value,
+          minimum_order_amount: associatedDeal.minimum_order_amount,
+          maximum_discount_amount: associatedDeal.maximum_discount_amount,
+          usage_limit: associatedDeal.usage_limit,
+          usage_count: associatedDeal.usage_count,
+          expires_at: associatedDeal.expires_at,
+          is_active: associatedDeal.is_active,
+          created_at: associatedDeal.created_at,
+          updated_at: associatedDeal.updated_at,
+        } : undefined
+      };
+    });
+
+    console.log('[fetchProductsWithDeals] 🎉 Successfully mapped products with deals');
+    return products;
+
   } catch (err) {
-    console.error('❌ Error fetching products:', err);
-    console.error('❌ Error details:', JSON.stringify(err, null, 2));
+    console.error('[fetchProductsWithDeals] 💥 Error:', err);
     throw err;
   }
 };
+
+// Update your existing fetchProducts to use the new function
+export const fetchProducts = fetchProductsWithDeals;
 
 // Add this new function for testing
 export const fetchProductsSimple = async (): Promise<ProductType[]> => {
@@ -356,7 +373,8 @@ export const updateProduct = async (
   updates: Partial<Omit<ProductType, 'id'>> & { imageFile?: File; deal_id?: string }
 ): Promise<ProductType> => {
   try {
-    console.log(`[updateProduct] Starting update for product ID: ${id}`);
+    console.log('[updateProduct] 🚀 Starting update for product ID:', id);
+    console.log('[updateProduct] 📝 Updates received:', updates);
     
     const { data: existingProduct, error: checkError } = await supabase
       .from('products')
@@ -365,80 +383,115 @@ export const updateProduct = async (
       .single();
       
     if (checkError) {
-      console.error('[updateProduct] Error checking product existence:', checkError);
+      console.error('[updateProduct] ❌ Error checking product existence:', checkError);
       throw checkError;
     }
     
-    console.log('[updateProduct] Found existing product:', existingProduct?.name);
+    console.log('[updateProduct] ✅ Found existing product:', existingProduct?.name);
     
     let imageUrl = updates.image;
     let isNewImage = false;
     
     if (updates.imageFile) {
-      console.log('[updateProduct] Uploading new image file');
+      console.log('[updateProduct] 📸 Uploading new image file');
       imageUrl = await uploadProductImage(updates.imageFile);
       isNewImage = true;
-      console.log('[updateProduct] New image URL:', imageUrl);
+      console.log('[updateProduct] ✅ New image URL:', imageUrl);
       
       if (existingProduct?.thumbnail_url && existingProduct.thumbnail_url !== imageUrl) {
-        console.log('[updateProduct] Deleting old image:', existingProduct.thumbnail_url);
+        console.log('[updateProduct] 🗑️ Deleting old image:', existingProduct.thumbnail_url);
         await deleteProductImage(existingProduct.thumbnail_url);
       }
     } else {
-      console.log('[updateProduct] No new image file, keeping existing or provided URL');
+      console.log('[updateProduct] 📷 No new image file, keeping existing or provided URL');
     }
     
-    console.log('[updateProduct] Updating product with:', {
-      name: updates.title,
-      description: updates.description,
-      unit_price: updates.price,
-      thumbnail_url: imageUrl,
-      about_url: updates.about_url,
-      clientpathurl: updates.clientpathurl,
-      deal_id: updates.deal_id
-    });
+    // 🔥 Build update data with proper typing
+    interface UpdateData {
+      name?: string;
+      description?: string | null;
+      unit_price?: number;
+      thumbnail_url?: string | null;
+      category?: string | null;
+      about_url?: string | null;
+      clientpathurl?: string | null;
+      assigned_deal_id?: string | null;
+      updated_at: string;
+    }
+    
+    const updateData: UpdateData = {
+      updated_at: new Date().toISOString()
+    };
+    
+    if (updates.title !== undefined) updateData.name = updates.title;
+    if (updates.description !== undefined) updateData.description = updates.description;
+    if (updates.price !== undefined) updateData.unit_price = updates.price;
+    if (imageUrl !== undefined) updateData.thumbnail_url = imageUrl;
+    if (updates.about_url !== undefined) updateData.about_url = updates.about_url;
+    if (updates.clientpathurl !== undefined) updateData.clientpathurl = updates.clientpathurl;
+    if (updates.deal_id !== undefined) updateData.assigned_deal_id = updates.deal_id; // 🔥 Map deal_id to assigned_deal_id
+    
+    console.log('[updateProduct] 📋 Final update data:', updateData);
+    console.log('[updateProduct] 🔄 Calling Supabase update...');
     
     const { data, error } = await supabase
       .from('products')
-      .update({
-        name: updates.title,
-        description: updates.description,
-        unit_price: updates.price,
-        thumbnail_url: imageUrl,
-        about_url: updates.about_url,
-        clientpathurl: updates.clientpathurl,
-        deal_id: updates.deal_id || null
-      })
+      .update(updateData)
       .eq('id', id)
       .select(`
-        *,
-        deals (*)
+        *
       `);
       
+    console.log('[updateProduct] 📡 Supabase response received');
+    console.log('[updateProduct] 📊 Data:', data);
+    console.log('[updateProduct] ❓ Error exists:', !!error);
+    
     if (error) {
-      console.error('[updateProduct] Update failed:', error);
+      console.error('[updateProduct] 🚨 DETAILED ERROR ANALYSIS:');
+      console.error('[updateProduct] Error type:', typeof error);
+      console.error('[updateProduct] Error instanceof Error:', error instanceof Error);
+      console.error('[updateProduct] Error.message:', error?.message);
+      console.error('[updateProduct] Error.code:', error?.code);
+      console.error('[updateProduct] Error.details:', error?.details);
+      console.error('[updateProduct] Error.hint:', error?.hint);
+      console.error('[updateProduct] Error keys:', Object.keys(error || {}));
+      
+      // Try different serialization methods
+      try {
+        console.error('[updateProduct] JSON.stringify(error):', JSON.stringify(error));
+      } catch (jsonErr) {
+        console.error('[updateProduct] Could not stringify error:', jsonErr);
+      }
+      
+      // Log each property individually
+      if (error && typeof error === 'object') {
+        for (const [key, value] of Object.entries(error)) {
+          console.error(`[updateProduct] error.${key}:`, value);
+        }
+      }
+      
       if (isNewImage && imageUrl) {
-        console.log('[updateProduct] Update failed, cleaning up orphaned image');
+        console.log('[updateProduct] 🧹 Update failed, cleaning up orphaned image');
         await deleteProductImage(imageUrl);
       }
       
-      throw error;
+      throw new Error(`Database update failed: ${error?.message || 'Unknown error'}`);
     }
     
     if (!data || !data[0]) {
-      console.error('[updateProduct] No data returned from update');
+      console.error('[updateProduct] ❌ No data returned from update');
       
       if (isNewImage && imageUrl) {
-        console.log('[updateProduct] No data returned, cleaning up orphaned image');
+        console.log('[updateProduct] 🧹 No data returned, cleaning up orphaned image');
         await deleteProductImage(imageUrl);
       }
       
       throw new Error('No data returned from update');
     }
     
-    console.log('[updateProduct] Product updated successfully:', data[0].name);
+    console.log('[updateProduct] ✅ Product updated successfully:', data[0].name);
     
-    return {
+    const result: ProductType = {
       id: data[0].id,
       title: data[0].name,
       price: data[0].unit_price,
@@ -447,11 +500,18 @@ export const updateProduct = async (
       category: data[0].category,
       about_url: data[0].about_url,
       clientpathurl: data[0].clientpathurl,
-      deal_id: data[0].deal_id,
+      deal_id: data[0].assigned_deal_id, // 🔥 Map back to deal_id
       deal: data[0].deals
     };
+    
+    console.log('[updateProduct] 🎉 Returning result:', result);
+    return result;
   } catch (err) {
-    console.error('[updateProduct] Error during update:', err);
+    console.error('[updateProduct] 💥 CAUGHT EXCEPTION:');
+    console.error('[updateProduct] Exception type:', typeof err);
+    console.error('[updateProduct] Exception message:', err?.message);
+    console.error('[updateProduct] Exception stack:', err?.stack);
+    console.error('[updateProduct] Full exception:', err);
     throw err;
   }
 };

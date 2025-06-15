@@ -155,9 +155,17 @@ export default function DashboardPage() {
   // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    
+    // 🔥 Debug deal selection
+    if (name === 'deal_id') {
+      console.log('🎫 Deal selection changed:', { name, value });
+      const selectedDeal = deals.find(d => d.id === value);
+      console.log('🎫 Selected deal object:', selectedDeal);
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'unit_price' ? parseFloat(value) || 0 : value
+      [name]: value
     }));
   };
 
@@ -173,7 +181,11 @@ export default function DashboardPage() {
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAdmin) return;
+    
+    console.log('📝 Form submission - deal_id:', formData.deal_id);
+    const selectedDeal = deals.find(d => d.id === formData.deal_id);
+    console.log('📝 Form submission - selected deal:', selectedDeal);
+    
     try {
       setIsUploading(true);
       let imageUrl = formData.image;
@@ -437,31 +449,52 @@ export default function DashboardPage() {
 
                         {/* NEW: Deal Selection Dropdown */}
                         <div>
-                          <label htmlFor="deal_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Product Deal (Optional)
+                          <label htmlFor="deal_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Associated Deal
                           </label>
                           <select
                             id="deal_id"
                             name="deal_id"
                             value={formData.deal_id || ''}
                             onChange={handleInputChange}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                            disabled={loadingDeals}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
                           >
                             <option value="">No deal</option>
                             {deals.map((deal) => (
                               <option key={deal.id} value={deal.id}>
                                 {deal.code} - {deal.description} 
-                                ({deal.discount_type === 'percentage' ? `${deal.discount_value}%` : `$${deal.discount_value}`} off)
+                                ({deal.discount_type === 'percentage' 
+                                  ? `${deal.discount_value}% off`
+                                  : `$${deal.discount_value} off`
+                                })
                               </option>
                             ))}
                           </select>
-                          {loadingDeals && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Loading deals...</p>
+                          
+                          {/* 🔥 NEW: Show selected deal info */}
+                          {formData.deal_id && (
+                            <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-800">
+                              {(() => {
+                                const selectedDeal = deals.find(d => d.id === formData.deal_id);
+                                return selectedDeal ? (
+                                  <div className="text-sm">
+                                    <p className="font-medium text-green-800 dark:text-green-200">
+                                      ✅ Selected: {selectedDeal.code}
+                                    </p>
+                                    <p className="text-green-600 dark:text-green-300">
+                                      {selectedDeal.description}
+                                    </p>
+                                    <p className="text-green-600 dark:text-green-300">
+                                      Discount: {selectedDeal.discount_type === 'percentage' 
+                                        ? `${selectedDeal.discount_value}%`
+                                        : `$${selectedDeal.discount_value}`
+                                      }
+                                    </p>
+                                  </div>
+                                ) : null;
+                              })()}
+                            </div>
                           )}
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            Select a deal to automatically apply discount to this product
-                          </p>
                         </div>
                       </div>
                       
@@ -572,118 +605,72 @@ export default function DashboardPage() {
                       <p className="text-gray-500 dark:text-gray-400">No products found.</p>
                     </div>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
-                        <colgroup>
-                          <col style={{ width: '280px' }}/>
-                          <col style={{ width: '120px' }}/>
-                          <col style={{ width: '200px' }}/>
-                          {isAdmin && <col style={{ width: '160px' }}/>}
-                        </colgroup>
-                        <thead className="bg-gray-50 dark:bg-gray-700">
-                          <tr>
-                            <th
-                              scope="col"
-                              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {products.map((product) => (
+                        <div key={product.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                          {/* Product Image */}
+                          {product.image && (
+                            <div className="relative w-full h-48 mb-4">
+                              <Image
+                                src={product.image}
+                                alt={product.title}
+                                fill
+                                className="object-cover rounded-lg"
+                              />
+                            </div>
+                          )}
+                          
+                          {/* Product Info */}
+                          <h3 className="text-lg font-semibold mb-2">{product.title}</h3>
+                          <p className="text-gray-600 dark:text-gray-300 mb-2">${product.price.toFixed(2)}</p>
+                          
+                          {/* 🔥 NEW: Deal Association Display */}
+                          {product.deal ? (
+                            <div className="mb-3">
+                              <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                🎉 {product.deal.code}
+                              </div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {product.deal.discount_type === 'percentage' 
+                                  ? `${product.deal.discount_value}% off`
+                                  : `$${product.deal.discount_value} off`
+                                }
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {product.deal.description}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="mb-3">
+                              <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                                No deal assigned
+                              </div>
+                            </div>
+                          )}
+                          
+                          {product.description && (
+                            <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2">
+                              {product.description}
+                            </p>
+                          )}
+                          
+                          {/* Action Buttons */}
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleEdit(product)}
+                              className="flex-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
                             >
-                              Product
-                            </th>
-                            <th
-                              scope="col"
-                              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(product.id)}
+                              className="flex-1 px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
                             >
-                              Price
-                            </th>
-                            <th
-                              scope="col"
-                              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                            >
-                              Service Category
-                            </th>
-                            {isAdmin && (
-                              <th
-                                scope="col"
-                                className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                              >
-                                Actions
-                              </th>
-                            )}
-                            <th
-                              scope="col"
-                              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                            >
-                              Deal
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                          {products.map((product) => (
-                            <tr key={product.id}>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="flex items-center">
-                                  <div className="h-10 w-10 flex-shrink-0 relative">
-                                    <Image
-                                      src={product.image || "/placeholder-product.jpg"}
-                                      alt={product.title}
-                                      fill
-                                      className="object-cover rounded-md"
-                                      onError={(e) => {
-                                        const target = e.target as HTMLImageElement;
-                                        target.src = "/placeholder-product.jpg";
-                                      }}
-                                    />
-                                  </div>
-                                  <div className="ml-4 min-w-0">
-                                    <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                      {product.title}
-                                    </div>
-                                    <div className="text-sm text-gray-500 dark:text-gray-400 overflow-hidden text-ellipsis break-normal">
-                                      {product.description || "No description"}
-                                    </div>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm text-gray-900 dark:text-white">
-                                  ${product.price?.toFixed(2) || "0.00"}
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm text-gray-900 dark:text-white">
-                                  {product.clientpathurl ? getServiceCategoryName(product.clientpathurl) : 'No category'}
-                                </div>
-                              </td>
-                              {isAdmin && (
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                  <button
-                                    onClick={() => handleEdit(product)}
-                                    className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-4"
-                                  >
-                                    Edit
-                                  </button>
-                                  <button
-                                    onClick={() => handleDelete(product.id)}
-                                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                                  >
-                                    Delete
-                                  </button>
-                                </td>
-                              )}
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm text-gray-900 dark:text-white">
-                                  {product.deal ? (
-                                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full">
-                                      {product.deal.code}
-                                    </span>
-                                  ) : (
-                                    <span className="text-gray-500 dark:text-gray-400">No deal</span>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </Card>
