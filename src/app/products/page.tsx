@@ -8,8 +8,7 @@ import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { useCart } from "@/context/CartContext";
-import { fetchProducts, fetchProductsSimple } from "@/services/productsService"; // Import both
-import Card from "@/components/ui/Card";
+import { fetchProducts } from "@/services/productsService";import Card from "@/components/ui/Card";
 import { ProductType } from "@/types/product";
 import { useAuth } from "@/context/AuthContext";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
@@ -39,7 +38,7 @@ export default function ProductsPage() {
           console.log('✅ Full products loaded successfully');
         } catch (fullError) {
           console.warn('⚠️ Full fetch failed, trying simple version:', fullError);
-          data = await fetchProductsSimple();
+          data = await fetchProducts();
           console.log('✅ Simple products loaded successfully');
         }
         

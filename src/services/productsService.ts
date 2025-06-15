@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabaseClient';
 import { ProductType } from '@/types/product';
+import { Deal } from './dealService';
 
 // Once deals table is created, you can use this:
 export const fetchProductsWithDeals = async (): Promise<ProductType[]> => {
@@ -462,8 +463,8 @@ export const createProduct = async (
   } catch (err) {
     console.error('[createProduct] 💥 CAUGHT EXCEPTION:');
     console.error('[createProduct] Exception type:', typeof err);
-    console.error('[createProduct] Exception message:', err?.message);
-    console.error('[createProduct] Exception stack:', err?.stack);
+    // console.error('[createProduct] Exception message:', err?.message);
+    // console.error('[createProduct] Exception stack:', err?.stack);
     console.error('[createProduct] Full exception:', err);
     throw err;
   }
