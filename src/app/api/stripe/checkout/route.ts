@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe'; // 🔥 Use your main Stripe instance
+import Stripe from 'stripe';
+import { stripe } from '@/lib/stripe';
 
 interface CartItem {
   id: string;
@@ -9,6 +10,8 @@ interface CartItem {
   image?: string;
   description?: string;
   clientpathurl?: string;
+  originalPrice?: number;
+  productDiscountAmount?: number;
 }
 
 interface AppliedDeal {
@@ -46,7 +49,7 @@ export async function POST(req: NextRequest) {
 
     const { orderId, items, appliedDeal, customerEmail, successUrl, cancelUrl } = requestBody;
 
-    // Validation
+    // Enhanced validation with detailed logging
     console.log('🔍 Validating required fields:');
     console.log('- orderId:', !!orderId, orderId);
     console.log('- items:', !!items, `${items?.length || 0} items`);
@@ -86,7 +89,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create line items for Stripe
+    // 🔥 FIX: Use proper Stripe types
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map((item: CartItem) => {
       const itemTotal = item.price * item.quantity;
       const itemDiscountRatio = discountAmount > 0 ? (itemTotal / subtotal) : 0;
@@ -111,7 +114,7 @@ export async function POST(req: NextRequest) {
 
     console.log('💰 Line items created:', lineItems.length);
 
-    // 🔥 FIX: Create minimal metadata to stay under 500 character limit
+    // Create minimal metadata to stay under 500 character limit
     const minimalCartItems = items.map(item => ({
       id: item.id,
       name: item.name.substring(0, 30), // Truncate long names
@@ -142,7 +145,7 @@ export async function POST(req: NextRequest) {
         allowed_countries: ['US', 'CA'],
       },
       metadata: {
-        // 🔥 ESSENTIAL: Only store the order ID - we can get everything else from our database
+        // Essential: Only store the order ID - we can get everything else from our database
         orderId: orderId,
         itemCount: items.length.toString(),
         subtotal: subtotal.toString(),
@@ -157,10 +160,8 @@ export async function POST(req: NextRequest) {
 
     console.log('🔄 Creating Stripe session with metadata:');
     Object.entries(sessionParams.metadata || {}).forEach(([key, value]) => {
-      console.log(`- ${key}: ${value.length} chars`);
-    });
-
-    const session = await stripe.checkout.sessions.create(sessionParams);
+      console.log(`- ${key}: ${String(value).length || 0} chars`);
+    });    const session = await stripe.checkout.sessions.create(sessionParams);
 
     console.log('✅ Checkout session created:', session.id);
 
