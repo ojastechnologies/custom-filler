@@ -144,6 +144,17 @@ export async function POST(req: NextRequest) {
       shipping_address_collection: {
         allowed_countries: ['US', 'CA'],
       },
+      // 🔥 ADD: Enable invoice creation
+      invoice_creation: {
+        enabled: true,
+        invoice_data: {
+          description: `Order #${orderId}`,
+          footer: 'Thank you for your business!',
+          metadata: {
+            order_id: orderId,
+          },
+        },
+      },
       metadata: {
         // Essential: Only store the order ID - we can get everything else from our database
         orderId: orderId,
