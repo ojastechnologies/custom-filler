@@ -152,6 +152,7 @@ export async function POST(req: NextRequest) {
           footer: 'Thank you for your business!',
           metadata: {
             order_id: orderId,
+            order_number: orderId
           },
         },
       },

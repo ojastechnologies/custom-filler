@@ -21,7 +21,7 @@ export const getBaseUrl = (): string => {
 export const buildCheckoutUrls = (orderId: string) => {
   const baseUrl = getBaseUrl();
   
-  const successUrl = `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`;
+  const successUrl = `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}&order_number={CHECKOUT_SESSION_ID}`;
   const cancelUrl = `${baseUrl}/cart`;
   
   console.log('🔗 Built checkout URLs:', { baseUrl, successUrl, cancelUrl });

@@ -329,7 +329,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ? `${window.location.protocol}//${window.location.host}`
         : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
-      const successUrl = `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order_id=${createdOrder.id}`;
+      const successUrl = `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order_id=${createdOrder.id}&order_number=${createdOrder.order_number}`;
       const cancelUrl = `${baseUrl}/cart`;
 
       console.log('🔗 Constructed URLs:');
@@ -339,6 +339,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Prepare checkout data for Stripe - 🔥 INCLUDE ALL REQUIRED FIELDS
       const checkoutData = {
         orderId: createdOrder.id,
+        orderNumber: createdOrder.order_number,
         items: safeItems.map(item => ({
           id: item.id,
           name: item.name,

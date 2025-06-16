@@ -18,15 +18,17 @@ export default function CheckoutSuccessPage() {
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
   const [invoiceError, setInvoiceError] = useState<string | null>(null);
-  
   const sessionId = searchParams.get('session_id');
   const orderId = searchParams.get('order_id');
+  debugger;
+  const orderNumber = searchParams.get('order_number');
 
   useEffect(() => {
     console.log('✅ Checkout successful!');
     console.log('Session ID:', sessionId);
     console.log('Order ID:', orderId);
-    
+    console.log('Order Number:', orderNumber);
+
     // Clear cart from localStorage
     localStorage.removeItem('cart');
     localStorage.removeItem('appliedDeal');
@@ -56,11 +58,11 @@ export default function CheckoutSuccessPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch invoice');
+        throw new Error(errorData.error || 'Failed to fetch Receipt');
       }
 
       const data = await response.json();
-      console.log('✅ Invoice data received:', data);
+      console.log('✅ Receipt data received:', data);
       
       setInvoiceData(data);
       
@@ -71,8 +73,8 @@ export default function CheckoutSuccessPage() {
       }
       
     } catch (error) {
-      console.error('❌ Error fetching invoice:', error);
-      setInvoiceError(error instanceof Error ? error.message : 'Failed to fetch invoice');
+      console.error('❌ Error fetching Receipt:', error);
+      setInvoiceError(error instanceof Error ? error.message : 'Failed to fetch Receipt');
     } finally {
       setInvoiceLoading(false);
     }
@@ -115,8 +117,8 @@ export default function CheckoutSuccessPage() {
               
               {orderId && (
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Order ID:</p>
-                  <p className="font-mono text-lg text-gray-900 dark:text-white">{orderId}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Order Number:</p>
+                  <p className="font-mono text-lg text-gray-900 dark:text-white">{orderNumber}</p>
                 </div>
               )}
 
@@ -130,7 +132,7 @@ export default function CheckoutSuccessPage() {
               {/* Invoice Section */}
               <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                 <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                  📄 Invoice & Receipt
+                  📄 Receipt
                 </h3>
                 
                 {invoiceError && (
@@ -171,20 +173,20 @@ export default function CheckoutSuccessPage() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Getting Invoice...
+                      Getting Receipt...
                     </span>
                   ) : (
                     <span className="flex items-center justify-center">
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      Get Invoice & Receipt
+                      Get Receipt
                     </span>
                   )}
                 </button>
 
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                  Your invoice will open in a new tab and can be downloaded as PDF
+                  Your Receipt will open in a new tab and can be downloaded as PDF
                 </p>
               </div>
               
