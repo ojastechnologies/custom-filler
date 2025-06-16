@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import Stripe from 'stripe';
+import { stripe } from '@/lib/stripe'; // 🔥 Use your main Stripe instance
 import { supabase } from '@/lib/supabaseClient';
+import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-05-28.basil',
-});
 export async function POST(req: NextRequest) {
   console.log('🔔 Webhook received');
   
@@ -46,6 +44,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ received: true });
 }
+
 async function updateOrderAfterPayment(session: Stripe.Checkout.Session) {
   try {
     console.log('🔄 Updating order after successful payment');
@@ -59,19 +58,27 @@ async function updateOrderAfterPayment(session: Stripe.Checkout.Session) {
     }
 
     console.log('📝 Updating order:', orderId);
+    console.log('📋 Session metadata received:', {
+      orderId,
+      itemCount: metadata.itemCount,
+      subtotal: metadata.subtotal,
+      discountAmount: metadata.discountAmount,
+      finalTotal: metadata.finalTotal,
+      dealCode: metadata.dealCode
+    });
 
     // Update order status and add payment information
     const { error: updateError } = await supabase
       .from('orders')
       .update({
         stripe_session_id: session.id,
-        stripe_payment_intent_id: session.payment_intent as string || null,
+        stripe_payment_intent_id: typeof session.payment_intent === 'string' 
+          ? session.payment_intent 
+          : session.payment_intent?.id || null,
         status: 'processing',
         updated_at: new Date().toISOString(),
-        // Update customer info from Stripe if available
         customer_name: session.customer_details?.name || null,
         customer_phone: session.customer_details?.phone || null,
-        // Update shipping address from Stripe
         shipping_line1: session.customer_details?.address?.line1 || null,
         shipping_line2: session.customer_details?.address?.line2 || null,
         shipping_city: session.customer_details?.address?.city || null,
@@ -87,6 +94,15 @@ async function updateOrderAfterPayment(session: Stripe.Checkout.Session) {
     }
 
     console.log('✅ Order updated successfully with payment info');
+
+    // 🔥 OPTIONAL: Log the successful payment details
+    console.log('💰 Payment completed:', {
+      orderId,
+      sessionId: session.id,
+      customerEmail: session.customer_details?.email,
+      amountTotal: session.amount_total ? (session.amount_total / 100) : 'unknown',
+      currency: session.currency
+    });
 
   } catch (error) {
     console.error('❌ Error in updateOrderAfterPayment:', error);

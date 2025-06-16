@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { validateDealCode, Deal } from '@/services/dealService';
 import { createOrderInDatabase, updateOrderWithStripeInfo, CreateOrderData } from '@/services/ordersService';
 
-// Update the Product type to include all fields
+// Update the Product and CartItem interfaces to include deal information
 export interface Product {
   id: string;
   name: string;
@@ -13,6 +13,8 @@ export interface Product {
   image?: string;
   description?: string;
   clientpathurl?: string;
+  deal_id?: string;
+  deal?: Deal;
 }
 
 export interface CartItem {
@@ -23,12 +25,51 @@ export interface CartItem {
   image?: string;
   description?: string;
   clientpathurl?: string;
+  deal_id?: string;
+  deal?: Deal;
+  originalPrice?: number; // NEW: Store original price before product discount
+  productDiscountAmount?: number; // NEW: Store product-level discount amount
 }
 
 export interface AppliedDeal {
   deal: Deal;
   discountAmount: number;
 }
+
+// Helper function to check if a deal is valid and active
+const isDealValid = (deal: Deal): boolean => {
+  if (!deal || !deal.is_active) return false;
+  
+  // Check expiration
+  if (deal.expires_at && new Date(deal.expires_at) < new Date()) return false;
+  
+  // Check usage limit
+  if (deal.usage_limit && deal.usage_count >= deal.usage_limit) return false;
+  
+  return true;
+};
+
+// Helper function to calculate product discount
+const calculateProductDiscount = (originalPrice: number, deal: Deal): number => {
+  if (!isDealValid(deal)) return 0;
+  
+  let discountAmount = 0;
+  if (deal.discount_type === 'percentage') {
+    discountAmount = originalPrice * (deal.discount_value / 100);
+  } else {
+    discountAmount = deal.discount_value;
+  }
+  
+  // Apply maximum discount limit if set
+  if (deal.maximum_discount_amount && discountAmount > deal.maximum_discount_amount) {
+    discountAmount = deal.maximum_discount_amount;
+  }
+  
+  // Ensure discount doesn't exceed original price
+  discountAmount = Math.min(discountAmount, originalPrice - 0.01);
+  
+  return Math.max(0, discountAmount);
+};
 
 interface CartContextType {
   items: CartItem[];
@@ -39,6 +80,7 @@ interface CartContextType {
   totalItems: number;
   subtotal: number;
   finalTotal: number;
+  productDiscountTotal: number; // NEW: Total product-level discounts
   appliedDeal: AppliedDeal | null;
   applyDeal: (code: string) => Promise<{ isValid: boolean; message: string }>;
   removeDeal: () => void;
@@ -49,7 +91,6 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // 🔥 ENSURE ITEMS IS ALWAYS AN ARRAY
   const [items, setItems] = useState<CartItem[]>([]);
   const [appliedDeal, setAppliedDeal] = useState<AppliedDeal | null>(null);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -62,7 +103,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (savedCart) {
         const parsedCart = JSON.parse(savedCart);
-        // 🔥 ENSURE PARSED CART IS AN ARRAY
         if (Array.isArray(parsedCart)) {
           setItems(parsedCart);
         } else {
@@ -78,7 +118,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error) {
       console.error('Error loading cart from localStorage:', error);
-      // Reset to safe defaults
       setItems([]);
       setAppliedDeal(null);
       localStorage.removeItem('cart');
@@ -108,28 +147,46 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('🛒 Adding to cart:', newItem);
     
     setItems(prevItems => {
-      // 🔥 ENSURE PREVITEMS IS ALWAYS AN ARRAY
       const safeItems = Array.isArray(prevItems) ? prevItems : [];
-      
       const existingItem = safeItems.find(item => item.id === newItem.id);
+      
+      // Calculate product-level discount if item has a deal
+      let processedItem = { ...newItem };
+      if (newItem.deal && isDealValid(newItem.deal)) {
+        const originalPrice = newItem.price;
+        const discountAmount = calculateProductDiscount(originalPrice, newItem.deal);
+        const discountedPrice = originalPrice - discountAmount;
+        
+        processedItem = {
+          ...newItem,
+          originalPrice,
+          productDiscountAmount: discountAmount,
+          price: discountedPrice
+        };
+        
+        console.log('🎉 Applied product discount:', {
+          originalPrice,
+          discountAmount,
+          finalPrice: discountedPrice,
+          deal: newItem.deal.code
+        });
+      }
       
       if (existingItem) {
         return safeItems.map(item =>
           item.id === newItem.id
-            ? { ...item, quantity: item.quantity + (newItem.quantity || 1) }
+            ? { ...item, quantity: item.quantity + (processedItem.quantity || 1) }
             : item
         );
       } else {
-        return [...safeItems, { ...newItem, quantity: newItem.quantity || 1 }];
+        return [...safeItems, { ...processedItem, quantity: processedItem.quantity || 1 }];
       }
     });
   }, []);
 
   const removeFromCart = useCallback((id: string) => {
     console.log('🗑️ Removing from cart:', id);
-    
     setItems(prevItems => {
-      // 🔥 ENSURE PREVITEMS IS ALWAYS AN ARRAY
       const safeItems = Array.isArray(prevItems) ? prevItems : [];
       return safeItems.filter(item => item.id !== id);
     });
@@ -144,7 +201,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     setItems(prevItems => {
-      // 🔥 ENSURE PREVITEMS IS ALWAYS AN ARRAY
       const safeItems = Array.isArray(prevItems) ? prevItems : [];
       return safeItems.map(item =>
         item.id === id ? { ...item, quantity } : item
@@ -160,9 +216,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const applyDeal = useCallback(async (code: string) => {
     try {
-      console.log('🎫 Applying deal:', code);
+      console.log('🎫 Applying cart deal:', code);
       
-      // 🔥 ENSURE ITEMS IS AN ARRAY BEFORE VALIDATION
       const safeItems = Array.isArray(items) ? items : [];
       
       if (safeItems.length === 0) {
@@ -179,7 +234,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           deal: result.deal,
           discountAmount: result.discountAmount
         });
-        console.log('✅ Deal applied successfully:', result);
+        console.log('✅ Cart deal applied successfully:', result);
       }
       
       return {
@@ -196,7 +251,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [items]);
 
   const removeDeal = useCallback(() => {
-    console.log('🗑️ Removing applied deal');
+    console.log('🗑️ Removing applied cart deal');
     setAppliedDeal(null);
   }, []);
 
@@ -204,29 +259,35 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setIsCheckingOut(true);
       
-      // 🔥 ENSURE ITEMS IS AN ARRAY
       const safeItems = Array.isArray(items) ? items : [];
       
       console.log('🛒 Starting checkout with items:', safeItems);
-      console.log('🎫 Applied deal:', appliedDeal);
 
       if (safeItems.length === 0) {
         throw new Error('Cart is empty');
       }
 
-      // Calculate totals with safe array
+      // Calculate totals
       const subtotal = safeItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      let discountAmount = appliedDeal ? appliedDeal.discountAmount : 0;
+      const productDiscountTotal = safeItems.reduce((sum, item) => 
+        sum + ((item.productDiscountAmount || 0) * item.quantity), 0
+      );
+      let cartDiscountAmount = appliedDeal ? appliedDeal.discountAmount : 0;
       
-      // Safety check: Ensure discount doesn't exceed subtotal
-      if (discountAmount >= subtotal) {
-        console.warn('⚠️ Discount amount exceeds subtotal, capping discount');
-        discountAmount = Math.max(0, subtotal - 0.50);
+      // Safety check: Ensure cart discount doesn't exceed subtotal
+      if (cartDiscountAmount >= subtotal) {
+        console.warn('⚠️ Cart discount amount exceeds subtotal, capping discount');
+        cartDiscountAmount = Math.max(0, subtotal - 0.50);
       }
       
-      const finalTotal = Math.max(0.50, subtotal - discountAmount);
+      const finalTotal = Math.max(0.50, subtotal - cartDiscountAmount);
 
-      console.log('💰 Checkout totals:', { subtotal, discountAmount, finalTotal });
+      console.log('💰 Checkout totals:', { 
+        subtotal, 
+        productDiscountTotal, 
+        cartDiscountAmount, 
+        finalTotal 
+      });
 
       // Validate final total
       if (finalTotal < 0.50) {
@@ -238,22 +299,24 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         customer_email: customerEmail || 'guest@example.com',
         customer_name: undefined,
         customer_phone: undefined,
-        subtotal: subtotal,
+        subtotal: subtotal + productDiscountTotal,
         shipping_cost: 0,
         tax_amount: 0,
         total_amount: finalTotal,
         currency: 'usd',
         deal_id: appliedDeal?.deal?.id,
         deal_code: appliedDeal?.deal?.code,
-        discount_amount: discountAmount,
+        discount_amount: cartDiscountAmount + productDiscountTotal,
         items: safeItems.map(item => ({
           id: item.id,
           name: item.name,
-          price: item.price,
+          price: item.originalPrice || item.price,
           quantity: item.quantity,
           image: item.image,
           description: item.description,
-          clientpathurl: item.clientpathurl
+          clientpathurl: item.clientpathurl,
+          deal_id: item.deal_id,
+          product_discount_amount: item.productDiscountAmount || 0
         }))
       };
 
@@ -261,28 +324,52 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const createdOrder = await createOrderInDatabase(orderData);
       console.log('✅ Order created in database:', createdOrder.order_number);
 
-      // Prepare checkout data
+      // 🔥 FIX: Construct URLs properly
+      const baseUrl = typeof window !== 'undefined' 
+        ? `${window.location.protocol}//${window.location.host}`
+        : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+
+      const successUrl = `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order_id=${createdOrder.id}&order_number=${createdOrder.order_number}`;
+      const cancelUrl = `${baseUrl}/cart`;
+
+      console.log('🔗 Constructed URLs:');
+      console.log('- Success URL:', successUrl);
+      console.log('- Cancel URL:', cancelUrl);
+
+      // Prepare checkout data for Stripe - 🔥 INCLUDE ALL REQUIRED FIELDS
       const checkoutData = {
         orderId: createdOrder.id,
+        orderNumber: createdOrder.order_number,
         items: safeItems.map(item => ({
           id: item.id,
           name: item.name,
-          price: item.price,
+          price: item.price, // Use discounted price for Stripe
           quantity: item.quantity,
           image: item.image,
           description: item.description,
-          clientpathurl: item.clientpathurl
+          clientpathurl: item.clientpathurl,
+          originalPrice: item.originalPrice,
+          productDiscountAmount: item.productDiscountAmount
         })),
         appliedDeal: appliedDeal ? {
-          ...appliedDeal,
-          discountAmount: discountAmount
+          deal: {
+            id: appliedDeal.deal.id,
+            code: appliedDeal.deal.code,
+            description: appliedDeal.deal.description
+          },
+          discountAmount: cartDiscountAmount
         } : undefined,
         customerEmail: customerEmail || undefined,
-        successUrl: `${window.location.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order_id=${createdOrder.id}`,
-        cancelUrl: `${window.location.origin}/cart`
+        successUrl: successUrl, // 🔥 REQUIRED FIELD
+        cancelUrl: cancelUrl    // 🔥 REQUIRED FIELD
       };
 
-      console.log('📤 Sending checkout data to Stripe:', checkoutData);
+      console.log('📤 Sending checkout data to Stripe:');
+      console.log('- Order ID:', checkoutData.orderId);
+      console.log('- Items count:', checkoutData.items.length);
+      console.log('- Has applied deal:', !!checkoutData.appliedDeal);
+      console.log('- Success URL present:', !!checkoutData.successUrl);
+      console.log('- Cancel URL present:', !!checkoutData.cancelUrl);
 
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
@@ -298,9 +385,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const errorText = await response.text();
         console.error('❌ Stripe API error response:', errorText);
         
-        let errorData;
+        let errorData: { error?: string };
         try {
-          errorData = JSON.parse(errorText);
+          errorData = JSON.parse(errorText) as { error?: string };
         } catch {
           errorData = { error: errorText || 'Unknown error from Stripe API' };
         }
@@ -308,7 +395,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(errorData.error || `Checkout failed with status ${response.status}`);
       }
 
-      const responseData = await response.json();
+      const responseData = await response.json() as { url?: string; sessionId?: string };
       console.log('✅ Stripe API success response:', responseData);
 
       const { url, sessionId } = responseData;
@@ -330,16 +417,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setIsCheckingOut(false);
     }
-
   }, [items, appliedDeal]);
-  // 🔥 SAFE CALCULATIONS WITH ARRAY CHECKS
-  const totalItems = Array.isArray(items) ? items.reduce((total, item) => total + item.quantity, 0) : 0;
-  const subtotal = Array.isArray(items) ? items.reduce((total, item) => total + item.price * item.quantity, 0) : 0;
-  const discountAmount = appliedDeal ? appliedDeal.discountAmount : 0;
-  const finalTotal = Math.max(0, subtotal - discountAmount);
+
+  // Calculate totals with product-level discounts
+  const safeItems = Array.isArray(items) ? items : [];
+  const totalItems = safeItems.reduce((total, item) => total + item.quantity, 0);
+  const subtotal = safeItems.reduce((total, item) => total + item.price * item.quantity, 0);
+  const productDiscountTotal = safeItems.reduce((total, item) => 
+    total + ((item.productDiscountAmount || 0) * item.quantity), 0
+  );
+  const cartDiscountAmount = appliedDeal ? appliedDeal.discountAmount : 0;
+  const finalTotal = Math.max(0, subtotal - cartDiscountAmount);
 
   const value: CartContextType = {
-    items: Array.isArray(items) ? items : [], // 🔥 ALWAYS RETURN AN ARRAY
+    items: safeItems,
     addToCart,
     removeFromCart,
     updateQuantity,
@@ -347,6 +438,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     totalItems,
     subtotal,
     finalTotal,
+    productDiscountTotal,
     appliedDeal,
     applyDeal,
     removeDeal,

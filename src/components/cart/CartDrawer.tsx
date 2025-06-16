@@ -10,6 +10,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
     removeFromCart, 
     totalItems, 
     subtotal, 
+    productDiscountTotal, // NEW: Get product discount total
     finalTotal, 
     appliedDeal,
     proceedToCheckout, 
@@ -85,12 +86,40 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm truncate">{item.name}</div>
+                      
+                      {/* Show original price if discounted */}
+                      {item.originalPrice && item.productDiscountAmount ? (
+                        <div className="text-sm">
+                          <span className="text-gray-500 dark:text-gray-400 line-through mr-2">
+                            ${item.originalPrice.toFixed(2)}
+                          </span>
+                          <span className="text-red-600 dark:text-red-400 font-medium">
+                            ${item.price.toFixed(2)}
+                          </span>
+                          <span className="text-xs text-green-600 dark:text-green-400 block">
+                            Save ${item.productDiscountAmount.toFixed(2)} each
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          ${item.price.toFixed(2)}
+                        </div>
+                      )}
+                      
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        ${item.price.toFixed(2)} x {item.quantity}
+                        Qty: {item.quantity}
                       </div>
+                      
                       <div className="text-sm font-medium">
                         ${(item.price * item.quantity).toFixed(2)}
                       </div>
+                      
+                      {/* Show deal badge if item has a deal */}
+                      {item.deal && item.productDiscountAmount && (
+                        <div className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded mt-1 inline-block">
+                          🎉 {item.deal.code}
+                        </div>
+                      )}
                     </div>
                     <button
                       onClick={() => removeFromCart(item.id)}
@@ -118,16 +147,35 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
               <span>Subtotal</span>
               <span>${subtotal.toFixed(2)}</span>
             </div>
+            
+            {/* NEW: Show product-level discounts */}
+            {productDiscountTotal > 0 && (
+              <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                <span>Product Discounts</span>
+                <span>-${productDiscountTotal.toFixed(2)}</span>
+              </div>
+            )}
+            
+            {/* Cart-level discount */}
             {appliedDeal && (
               <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
-                <span>Discount ({appliedDeal.deal.code})</span>
+                <span>Cart Discount ({appliedDeal.deal.code})</span>
                 <span>-${appliedDeal.discountAmount.toFixed(2)}</span>
               </div>
             )}
+            
             <div className="flex justify-between font-semibold">
               <span>Total</span>
               <span>${finalTotal.toFixed(2)}</span>
             </div>
+            
+            {/* NEW: Show total savings */}
+            {(productDiscountTotal > 0 || appliedDeal) && (
+              <div className="flex justify-between text-sm text-green-600 dark:text-green-400 font-medium">
+                <span>Total Savings</span>
+                <span>-${(productDiscountTotal + (appliedDeal?.discountAmount || 0)).toFixed(2)}</span>
+              </div>
+            )}
           </div>
           
           <div className="flex gap-2">

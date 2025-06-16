@@ -6,7 +6,7 @@ import Card from './ui/Card';
 import Button from './ui/Button';
 import { useCart } from '@/context/CartContext';
 import { fetchProducts } from '@/services/productsService';
-import { ProductType } from '@/types/product';
+import { Deal, ProductType } from '@/types/product';
 
 const Products = () => {
   const { addToCart } = useCart();
@@ -28,24 +28,7 @@ const Products = () => {
         setError(null);
       } catch {
         setError('Failed to load products. Please try again later.');
-        setProducts([
-          {
-            id: 'fallback-1',
-            title: 'Sample Product 1',
-            price: 19.99,
-            image: '/placeholder-product.jpg',
-            description: 'This is a fallback product shown when database connection fails.',
-            about_url: 'https://example.com/product1'
-          },
-          {
-            id: 'fallback-2',
-            title: 'Sample Product 2',
-            price: 29.99,
-            image: '/placeholder-product.jpg',
-            description: 'This is a fallback product shown when database connection fails.',
-            about_url: 'https://example.com/product2'
-          }
-        ]);
+        setProducts([]);
       } finally {
         setLoading(false);
       }
@@ -63,24 +46,25 @@ const Products = () => {
       image: product.image,
       description: product.description,
       clientpathurl: product.about_url,
-      quantity: 0
+      deal_id: product.deal_id, // NEW: Include deal_id
+      deal: product.deal, // NEW: Include deal object
+      quantity: 1,
     });
 
-    console.log('🛒 Added to cart with all fields:', {
+    console.log('🛒 Added to cart with deal info:', {
       id: product.id,
       name: product.title,
       price: product.price,
-      image: product.image,
-      description: product.description,
-      clientpathurl: product.about_url
+      deal: product.deal?.code || 'No deal'
     });
-   
+
     setAddedToCart(prev => ({ ...prev, [product.id]: true }));
   
     setTimeout(() => {
       setAddedToCart(prev => ({ ...prev, [product.id]: false }));
     }, 2000);
   };
+
   // Helper function to check if deal is valid
   const isDealValid = (deal: { is_active: boolean; expires_at?: string; usage_limit?: number; usage_count?: number }) => {
     if (!deal || !deal.is_active) return false;
@@ -93,6 +77,50 @@ const Products = () => {
     
     return true;
   };
+
+  // Helper function to calculate discounted price
+  const getDiscountedPrice = (originalPrice: number, deal: Deal) => {
+    if (!deal || !isDealValid(deal)) return originalPrice;
+    
+    let discountAmount = 0;
+    if (deal.discount_type === 'percentage') {
+      discountAmount = originalPrice * (deal.discount_value / 100);
+    } else {
+      discountAmount = deal.discount_value;
+    }
+    
+    // Apply maximum discount limit if set
+    if (deal.maximum_discount_amount && discountAmount > deal.maximum_discount_amount) {
+      discountAmount = deal.maximum_discount_amount;
+    }
+    
+    // Ensure discount doesn't exceed original price
+    discountAmount = Math.min(discountAmount, originalPrice - 0.01);
+    
+    return Math.max(0.01, originalPrice - discountAmount);
+  };
+
+  useEffect(() => {
+    console.log('🔍 Products Debug - User Status:', {
+      isLoggedIn: 'Check your auth state here',
+      productsCount: products.length,
+      productsWithDeals: products.filter(p => p.deal).length,
+      productsWithValidDeals: products.filter(p => p.deal && isDealValid(p.deal)).length
+    });
+
+    // Log each product's deal status
+    products.forEach(product => {
+      if (product.deal) {
+        console.log(`📦 Product "${product.title}":`, {
+          hasDeal: !!product.deal,
+          dealCode: product.deal.code,
+          dealActive: product.deal.is_active,
+          dealValid: isDealValid(product.deal),
+          dealExpired: product.deal.expires_at ? new Date(product.deal.expires_at) < new Date() : false
+        });
+      }
+    });
+  }, [products]);
 
   if (loading) {
     return (
@@ -129,77 +157,93 @@ const Products = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {products.map((product) => (
-              <Card key={product.id} className="h-full">
-                <div className="h-48 bg-gray-200 dark:bg-gray-700 relative">
-                  {product.image && (
-                    <Image 
-                      src={product.image} 
-                      alt={product.title} 
-                      fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                      className="object-cover"
-                      priority={false}
-                    />
-                  )}
-                  
-                  {/* Deal Badge */}
-                  {product.deal && isDealValid(product.deal) && (
-                    <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-                      {product.deal.discount_type === 'percentage' 
-                        ? `${product.deal.discount_value}% OFF` 
-                        : `$${product.deal.discount_value} OFF`
-                      }
-                    </div>
-                  )}
-                </div>
-                <div className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{product.title}</h3>
-                  {product.description && (
-                    <p className="mt-2 text-gray-600 dark:text-gray-400 line-clamp-3">{product.description}</p>
-                  )}
-                  
-                  {/* Deal Information */}
-                  {product.deal && isDealValid(product.deal) && (
-                    <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded">
-                      <p className="text-xs text-green-700 dark:text-green-300 font-medium">
-                        🎉 Deal: {product.deal.code}
-                      </p>
-                      <p className="text-xs text-green-600 dark:text-green-400">
-                        {product.deal.description}
-                      </p>
-                    </div>
-                  )}
-                  
-                  {/* Show about_url if available */}
-                  {product.about_url && (
-                    <p className="mt-2 text-xs text-blue-600 dark:text-blue-400 truncate">
-                      More info: {product.about_url}
-                    </p>
-                  )}
-                  
-                  <div className="mt-4 flex items-center justify-between">
-                    <div className="flex flex-col">
-                      <span className="text-lg font-bold text-gray-900 dark:text-white">
-                        ${product.price.toFixed(2)}
-                      </span>
-                      {product.deal && isDealValid(product.deal) && (
-                        <span className="text-xs text-green-600 dark:text-green-400">
-                          Deal price applies at checkout
-                        </span>
-                      )}
-                    </div>
-                    <Button
-                      variant={addedToCart[product.id] ? 'secondary' : 'primary'}
-                      size="sm"
-                      onClick={() => handleAddToCart(product)}
-                    >
-                      {addedToCart[product.id] ? 'Added ✓' : 'Add to Cart'}
-                    </Button>
+            {products.map((product) => {
+              const hasValidDeal = product.deal && isDealValid(product.deal);
+              const discountedPrice = hasValidDeal ? getDiscountedPrice(product.price, product.deal!) : product.price;
+              
+              return (
+                <Card key={product.id} className="h-full">
+                  <div className="h-48 bg-gray-200 dark:bg-gray-700 relative">
+                    {product.image && (
+                      <Image 
+                        src={product.image} 
+                        alt={product.title} 
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                        className="object-cover"
+                        priority={false}
+                      />
+                    )}
+                    
+                    {/* Deal Badge */}
+                    {hasValidDeal && (
+                      <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                        {product.deal!.discount_type === 'percentage' 
+                          ? `${product.deal!.discount_value}% OFF` 
+                          : `$${product.deal!.discount_value} OFF`
+                        }
+                      </div>
+                    )}
                   </div>
-                </div>
-              </Card>
-            ))}
+                  <div className="p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{product.title}</h3>
+                    {product.description && (
+                      <p className="mt-2 text-gray-600 dark:text-gray-400 line-clamp-3">{product.description}</p>
+                    )}
+                    
+                    {/* Deal Information */}
+                    {hasValidDeal && (
+                      <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded">
+                        <p className="text-xs text-green-700 dark:text-green-300 font-medium">
+                          🎉 Deal: {product.deal!.code}
+                        </p>
+                        <p className="text-xs text-green-600 dark:text-green-400">
+                          {product.deal!.description}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Show about_url if available */}
+                    {product.about_url && (
+                      <p className="mt-2 text-xs text-blue-600 dark:text-blue-400 truncate">
+                        More info: {product.about_url}
+                      </p>
+                    )}
+                    
+                    <div className="mt-4 flex items-center justify-between">
+                      <div className="flex flex-col">
+                        {hasValidDeal ? (
+                          <>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-lg font-bold text-green-600 dark:text-green-400">
+                                ${discountedPrice.toFixed(2)}
+                              </span>
+                              <span className="text-sm text-gray-500 dark:text-gray-400 line-through">
+                                ${product.price.toFixed(2)}
+                              </span>
+                            </div>
+                            <span className="text-xs text-green-600 dark:text-green-400">
+                              Save ${(product.price - discountedPrice).toFixed(2)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-lg font-bold text-gray-900 dark:text-white">
+                            ${product.price.toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                      <Button
+                        variant={addedToCart[product.id] ? 'secondary' : 'primary'}
+                        size="sm"
+                        onClick={() => handleAddToCart(product)}
+                      >
+                        {addedToCart[product.id] ? 'Added ✓' : 'Add to Cart'}
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>

@@ -8,8 +8,7 @@ import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { useCart } from "@/context/CartContext";
-import { fetchProducts } from "@/services/productsService";
-import Card from "@/components/ui/Card";
+import { fetchProducts } from "@/services/productsService";import Card from "@/components/ui/Card";
 import { ProductType } from "@/types/product";
 import { useAuth } from "@/context/AuthContext";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
@@ -28,17 +27,34 @@ export default function ProductsPage() {
     const loadProducts = async () => {
       try {
         setLoading(true);
-        const data = await fetchProducts();
+        setError(null);
+        
+        console.log('🔄 Attempting to load products...');
+        
+        // Try the full version first, fall back to simple if it fails
+        let data: ProductType[];
+        try {
+          data = await fetchProducts();
+          console.log('✅ Full products loaded successfully');
+        } catch (fullError) {
+          console.warn('⚠️ Full fetch failed, trying simple version:', fullError);
+          data = await fetchProducts();
+          console.log('✅ Simple products loaded successfully');
+        }
+        
         setProducts(data);
+        
+        // Initialize quantities
         const initialQuantities: Record<string, number> = {};
         data.forEach((product: ProductType) => {
           initialQuantities[product.id] = 1;
         });
         setQuantities(initialQuantities);
-        setError(null);
+        
       } catch (err) {
-        console.error("Error fetching products:", err);
+        console.error("❌ All product loading attempts failed:", err);
         setError("Failed to load products. Please try again later.");
+        setProducts([]); // Set empty array instead of fallback products
       } finally {
         setLoading(false);
       }
@@ -47,24 +63,24 @@ export default function ProductsPage() {
   }, []);
 
   const handleAddToCart = (product: ProductType) => {
-    // Add the product to cart with ALL fields including description and clientpathurl
+    // Add the product to cart with ALL fields including deal information
     addToCart({
-      id: product.id,
-      name: product.title,
-      price: product.price,
-      image: product.image,
-      description: product.description, // Include description
-      clientpathurl: product.about_url, // Map about_url to clientpathurl
-      quantity: quantities[product.id] || 1,
-    });
-
-    console.log('🛒 Added to cart with all fields:', {
       id: product.id,
       name: product.title,
       price: product.price,
       image: product.image,
       description: product.description,
       clientpathurl: product.about_url,
+      deal_id: product.deal_id, // NEW: Include deal_id
+      deal: product.deal, // NEW: Include deal object
+      quantity: quantities[product.id] || 1,
+    });
+
+    console.log('🛒 Added to cart with deal info:', {
+      id: product.id,
+      name: product.title,
+      price: product.price,
+      deal: product.deal?.code || 'No deal',
       quantity: quantities[product.id] || 1,
     });
 
@@ -131,6 +147,20 @@ export default function ProductsPage() {
               solutions and services. Browse our offerings below or contact us
               for custom requirements.
             </p>
+            
+            {/* Debug info in development */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">Debug Info:</h3>
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Products loaded: {products.length}
+                </p>
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Products with deals: {products.filter(p => p.deal).length}
+                </p>
+              </div>
+            )}
+            
             {filteredProducts.length === 0 ? (
               <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-md">
                 <svg
@@ -173,6 +203,16 @@ export default function ProductsPage() {
                           target.src = "/images/placeholder-product.jpg";
                         }}
                       />
+                      
+                      {/* Deal Badge - only show if deal exists and is valid */}
+                      {product.deal && product.deal.is_active && (
+                        <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                          {product.deal.discount_type === 'percentage' 
+                            ? `${product.deal.discount_value}% OFF` 
+                            : `$${product.deal.discount_value} OFF`
+                          }
+                        </div>
+                      )}
                     </div>
 
                     <div className="p-5 flex-grow flex flex-col">
@@ -188,6 +228,18 @@ export default function ProductsPage() {
                       <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-2 flex-grow">
                         {product.description || "No description available."}
                       </p>
+
+                      {/* Deal Information */}
+                      {product.deal && product.deal.is_active && (
+                        <div className="mb-4 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded">
+                          <p className="text-xs text-green-700 dark:text-green-300 font-medium">
+                            🎉 Deal: {product.deal.code}
+                          </p>
+                          <p className="text-xs text-green-600 dark:text-green-400">
+                            {product.deal.description}
+                          </p>
+                        </div>
+                      )}
 
                       {/* Show about_url if available */}
                       {product.about_url && (

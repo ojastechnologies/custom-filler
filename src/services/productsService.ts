@@ -1,28 +1,149 @@
 import { supabase } from '@/lib/supabaseClient';
 import { ProductType } from '@/types/product';
+import { Deal } from './dealService';
 
+// Once deals table is created, you can use this:
+export const fetchProductsWithDeals = async (): Promise<ProductType[]> => {
+  try {
+    console.log('[fetchProductsWithDeals] 🚀 Fetching products with deals');
+    
+    // Fetch products
+    const { data: productsData, error: productsError } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (productsError) throw productsError;
+    if (!productsData) return [];
+
+    // Get deal IDs
+    const dealIds = productsData
+      .map(p => p.assigned_deal_id)
+      .filter(Boolean);
+
+    // Fetch deals if any exist
+    let dealsData: Deal[] = [];
+    if (dealIds.length > 0) {
+      const { data: fetchedDeals } = await supabase
+        .from('deals')
+        .select('*')
+        .in('id', dealIds);
+      
+      dealsData = fetchedDeals || [];
+    }
+
+    // Create deals map
+    const dealsMap = new Map<string, Deal>();
+    dealsData.forEach(deal => dealsMap.set(deal.id, deal));
+
+    // Map products with deals
+    return productsData.map(product => ({
+      id: product.id,
+      title: product.name,
+      price: product.unit_price,
+      image: product.thumbnail_url,
+      description: product.description,
+      category: product.category,
+      about_url: product.about_url,
+      clientpathurl: product.clientpathurl,
+      deal_id: product.assigned_deal_id,
+      deal: product.assigned_deal_id ? dealsMap.get(product.assigned_deal_id) : undefined
+    }));
+
+  } catch (err) {
+    console.error('[fetchProductsWithDeals] Error:', err);
+    return [];
+  }
+};
+
+
+
+
+
+
+// Replace your fetchProductsWithDeals with this simplified version:
 export const fetchProducts = async (): Promise<ProductType[]> => {
   try {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*');
-      
-    if (error) throw error;
-    if (!data || data.length === 0) return [];
+    console.log('[fetchProducts] 🚀 Fetching products with deal support');
     
-    return data.map(item => ({
-      id: item.id,
-      title: item.name,
-      price: item.unit_price || 0,
-      image: item.thumbnail_url || '/placeholder-product.jpg',
-      description: item.description || 'No description available',
-      category: item.category || undefined,
-      about_url: item.about_url || undefined,
-      clientpathurl: item.clientpathurl || undefined,
-    }));
+    const { data: productsData, error: productsError } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (productsError) {
+      console.error('[fetchProducts] ❌ Error fetching products:', productsError);
+      throw productsError;
+    }
+
+    if (!productsData || productsData.length === 0) {
+      console.log('[fetchProducts] ℹ️ No products found');
+      return [];
+    }
+
+    console.log('[fetchProducts] ✅ Found', productsData.length, 'products');
+
+    // Get unique deal IDs
+    const dealIds = productsData
+      .map(product => product.assigned_deal_id)
+      .filter(Boolean);
+
+    console.log('[fetchProducts] 🎫 Products with deals:', dealIds.length);
+
+    // Fetch deals - this should work for guests now
+    let dealsData: Deal[] = [];
+    if (dealIds.length > 0) {
+      try {
+        console.log('[fetchProducts] 🔄 Fetching deals for guest/user...');
+        
+        const { data: fetchedDeals, error: dealsError } = await supabase
+          .from('deals')
+          .select('*')
+          .in('id', dealIds)
+          .eq('is_active', true); // Only fetch active deals
+
+        if (dealsError) {
+          console.error('[fetchProducts] ❌ Error fetching deals:', dealsError);
+          console.error('[fetchProducts] This might be an RLS policy issue for guests');
+        } else {
+          dealsData = fetchedDeals || [];
+          console.log('[fetchProducts] ✅ Fetched', dealsData.length, 'active deals');
+        }
+      } catch (dealsException) {
+        console.error('[fetchProducts] ❌ Exception fetching deals:', dealsException);
+      }
+    }
+
+    // Create deals map
+    const dealsMap = new Map<string, Deal>();
+    dealsData.forEach(deal => dealsMap.set(deal.id, deal));
+
+    // Map products with their deals
+    const products: ProductType[] = productsData.map(product => {
+      const associatedDeal = product.assigned_deal_id ? dealsMap.get(product.assigned_deal_id) : undefined;
+      
+      return {
+        id: product.id,
+        title: product.name,
+        price: product.unit_price,
+        image: product.thumbnail_url,
+        description: product.description,
+        category: product.category,
+        about_url: product.about_url,
+        clientpathurl: product.clientpathurl,
+        deal_id: product.assigned_deal_id,
+        deal: associatedDeal
+      };
+    });
+
+    console.log('[fetchProducts] 🎉 Successfully mapped', products.length, 'products');
+    console.log('[fetchProducts] 🎫 Products with deals attached:', products.filter(p => p.deal).length);
+    
+    return products;
+
   } catch (err) {
-    console.error('Error fetching products:', err);
-    throw err;
+    console.error('[fetchProducts] 💥 Error:', err);
+    return [];
   }
 };
 
@@ -169,73 +290,164 @@ export const deleteProductImageDirect = async (imageUrl: string) => {
   }
 };
 
-export const createProduct = async (product: {
-  name: string;
-  description?: string;
-  unit_price: number;
-  thumbnail_url?: string;
-  imageFile?: File;
-  category?: string;
-  about_url?: string;
-  clientpathurl?: string;
-}): Promise<ProductType> => {
+export const createProduct = async (
+  productData: Omit<ProductType, 'id'> & { imageFile?: File; deal_id?: string }
+): Promise<ProductType> => {
   try {
-    let imageUrl = product.thumbnail_url;
+    console.log('[createProduct] 🚀 Starting product creation');
+    
+    // 🔥 DEBUG: Log the incoming productData in detail
+    console.log('[createProduct] DEBUGGING INCOMING DATA:');
+    console.log('[createProduct] productData type:', typeof productData);
+    console.log('[createProduct] productData keys:', Object.keys(productData || {}));
+    console.log('[createProduct] productData.title:', productData?.title);
+    console.log('[createProduct] productData.title type:', typeof productData?.title);
+    console.log('[createProduct] productData.title length:', productData?.title?.length);
+    console.log('[createProduct] productData.title === null:', productData?.title === null);
+    console.log('[createProduct] productData.title === undefined:', productData?.title === undefined);
+    console.log('[createProduct] productData.title === "":', productData?.title === '');
+    console.log('[createProduct] Full productData:', JSON.stringify(productData, null, 2));
+
+    let imageUrl: string | null = null;
     let uploadedNewImage = false;
-    
-    if (product.imageFile && !imageUrl) {
-      console.log('[createProduct] Uploading new image');
-      imageUrl = await uploadProductImage(product.imageFile);
-      uploadedNewImage = true;
-      console.log('[createProduct] Uploaded image URL:', imageUrl);
-    } else if (imageUrl) {
-      console.log('[createProduct] Using provided thumbnail URL:', imageUrl);
-    } else {
-      console.log('[createProduct] No image provided, using placeholder');
+
+    // Handle image upload if provided
+    if (productData.imageFile) {
+      console.log('[createProduct] 📸 Uploading image file');
+      try {
+        imageUrl = await uploadProductImage(productData.imageFile);
+        uploadedNewImage = true;
+        console.log('[createProduct] ✅ Image uploaded successfully:', imageUrl);
+      } catch (imageError) {
+        console.error('[createProduct] ❌ Image upload failed:', imageError);
+        throw new Error(`Image upload failed: ${imageError instanceof Error ? imageError.message : 'Unknown error'}`);
+      }
+    } else if (productData.image) {
+      imageUrl = productData.image;
+      console.log('[createProduct] 📷 Using provided image URL:', imageUrl);
     }
-    
-    console.log('[createProduct] Inserting product:', {
-      name: product.name,
-      description: product.description,
-      unit_price: product.unit_price,
+
+    // 🔥 VALIDATE: Ensure title exists and is not empty
+    if (!productData.title || productData.title.trim() === '') {
+      console.error('[createProduct] ❌ VALIDATION ERROR: Title is missing or empty');
+      console.error('[createProduct] productData.title:', productData.title);
+      throw new Error('Product title is required and cannot be empty');
+    }
+
+    // 🔥 Build insert data with validation
+    const insertData = {
+      name: productData.title.trim(), // 🔥 Ensure we trim whitespace
+      description: productData.description?.trim() || null,
+      unit_price: productData.price,
       thumbnail_url: imageUrl,
-      about_url: product.about_url,
-      clientpathurl: product.clientpathurl,
-    });
-    
+      category: productData.category?.trim() || null,
+      about_url: productData.about_url?.trim() || null,
+      clientpathurl: productData.clientpathurl?.trim() || null,
+      assigned_deal_id: productData.deal_id || null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    // 🔥 DEBUG: Log the insert data
+    console.log('[createProduct] DEBUGGING INSERT DATA:');
+    console.log('[createProduct] insertData.name:', insertData.name);
+    console.log('[createProduct] insertData.name type:', typeof insertData.name);
+    console.log('[createProduct] insertData.name length:', insertData.name?.length);
+    console.log('[createProduct] insertData.name === null:', insertData.name === null);
+    console.log('[createProduct] insertData.name === undefined:', insertData.name === undefined);
+    console.log('[createProduct] Full insertData:', JSON.stringify(insertData, null, 2));
+
+    console.log('[createProduct] 🔄 Calling Supabase insert...');
+
     const { data, error } = await supabase
       .from('products')
-      .insert([
-        {
-          name: product.name,
-          description: product.description,
-          unit_price: product.unit_price,
-          thumbnail_url: imageUrl,
-          about_url: product.about_url,
-          clientpathurl: product.clientpathurl,
-        },
-      ])
-      .select();
-      
+      .insert([insertData])
+      .select('*');
+
+    console.log('[createProduct] 📡 Supabase response received');
+    console.log('[createProduct] 📊 Data exists:', !!data);
+    console.log('[createProduct] 📊 Data length:', data?.length || 0);
+    console.log('[createProduct] ❓ Error exists:', !!error);
+
     if (error) {
-      console.error('[createProduct] Supabase insert error:', error);
-      if (uploadedNewImage && imageUrl) {
-        console.log('[createProduct] Product creation failed, deleting orphaned image');
-        await deleteProductImage(imageUrl);
+      console.error('[createProduct] 🚨 DETAILED ERROR ANALYSIS:');
+      console.error('[createProduct] Error type:', typeof error);
+      console.error('[createProduct] Error instanceof Error:', error instanceof Error);
+      console.error('[createProduct] Error.message:', error?.message);
+      console.error('[createProduct] Error.code:', error?.code);
+      console.error('[createProduct] Error.details:', error?.details);
+      console.error('[createProduct] Error.hint:', error?.hint);
+      console.error('[createProduct] Error keys:', Object.keys(error || {}));
+      
+      // Try different serialization methods
+      try {
+        console.error('[createProduct] JSON.stringify(error):', JSON.stringify(error));
+      } catch (jsonErr) {
+        console.error('[createProduct] Could not stringify error:', jsonErr);
       }
-      throw error;
+      
+      // Log each property individually
+      if (error && typeof error === 'object') {
+        for (const [key, value] of Object.entries(error)) {
+          console.error(`[createProduct] error.${key}:`, value);
+        }
+      }
+      
+      // Clean up uploaded image if product creation failed
+      if (uploadedNewImage && imageUrl) {
+        console.log('[createProduct] 🧹 Product creation failed, deleting orphaned image');
+        try {
+          await deleteProductImage(imageUrl);
+          console.log('[createProduct] ✅ Orphaned image deleted');
+        } catch (deleteError) {
+          console.error('[createProduct] ⚠️ Failed to delete orphaned image:', deleteError);
+        }
+      }
+      
+      throw new Error(`Product creation failed: ${error?.message || 'Unknown database error'}`);
     }
-    
+
     if (!data || !data[0]) {
-      console.error('[createProduct] No data returned from insert:', data);
+      console.error('[createProduct] ❌ No data returned from insert');
+      
       if (uploadedNewImage && imageUrl) {
-        console.log('[createProduct] Product creation failed, deleting orphaned image');
-        await deleteProductImage(imageUrl);
+        console.log('[createProduct] 🧹 No data returned, cleaning up orphaned image');
+        try {
+          await deleteProductImage(imageUrl);
+        } catch (deleteError) {
+          console.error('[createProduct] ⚠️ Failed to delete orphaned image:', deleteError);
+        }
       }
-      throw new Error('No data returned from insert');
+      
+      throw new Error('No data returned from product creation');
     }
-    
-    return {
+
+    console.log('[createProduct] ✅ Product created successfully:', data[0].name);
+
+    // 🔥 Fetch the deal information if assigned
+    let dealInfo: Deal | undefined = undefined;
+    if (data[0].assigned_deal_id) {
+      console.log('[createProduct] 🎫 Fetching deal information for:', data[0].assigned_deal_id);
+      try {
+        const { data: dealData, error: dealError } = await supabase
+          .from('deals')
+          .select('*')
+          .eq('id', data[0].assigned_deal_id)
+          .single();
+
+        if (dealError) {
+          console.warn('[createProduct] ⚠️ Could not fetch deal info:', dealError?.message);
+        } else if (dealData) {
+          dealInfo = dealData as Deal;
+          console.log('[createProduct] ✅ Deal info fetched:', dealInfo.code);
+        }
+      } catch (dealFetchError) {
+        console.warn('[createProduct] ⚠️ Exception fetching deal:', dealFetchError);
+      }
+    }
+
+    // Map the response back to ProductType
+    const result: ProductType = {
       id: data[0].id,
       title: data[0].name,
       price: data[0].unit_price,
@@ -244,19 +456,33 @@ export const createProduct = async (product: {
       category: data[0].category,
       about_url: data[0].about_url,
       clientpathurl: data[0].clientpathurl,
+      deal_id: data[0].assigned_deal_id, // 🔥 Map back to deal_id
+      deal: dealInfo // Include deal information
     };
+
+    console.log('[createProduct] 🎉 Returning result with deal info:', {
+      productName: result.title,
+      dealCode: result.deal?.code || 'No deal'
+    });
+
+    return result;
   } catch (err) {
-    console.error('[createProduct] Caught error:', err);
+    console.error('[createProduct] 💥 CAUGHT EXCEPTION:');
+    console.error('[createProduct] Exception type:', typeof err);
+    // console.error('[createProduct] Exception message:', err?.message);
+    // console.error('[createProduct] Exception stack:', err?.stack);
+    console.error('[createProduct] Full exception:', err);
     throw err;
   }
 };
 
 export const updateProduct = async (
   id: string,
-  updates: Partial<Omit<ProductType, 'id'>> & { imageFile?: File }
+  updates: Partial<Omit<ProductType, 'id'>> & { imageFile?: File; deal_id?: string }
 ): Promise<ProductType> => {
   try {
-    console.log(`[updateProduct] Starting update for product ID: ${id}`);
+    console.log('[updateProduct] 🚀 Starting update for product ID:', id);
+    console.log('[updateProduct] 📝 Updates received:', updates);
     
     const { data: existingProduct, error: checkError } = await supabase
       .from('products')
@@ -265,75 +491,115 @@ export const updateProduct = async (
       .single();
       
     if (checkError) {
-      console.error('[updateProduct] Error checking product existence:', checkError);
+      console.error('[updateProduct] ❌ Error checking product existence:', checkError);
       throw checkError;
     }
     
-    console.log('[updateProduct] Found existing product:', existingProduct?.name);
+    console.log('[updateProduct] ✅ Found existing product:', existingProduct?.name);
     
     let imageUrl = updates.image;
     let isNewImage = false;
     
     if (updates.imageFile) {
-      console.log('[updateProduct] Uploading new image file');
+      console.log('[updateProduct] 📸 Uploading new image file');
       imageUrl = await uploadProductImage(updates.imageFile);
       isNewImage = true;
-      console.log('[updateProduct] New image URL:', imageUrl);
+      console.log('[updateProduct] ✅ New image URL:', imageUrl);
       
       if (existingProduct?.thumbnail_url && existingProduct.thumbnail_url !== imageUrl) {
-        console.log('[updateProduct] Deleting old image:', existingProduct.thumbnail_url);
+        console.log('[updateProduct] 🗑️ Deleting old image:', existingProduct.thumbnail_url);
         await deleteProductImage(existingProduct.thumbnail_url);
       }
     } else {
-      console.log('[updateProduct] No new image file, keeping existing or provided URL');
+      console.log('[updateProduct] 📷 No new image file, keeping existing or provided URL');
     }
     
-    console.log('[updateProduct] Updating product with:', {
-      name: updates.title,
-      description: updates.description,
-      unit_price: updates.price,
-      thumbnail_url: imageUrl,
-      about_url: updates.about_url,
-      clientpathurl: updates.clientpathurl
-    });
+    // 🔥 Build update data with proper typing
+    interface UpdateData {
+      name?: string;
+      description?: string | null;
+      unit_price?: number;
+      thumbnail_url?: string | null;
+      category?: string | null;
+      about_url?: string | null;
+      clientpathurl?: string | null;
+      assigned_deal_id?: string | null;
+      updated_at: string;
+    }
+    
+    const updateData: UpdateData = {
+      updated_at: new Date().toISOString()
+    };
+    
+    if (updates.title !== undefined) updateData.name = updates.title;
+    if (updates.description !== undefined) updateData.description = updates.description;
+    if (updates.price !== undefined) updateData.unit_price = updates.price;
+    if (imageUrl !== undefined) updateData.thumbnail_url = imageUrl;
+    if (updates.about_url !== undefined) updateData.about_url = updates.about_url;
+    if (updates.clientpathurl !== undefined) updateData.clientpathurl = updates.clientpathurl;
+    if (updates.deal_id !== undefined) updateData.assigned_deal_id = updates.deal_id; // 🔥 Map deal_id to assigned_deal_id
+    
+    console.log('[updateProduct] 📋 Final update data:', updateData);
+    console.log('[updateProduct] 🔄 Calling Supabase update...');
     
     const { data, error } = await supabase
       .from('products')
-      .update({
-        name: updates.title,
-        description: updates.description,
-        unit_price: updates.price,
-        thumbnail_url: imageUrl,
-        about_url: updates.about_url,
-        clientpathurl: updates.clientpathurl
-      })
+      .update(updateData)
       .eq('id', id)
-      .select();
+      .select(`
+        *
+      `);
       
+    console.log('[updateProduct] 📡 Supabase response received');
+    console.log('[updateProduct] 📊 Data:', data);
+    console.log('[updateProduct] ❓ Error exists:', !!error);
+    
     if (error) {
-      console.error('[updateProduct] Update failed:', error);
+      console.error('[updateProduct] 🚨 DETAILED ERROR ANALYSIS:');
+      console.error('[updateProduct] Error type:', typeof error);
+      console.error('[updateProduct] Error instanceof Error:', error instanceof Error);
+      console.error('[updateProduct] Error.message:', error?.message);
+      console.error('[updateProduct] Error.code:', error?.code);
+      console.error('[updateProduct] Error.details:', error?.details);
+      console.error('[updateProduct] Error.hint:', error?.hint);
+      console.error('[updateProduct] Error keys:', Object.keys(error || {}));
+      
+      // Try different serialization methods
+      try {
+        console.error('[updateProduct] JSON.stringify(error):', JSON.stringify(error));
+      } catch (jsonErr) {
+        console.error('[updateProduct] Could not stringify error:', jsonErr);
+      }
+      
+      // Log each property individually
+      if (error && typeof error === 'object') {
+        for (const [key, value] of Object.entries(error)) {
+          console.error(`[updateProduct] error.${key}:`, value);
+        }
+      }
+      
       if (isNewImage && imageUrl) {
-        console.log('[updateProduct] Update failed, cleaning up orphaned image');
+        console.log('[updateProduct] 🧹 Update failed, cleaning up orphaned image');
         await deleteProductImage(imageUrl);
       }
       
-      throw error;
+      throw new Error(`Database update failed: ${error?.message || 'Unknown error'}`);
     }
     
     if (!data || !data[0]) {
-      console.error('[updateProduct] No data returned from update');
+      console.error('[updateProduct] ❌ No data returned from update');
       
       if (isNewImage && imageUrl) {
-        console.log('[updateProduct] No data returned, cleaning up orphaned image');
+        console.log('[updateProduct] 🧹 No data returned, cleaning up orphaned image');
         await deleteProductImage(imageUrl);
       }
       
       throw new Error('No data returned from update');
     }
     
-    console.log('[updateProduct] Product updated successfully:', data[0].name);
+    console.log('[updateProduct] ✅ Product updated successfully:', data[0].name);
     
-    return {
+    const result: ProductType = {
       id: data[0].id,
       title: data[0].name,
       price: data[0].unit_price,
@@ -341,10 +607,15 @@ export const updateProduct = async (
       description: data[0].description,
       category: data[0].category,
       about_url: data[0].about_url,
-      clientpathurl: data[0].clientpathurl
+      clientpathurl: data[0].clientpathurl,
+      deal_id: data[0].assigned_deal_id, // 🔥 Map back to deal_id
+      deal: data[0].deals
     };
-  } catch (err) {
-    console.error('[updateProduct] Error during update:', err);
+    
+    console.log('[updateProduct] 🎉 Returning result:', result);
+    return result;
+  } catch (err ) {
+ 
     throw err;
   }
 };
@@ -476,4 +747,52 @@ export const testImageUrlParsing = (imageUrl: string) => {
   console.log('=== End Test ===\n');
   
   return filePath;
+};
+
+
+// Add this function to test your database setup
+export const checkDatabaseTables = async () => {
+  console.log('🔍 Checking database tables...');
+  
+  // Check products table
+  try {
+    const { data: productsTest, error: productsError } = await supabase
+      .from('products')
+      .select('id, name, assigned_deal_id')
+      .limit(1);
+      
+    console.log('📊 Products table test:', {
+      hasData: !!productsTest,
+      dataLength: productsTest?.length || 0,
+      hasError: !!productsError,
+      errorMessage: productsError?.message
+    });
+    
+    if (productsTest && productsTest.length > 0) {
+      console.log('📋 Sample product:', productsTest[0]);
+    }
+  } catch (err) {
+    console.error('❌ Products table test failed:', err);
+  }
+  
+  // Check deals table
+  try {
+    const { data: dealsTest, error: dealsError } = await supabase
+      .from('deals')
+      .select('id, code, description')
+      .limit(1);
+      
+    console.log('📊 Deals table test:', {
+      hasData: !!dealsTest,
+      dataLength: dealsTest?.length || 0,
+      hasError: !!dealsError,
+      errorMessage: dealsError?.message
+    });
+    
+    if (dealsTest && dealsTest.length > 0) {
+      console.log('📋 Sample deal:', dealsTest[0]);
+    }
+  } catch (err) {
+    console.error('❌ Deals table test failed:', err);
+  }
 };
