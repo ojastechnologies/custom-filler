@@ -2,6 +2,33 @@ import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import Stripe from 'stripe';
 
+interface InvoiceData {
+  // Invoice-specific fields
+  invoice_id?: string;
+  invoice_url?: string;
+  invoice_pdf?: string;
+  hosted_invoice_url?: string;
+  status?: string;
+  amount_paid?: number;
+  currency?: string;
+  
+  // Charge/Payment Intent fields
+  charge_id?: string;
+  receipt_url?: string;
+  amount?: number;
+  payment_method?: string;
+  
+  // Session fallback fields
+  session_id?: string;
+  amount_total?: number;
+  payment_status?: string;
+  customer_email?: string;
+  
+  // Error/message fields
+  error?: string;
+  message?: string;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -28,7 +55,7 @@ export async function GET(req: NextRequest) {
       payment_intent: session.payment_intent ? 'Present' : 'None'
     });
 
-    let invoiceData: any = {};
+    let invoiceData: InvoiceData = {};
 
     // Try to get invoice from session
     if (session.invoice) {
@@ -37,10 +64,10 @@ export async function GET(req: NextRequest) {
       
       invoiceData = {
         invoice_id: invoice.id,
-        invoice_url: invoice.hosted_invoice_url,
-        invoice_pdf: invoice.invoice_pdf,
-        hosted_invoice_url: invoice.hosted_invoice_url,
-        status: invoice.status,
+        invoice_url: invoice.hosted_invoice_url || undefined,
+        invoice_pdf: invoice.invoice_pdf || undefined,
+        hosted_invoice_url: invoice.hosted_invoice_url || undefined,
+        status: invoice.status || undefined,
         amount_paid: invoice.amount_paid,
         currency: invoice.currency
       };
@@ -60,12 +87,12 @@ export async function GET(req: NextRequest) {
         
         invoiceData = {
           charge_id: charge.id,
-          receipt_url: charge.receipt_url,
-          invoice_url: charge.receipt_url, // Use receipt_url as invoice_url for consistency
-          hosted_invoice_url: charge.receipt_url,
+          receipt_url: charge.receipt_url || undefined,
+          invoice_url: charge.receipt_url || undefined, // Use receipt_url as invoice_url for consistency
+          hosted_invoice_url: charge.receipt_url || undefined,
           amount: charge.amount,
           currency: charge.currency,
-          status: charge.status,
+          status: charge.status || undefined,
           payment_method: charge.payment_method_details?.type
         };
       }
@@ -115,10 +142,10 @@ export async function GET(req: NextRequest) {
           
           invoiceData = {
             invoice_id: finalizedInvoice.id,
-            invoice_url: finalizedInvoice.hosted_invoice_url,
-            invoice_pdf: finalizedInvoice.invoice_pdf,
-            hosted_invoice_url: finalizedInvoice.hosted_invoice_url,
-            status: finalizedInvoice.status,
+            invoice_url: finalizedInvoice.hosted_invoice_url || undefined,
+            invoice_pdf: finalizedInvoice.invoice_pdf || undefined,
+            hosted_invoice_url: finalizedInvoice.hosted_invoice_url || undefined,
+            status: finalizedInvoice.status || undefined,
             amount_paid: finalizedInvoice.amount_paid,
             currency: finalizedInvoice.currency
           };
@@ -129,8 +156,8 @@ export async function GET(req: NextRequest) {
         // Fall back to basic session info
         invoiceData = {
           session_id: session.id,
-          amount_total: session.amount_total,
-          currency: session.currency,
+          amount_total: session.amount_total || undefined,
+          currency: session.currency || undefined,
           payment_status: session.payment_status,
           error: 'Could not create invoice, but payment was successful'
         };
@@ -143,10 +170,10 @@ export async function GET(req: NextRequest) {
       invoiceData = {
         ...invoiceData,
         session_id: session.id,
-        amount_total: session.amount_total,
-        currency: session.currency,
+        amount_total: session.amount_total || undefined,
+        currency: session.currency || undefined,
         payment_status: session.payment_status,
-        customer_email: session.customer_details?.email || session.customer_email,
+        customer_email: session.customer_details?.email || session.customer_email || undefined,
         message: 'Payment successful - Invoice generation in progress'
       };
     }

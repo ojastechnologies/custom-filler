@@ -88,7 +88,7 @@ export default function RedirectToInvoicePage() {
                     {message}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    If you're not redirected automatically, please check your browser's popup blocker.
+                    If you&apos;re not redirected automatically, please check your browser&apos;s popup blocker.
                   </p>
                 </>
               )}
@@ -108,7 +108,7 @@ export default function RedirectToInvoicePage() {
                   </p>
                   <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
                     <p className="text-yellow-800 dark:text-yellow-200 text-sm">
-                      Don't worry! Your payment was successful. You can contact support for your invoice or receipt.
+                      Don&apos;t worry! Your payment was successful. You can contact support for your invoice or receipt.
                     </p>
                   </div>
                 </>

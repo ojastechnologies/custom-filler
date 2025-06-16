@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import Card from "@/components/ui/Card";
@@ -67,8 +67,8 @@ const ProductsSection = () => {
     }, 2000);
   };
 
-  // Helper function to check if deal is valid
-  const isDealValid = (deal: Deal): boolean => {
+  // Helper function to check if deal is valid - wrapped in useCallback
+  const isDealValid = useCallback((deal: Deal): boolean => {
     if (!deal || !deal.is_active) return false;
     
     // Check expiration
@@ -78,10 +78,10 @@ const ProductsSection = () => {
     if (deal.usage_limit && deal.usage_count >= deal.usage_limit) return false;
     
     return true;
-  };
+  }, []);
 
-  // Helper function to calculate discounted price
-  const getDiscountedPrice = (originalPrice: number, deal: Deal): number => {
+  // Helper function to calculate discounted price - wrapped in useCallback
+  const getDiscountedPrice = useCallback((originalPrice: number, deal: Deal): number => {
     if (!deal || !isDealValid(deal)) return originalPrice;
     
     let discountAmount = 0;
@@ -100,7 +100,7 @@ const ProductsSection = () => {
     discountAmount = Math.min(discountAmount, originalPrice - 0.01);
     
     return Math.max(0.01, originalPrice - discountAmount);
-  };
+  }, [isDealValid]);
 
   // Determine grid columns based on number of products
   const getGridClass = () => {
@@ -131,7 +131,7 @@ const ProductsSection = () => {
         });
       }
     });
-  }, [products]);
+  }, [products, isDealValid, getDiscountedPrice]);
 
   if (loading || isLoading) {
     return (
@@ -213,7 +213,7 @@ const ProductsSection = () => {
                       <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
                         {product.deal!.discount_type === 'percentage' 
                           ? `${product.deal!.discount_value}% OFF` 
-                          : `$${product.deal!.discount_value} OFF`
+                          : `${product.deal!.discount_value} OFF`
                         }
                       </div>
                     )}
