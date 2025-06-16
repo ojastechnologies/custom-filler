@@ -34,7 +34,7 @@ export default function CheckoutSuccessPage() {
     localStorage.removeItem('appliedDeal');
     
     setLoading(false);
-  }, [sessionId, orderId]);
+  }, [sessionId, orderId, orderNumber]);
 
   // Function to fetch invoice from Stripe
   const fetchInvoice = async () => {
