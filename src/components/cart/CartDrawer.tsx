@@ -4,7 +4,7 @@ import { useCart } from '@/context/CartContext';
 import DealInput from './DealInput';
 import Link from 'next/link';
 
-// Helper function to check if deal is valid for product quantity
+// Helper function to check if deal is valid for product
 const isDealValidForProduct = (deal: any, originalPrice: number, quantity: number): boolean => {
   if (!deal || !deal.is_active) return false;
   
@@ -14,9 +14,9 @@ const isDealValidForProduct = (deal: any, originalPrice: number, quantity: numbe
   // Check usage limit
   if (deal.usage_limit && deal.usage_count >= deal.usage_limit) return false;
   
-  // Check minimum order amount
-  const productTotal = originalPrice * quantity;
-  if (deal.minimum_order_amount && productTotal < deal.minimum_order_amount) return false;
+  // Check if total order value meets minimum requirement
+  const totalOrderValue = originalPrice * quantity;
+  if (deal.minimum_order_amount && totalOrderValue < deal.minimum_order_amount) return false;
   
   return true;
 };
@@ -27,7 +27,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
     removeFromCart, 
     totalItems, 
     subtotal, 
-    productDiscountTotal, // NEW: Get product discount total
+    productDiscountTotal,
     finalTotal, 
     appliedDeal,
     proceedToCheckout, 
@@ -44,7 +44,6 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
     } catch (error) {
       console.error('❌ CartDrawer: Checkout failed:', error);
       
-      // Show more specific error message
       const errorMessage = error instanceof Error 
         ? error.message 
         : 'Checkout failed. Please try again.';
@@ -89,8 +88,13 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
             <>
               <ul className="divide-y divide-gray-200 dark:divide-gray-700 mb-6">
                 {items.map(item => {
+                  // 🔥 UPDATED: Check if deal is valid for this specific item
                   const hasValidDeal = item.deal && item.originalPrice && 
                     isDealValidForProduct(item.deal, item.originalPrice, item.quantity);
+                  
+                  const minOrderValueNeeded = item.deal?.minimum_order_amount || 0;
+                  const currentItemValue = (item.originalPrice || item.price) * item.quantity;
+                  const additionalValueNeeded = Math.max(0, minOrderValueNeeded - currentItemValue);
                   
                   return (
                     <li key={item.id} className="py-4 flex items-center">
@@ -108,7 +112,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm truncate">{item.name}</div>
                         
-                        {/* Show original price if discounted and deal is valid */}
+                        {/* 🔥 UPDATED: Show pricing based on deal validity */}
                         {item.originalPrice && item.productDiscountAmount && hasValidDeal ? (
                           <div className="text-sm">
                             <span className="text-gray-500 dark:text-gray-400 line-through mr-2">
@@ -135,17 +139,18 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                           ${(item.price * item.quantity).toFixed(2)}
                         </div>
                         
-                        {/* Show deal badge if item has a valid deal */}
-                        {hasValidDeal && (
-                          <div className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded mt-1 inline-block">
-                            🎉 {item.deal!.code}
-                          </div>
-                        )}
-                        
-                        {/* Show deal not active message if deal exists but not valid for current quantity */}
-                        {item.deal && item.originalPrice && !hasValidDeal && (
-                          <div className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-1 rounded mt-1 inline-block">
-                            📦 {item.deal.code} - Need ${item.deal.minimum_order_amount} min order
+                        {/* 🔥 UPDATED: Show deal status */}
+                        {item.deal && (
+                          <div className="mt-1">
+                            {hasValidDeal && item.productDiscountAmount ? (
+                              <div className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded inline-block">
+                                🎉 {item.deal.code} - Active
+                              </div>
+                            ) : (
+                              <div className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-1 rounded inline-block">
+                                ⏳ {item.deal.code} - Need ${additionalValueNeeded.toFixed(2)} more
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -177,7 +182,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
               <span>${subtotal.toFixed(2)}</span>
             </div>
             
-            {/* NEW: Show product-level discounts */}
+            {/* Product-level discounts */}
             {productDiscountTotal > 0 && (
               <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
                 <span>Product Discounts</span>
@@ -198,7 +203,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
               <span>${finalTotal.toFixed(2)}</span>
             </div>
             
-            {/* NEW: Show total savings */}
+            {/* Total savings */}
             {(productDiscountTotal > 0 || appliedDeal) && (
               <div className="flex justify-between text-sm text-green-600 dark:text-green-400 font-medium">
                 <span>Total Savings</span>

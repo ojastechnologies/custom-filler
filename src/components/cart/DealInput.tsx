@@ -5,7 +5,7 @@ import { useCart } from '@/context/CartContext';
 import Button from '@/components/ui/Button';
 
 export default function DealInput() {
-  const { appliedDeal, applyDeal, removeDeal } = useCart();
+  const { appliedDeal, applyDeal, removeDeal, subtotal } = useCart();
   const [dealCode, setDealCode] = useState('');
   const [isApplying, setIsApplying] = useState(false);
   const [message, setMessage] = useState('');
@@ -33,6 +33,7 @@ export default function DealInput() {
       setIsApplying(false);
     }
   };
+
   const handleRemoveDeal = () => {
     removeDeal();
     setMessage('');
@@ -88,6 +89,11 @@ export default function DealInput() {
             >
               {isApplying ? 'Applying...' : 'Apply'}
             </Button>
+          </div>
+          
+          {/* Show current cart total for reference */}
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            Current cart total: ${subtotal.toFixed(2)}
           </div>
           
           {message && (

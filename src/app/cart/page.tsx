@@ -8,7 +8,7 @@ import Footer from '@/components/layout/Footer';
 import DealInput from '@/components/cart/DealInput';
 import { useCart } from '@/context/CartContext';
 
-// Helper function to check if deal is valid for product quantity
+// 🔥 FIXED: Helper function to check if deal is valid for product (based on total value, not quantity)
 const isDealValidForProduct = (deal: any, originalPrice: number, quantity: number): boolean => {
   if (!deal || !deal.is_active) return false;
   
@@ -18,9 +18,9 @@ const isDealValidForProduct = (deal: any, originalPrice: number, quantity: numbe
   // Check usage limit
   if (deal.usage_limit && deal.usage_count >= deal.usage_limit) return false;
   
-  // Check minimum order amount
-  const productTotal = originalPrice * quantity;
-  if (deal.minimum_order_amount && productTotal < deal.minimum_order_amount) return false;
+  // Check if total order value meets minimum requirement
+  const totalOrderValue = originalPrice * quantity;
+  if (deal.minimum_order_amount && totalOrderValue < deal.minimum_order_amount) return false;
   
   return true;
 };
@@ -34,7 +34,7 @@ export default function CartPage() {
     totalItems, 
     subtotal, 
     finalTotal, 
-    productDiscountTotal, // NEW: Get product discount total
+    productDiscountTotal,
     appliedDeal,
     proceedToCheckout, 
     isCheckingOut 
@@ -142,9 +142,14 @@ export default function CartPage() {
                         {items.map((item, index) => {
                           const hasValidDeal = item.deal && item.originalPrice && 
                             isDealValidForProduct(item.deal, item.originalPrice, item.quantity);
-                          const minQuantityForDeal = item.deal && item.originalPrice && item.deal.minimum_order_amount 
-                            ? Math.ceil(item.deal.minimum_order_amount / item.originalPrice) 
-                            : 1;
+                          
+                          // 🔥 FIXED: Calculate minimum order value needed, not quantity
+                          const minOrderValueNeeded = item.deal?.minimum_order_amount || 0;
+                          const currentOrderValue = (item.originalPrice || item.price) * item.quantity;
+                          const additionalValueNeeded = Math.max(0, minOrderValueNeeded - currentOrderValue);
+                          const additionalQuantityNeeded = item.originalPrice 
+                            ? Math.ceil(additionalValueNeeded / item.originalPrice) 
+                            : 0;
                           
                           return (
                             <li key={item.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 group">
@@ -179,7 +184,7 @@ export default function CartPage() {
                                     {item.name}
                                   </h3>
                                   
-                                  {/* Enhanced Pricing */}
+                                  {/* 🔥 FIXED: Enhanced Pricing with correct deal logic */}
                                   {item.originalPrice && item.productDiscountAmount && hasValidDeal ? (
                                     <div className="mb-3">
                                       <div className="flex items-center space-x-3 mb-1">
@@ -197,6 +202,21 @@ export default function CartPage() {
                                         Save ${item.productDiscountAmount.toFixed(2)} per item
                                       </div>
                                     </div>
+                                  ) : item.originalPrice && item.deal && !hasValidDeal ? (
+                                    <div className="mb-3">
+                                      <p className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                                        ${item.originalPrice.toFixed(2)} each
+                                      </p>
+                                      {/* Show what's needed for deal */}
+                                      {additionalValueNeeded > 0 && (
+                                        <div className="inline-flex items-center px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full text-xs font-medium">
+                                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                          </svg>
+                                          Add ${additionalValueNeeded.toFixed(2)} more for deal ({additionalQuantityNeeded} more items)
+                                        </div>
+                                      )}
+                                    </div>
                                   ) : (
                                     <p className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
                                       ${item.price.toFixed(2)} each
@@ -209,21 +229,23 @@ export default function CartPage() {
                                     </p>
                                   )}
                                   
-                                  {/* Enhanced Deal Badge */}
+                                  {/* 🔥 UPDATED: Enhanced Deal Badge with requirement status */}
                                   {item.deal && (
                                     <div className="mb-2">
-                                      {hasValidDeal ? (
+                                      {hasValidDeal && item.productDiscountAmount ? (
                                         <span className="inline-flex items-center px-3 py-1 text-xs font-semibold bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 text-green-800 dark:text-green-200 rounded-full border border-green-200 dark:border-green-700">
-                                          🎉 {item.deal.code} - {item.deal.description}
+                                          🎉 {item.deal.code} - Active (Save ${item.productDiscountAmount.toFixed(2)} each)
                                         </span>
                                       ) : (
                                         <div className="space-y-1">
                                           <span className="inline-flex items-center px-3 py-1 text-xs font-semibold bg-gradient-to-r from-orange-100 to-yellow-100 dark:from-orange-900/30 dark:to-yellow-900/30 text-orange-800 dark:text-orange-200 rounded-full border border-orange-200 dark:border-orange-700">
-                                            📦 {item.deal.code} - Available
+                                            ⏳ {item.deal.code} - Need ${minOrderValueNeeded.toFixed(2)} total
                                           </span>
-                                          <p className="text-xs text-orange-600 dark:text-orange-400">
-                                            Need {minQuantityForDeal} items (${item.deal.minimum_order_amount} min) for discount
-                                          </p>
+                                          {additionalQuantityNeeded > 0 && (
+                                            <div className="text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded">
+                                              Add {additionalQuantityNeeded} more item{additionalQuantityNeeded > 1 ? 's' : ''} to activate deal
+                                            </div>
+                                          )}
                                         </div>
                                       )}
                                     </div>
@@ -258,21 +280,22 @@ export default function CartPage() {
                                 {/* Enhanced Price and Remove */}
                                 <div className="flex items-center space-x-4">
                                   <div className="text-right">
+                                    {/* 🔥 UPDATED: Show deal progress for items that don't meet minimum */}
+                                    {item.deal && !hasValidDeal && additionalQuantityNeeded > 0 && (
+                                      <div className="text-xs text-orange-600 dark:text-orange-400 font-medium mb-1">
+                                        📈 ${additionalValueNeeded.toFixed(2)} more needed
+                                      </div>
+                                    )}
+                                    
                                     {/* Enhanced savings display */}
-                                    {item.originalPrice && item.productDiscountAmount && hasValidDeal && (
+                                    {hasValidDeal && item.productDiscountAmount && (
                                       <div className="text-xs text-green-600 dark:text-green-400 font-medium mb-1">
-                                        💰 Save ${(item.productDiscountAmount * item.quantity).toFixed(2)}
+                                        💰 Save ${item.productDiscountAmount.toFixed(2)} each
                                       </div>
                                     )}
                                     <div className="text-xl font-bold text-gray-900 dark:text-white">
                                       ${(item.price * item.quantity).toFixed(2)}
                                     </div>
-                                    {/* Show potential savings if deal is not active */}
-                                    {item.deal && item.originalPrice && !hasValidDeal && (
-                                      <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                                        Add {minQuantityForDeal - item.quantity} more for deal
-                                      </div>
-                                    )}
                                   </div>
                                   
                                   <button
@@ -310,7 +333,7 @@ export default function CartPage() {
                             <span className="text-gray-900 dark:text-white font-bold text-lg">${subtotal.toFixed(2)}</span>
                           </div>
                           
-                          {/* Enhanced product-level discounts */}
+                          {/* 🔥 FIXED: Enhanced product-level discounts (applied once per item) */}
                           {productDiscountTotal > 0 && (
                             <div className="flex justify-between items-center py-2 bg-green-50 dark:bg-green-900/20 rounded-lg px-3 -mx-1">
                               <div className="flex items-center">
@@ -369,9 +392,35 @@ export default function CartPage() {
                                   <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                   </svg>
-                                  Includes ${productDiscountTotal.toFixed(2)} in product discounts
+                                  Product discounts applied when minimum order amounts are met
                                 </div>
                               )}
+                            </div>
+                          )}
+                          
+                          {/* 🔥 NEW: Show potential savings for items that don't meet minimum */}
+                          {items.some(item => item.deal && !isDealValidForProduct(item.deal, item.originalPrice || item.price, item.quantity)) && (
+                            <div className="bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20 p-4 rounded-xl border border-orange-200 dark:border-orange-700">
+                              <div className="flex items-center mb-2">
+                                <span className="text-xl mr-2">💡</span>
+                                <span className="font-bold text-orange-700 dark:text-orange-300">Potential Additional Savings</span>
+                              </div>
+                              <div className="space-y-2">
+                                {items.filter(item => item.deal && !isDealValidForProduct(item.deal, item.originalPrice || item.price, item.quantity)).map(item => {
+                                  const minOrderValueNeeded = item.deal?.minimum_order_amount || 0;
+                                  const currentItemValue = (item.originalPrice || item.price) * item.quantity;
+                                  const additionalValueNeeded = Math.max(0, minOrderValueNeeded - currentItemValue);
+                                  const additionalQuantityNeeded = item.originalPrice ? Math.ceil(additionalValueNeeded / item.originalPrice) : 0;
+                                  const potentialDiscount = item.deal ? (item.originalPrice || item.price) * (item.deal.discount_percentage / 100) : 0;
+                                  
+                                  return (
+                                    <div key={item.id} className="text-xs text-orange-600 dark:text-orange-400 bg-white dark:bg-gray-800 p-2 rounded border">
+                                      <div className="font-medium">{item.name}</div>
+                                      <div>Add {additionalQuantityNeeded} more item{additionalQuantityNeeded > 1 ? 's' : ''} to save ${potentialDiscount.toFixed(2)} each</div>
+                                      <div className="text-orange-500">Need ${additionalValueNeeded.toFixed(2)} more total value</div>
+                                    </div>
+                                  );
+                                })}                              </div>
                             </div>
                           )}
                         </div>
@@ -384,6 +433,9 @@ export default function CartPage() {
                             <span className="text-xl mr-2">🏷️</span>
                             <h4 className="font-semibold text-gray-900 dark:text-white">Have a promo code?</h4>
                           </div>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                            Cart-level discounts apply to your entire order
+                          </p>
                         </div>
                         <div className="p-4">
                           <DealInput />
@@ -471,7 +523,7 @@ export default function CartPage() {
                           </div>
                           <div className="flex items-center">
                             <svg className="w-4 h-4 mr-1 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                             </svg>
                             SSL Protected
                           </div>

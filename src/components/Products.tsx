@@ -181,9 +181,7 @@ const Products = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {products.map((product) => {
               const hasValidDeal = product.deal && isDealValid(product.deal);
-              const minQuantityForDeal = hasValidDeal ? getMinQuantityForDeal(product.deal!, product.price) : 1;
-              const dealValidForSingleItem = hasValidDeal && isDealValidForQuantity(product.deal!, product.price, 1);
-              const discountedPrice = dealValidForSingleItem ? getDiscountedPrice(product.price, product.deal!, 1) : product.price;
+              // 🔥 FIXED: Don't show discounted price on product card since discount depends on quantity
               
               return (
                 <Card key={product.id} className="h-full">
@@ -199,21 +197,13 @@ const Products = () => {
                       />
                     )}
                     
-                    {/* Deal Badge - Only show if deal is valid for single item OR show minimum quantity needed */}
+                    {/* Deal Badge */}
                     {hasValidDeal && (
-                      <div className="absolute top-2 right-2">
-                        {dealValidForSingleItem ? (
-                          <div className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-                            {product.deal!.discount_type === 'percentage' 
-                              ? `${product.deal!.discount_value}% OFF` 
-                              : `$${product.deal!.discount_value} OFF`
-                            }
-                          </div>
-                        ) : (
-                          <div className="bg-orange-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-                            Buy {minQuantityForDeal}+ for deal
-                          </div>
-                        )}
+                      <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                        {product.deal!.discount_type === 'percentage' 
+                          ? `${product.deal!.discount_value}% OFF` 
+                          : `$${product.deal!.discount_value} OFF`
+                        }
                       </div>
                     )}
                   </div>
@@ -223,19 +213,32 @@ const Products = () => {
                       <p className="mt-2 text-gray-600 dark:text-gray-400 line-clamp-3">{product.description}</p>
                     )}
                     
-                    {/* Deal Information */}
+                    {/* 🔥 UPDATED: Deal Information with minimum order requirement */}
                     {hasValidDeal && (
-                      <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded">
-                        <p className="text-xs text-green-700 dark:text-green-300 font-medium">
-                          🎉 Deal: {product.deal!.code}
-                        </p>
-                        <p className="text-xs text-green-600 dark:text-green-400">
+                      <div className="mt-2 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                        <div className="flex items-center mb-1">
+                          <span className="text-sm font-bold text-green-700 dark:text-green-300">
+                            🎉 {product.deal!.code}
+                          </span>
+                        </div>
+                        <p className="text-xs text-green-600 dark:text-green-400 mb-2">
                           {product.deal!.description}
                         </p>
-                        {!dealValidForSingleItem && (
-                          <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                            Min order: ${product.deal!.minimum_order_amount}
-                          </p>
+                        
+                        {/* Show minimum order requirement */}
+                        {product.deal!.minimum_order_amount && (
+                          <div className="bg-white dark:bg-gray-800 rounded px-2 py-1 border border-green-300 dark:border-green-600">
+                            <p className="text-xs text-green-700 dark:text-green-300 font-medium">
+                              💰 Buy ${product.deal!.minimum_order_amount.toFixed(2)} worth to get{' '}
+                              {product.deal!.discount_type === 'percentage' 
+                                ? `${product.deal!.discount_value}% off`
+                                : `$${product.deal!.discount_value} off`
+                              } each item
+                            </p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                              Need {Math.ceil(product.deal!.minimum_order_amount / product.price)} items minimum
+                            </p>
+                          </div>
                         )}
                       </div>
                     )}
@@ -249,23 +252,12 @@ const Products = () => {
                     
                     <div className="mt-4 flex items-center justify-between">
                       <div className="flex flex-col">
-                        {hasValidDeal ? (
-                          <>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-lg font-bold text-green-600 dark:text-green-400">
-                                ${discountedPrice.toFixed(2)}
-                              </span>
-                              <span className="text-sm text-gray-500 dark:text-gray-400 line-through">
-                                ${product.price.toFixed(2)}
-                              </span>
-                            </div>
-                            <span className="text-xs text-green-600 dark:text-green-400">
-                              Save ${(product.price - discountedPrice).toFixed(2)}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-lg font-bold text-gray-900 dark:text-white">
-                            ${product.price.toFixed(2)}
+                        <span className="text-lg font-bold text-gray-900 dark:text-white">
+                          ${product.price.toFixed(2)}
+                        </span>
+                        {hasValidDeal && product.deal!.minimum_order_amount && (
+                          <span className="text-xs text-green-600 dark:text-green-400">
+                            Potential savings available!
                           </span>
                         )}
                       </div>
