@@ -176,21 +176,21 @@ const Header = () => {
                         className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
-                        Manage Deals
+                       Deals Management
                       </Link>
                       <Link 
                         href="/dashboard/orders" 
                         className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
-                        Order Management
+                        Orders Management
                       </Link>
                       <Link 
                         href="/dashboard" 
                         className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
-                        Product Management
+                        Products Management
                       </Link>
                       <Link 
                         href="/profile" 
