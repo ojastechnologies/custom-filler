@@ -145,7 +145,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                           <div className="mt-1">
                             {hasValidDeal && item.productDiscountAmount ? (
                               <div className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded inline-block">
-                                🎉 {item.deal.code} - Active
+                                🎉 {item.deal.description} - Active
                               </div>
                             ) : (
                               <div className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-1 rounded inline-block">

@@ -233,7 +233,7 @@ export default function ProductsPage() {
                       {product.deal && product.deal.is_active && (
                         <div className="mb-4 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded">
                           <p className="text-xs text-green-700 dark:text-green-300 font-medium">
-                            🎉 Deal: {product.deal.code}
+                            🎉 Deal: {product.deal.discount_type}
                           </p>
                           <p className="text-xs text-green-600 dark:text-green-400">
                             {product.deal.description}
