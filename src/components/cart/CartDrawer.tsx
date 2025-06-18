@@ -123,7 +123,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                               ${item.price.toFixed(2)}
                             </span>
                             <span className="text-xs text-green-600 dark:text-green-400 block">
-                              Save ${item.productDiscountAmount.toFixed(2)} each
+                              Save ${productDiscountTotal.toFixed(2)}
                             </span>
                           </div>
                         ) : (
