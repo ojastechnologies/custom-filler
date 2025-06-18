@@ -6,7 +6,7 @@ import Card from './ui/Card';
 import Button from './ui/Button';
 import { useCart } from '@/context/CartContext';
 import { fetchProducts } from '@/services/productsService';
-import { Deal, ProductType } from '@/types/product';
+import { ProductType } from '@/types/product';
 
 const Products = () => {
   const { addToCart } = useCart();
@@ -46,8 +46,8 @@ const Products = () => {
       image: product.image,
       description: product.description,
       clientpathurl: product.about_url,
-      deal_id: product.deal_id, // Include deal_id
-      deal: product.deal, // Include deal object
+      deal_id: product.deal_id,
+      deal: product.deal,
       quantity: 1,
     });
 
@@ -78,45 +78,27 @@ const Products = () => {
     return true;
   };
 
-  // NEW: Helper function to check if deal would be valid for a given quantity
-  const isDealValidForQuantity = (deal: Deal, productPrice: number, quantity: number): boolean => {
-    if (!isDealValid(deal)) return false;
+  // // Helper function to calculate discounted price
+  // const getDiscountedPrice = (originalPrice: number, deal: Deal) => {
+  //   if (!deal || !isDealValid(deal)) return originalPrice;
     
-    const productTotal = productPrice * quantity;
-    if (deal.minimum_order_amount && productTotal < deal.minimum_order_amount) {
-      return false;
-    }
+  //   let discountAmount = 0;
+  //   if (deal.discount_type === 'percentage') {
+  //     discountAmount = originalPrice * (deal.discount_value / 100);
+  //   } else {
+  //     discountAmount = deal.discount_value;
+  //   }
     
-    return true;
-  };
-
-  // Helper function to calculate discounted price
-  const getDiscountedPrice = (originalPrice: number, deal: Deal, quantity: number = 1) => {
-    if (!deal || !isDealValidForQuantity(deal, originalPrice, quantity)) return originalPrice;
+  //   // Apply maximum discount limit if set
+  //   if (deal.maximum_discount_amount && discountAmount > deal.maximum_discount_amount) {
+  //     discountAmount = deal.maximum_discount_amount;
+  //   }
     
-    let discountAmount = 0;
-    if (deal.discount_type === 'percentage') {
-      discountAmount = originalPrice * (deal.discount_value / 100);
-    } else {
-      discountAmount = deal.discount_value;
-    }
+  //   // Ensure discount doesn't exceed original price
+  //   discountAmount = Math.min(discountAmount, originalPrice - 0.01);
     
-    // Apply maximum discount limit if set
-    if (deal.maximum_discount_amount && discountAmount > deal.maximum_discount_amount) {
-      discountAmount = deal.maximum_discount_amount;
-    }
-    
-    // Ensure discount doesn't exceed original price
-    discountAmount = Math.min(discountAmount, originalPrice - 0.01);
-    
-    return Math.max(0.01, originalPrice - discountAmount);
-  };
-
-  // NEW: Helper function to get minimum quantity needed for deal
-  const getMinQuantityForDeal = (deal: Deal, productPrice: number): number => {
-    if (!deal || !deal.minimum_order_amount) return 1;
-    return Math.ceil(deal.minimum_order_amount / productPrice);
-  };
+  //   return Math.max(0.01, originalPrice - discountAmount);
+  // };
 
   useEffect(() => {
     console.log('🔍 Products Debug - User Status:', {
@@ -129,15 +111,11 @@ const Products = () => {
     // Log each product's deal status
     products.forEach(product => {
       if (product.deal) {
-        const minQty = getMinQuantityForDeal(product.deal, product.price);
         console.log(`📦 Product "${product.title}":`, {
-          price: product.price,
           hasDeal: !!product.deal,
           dealCode: product.deal.code,
           dealActive: product.deal.is_active,
           dealValid: isDealValid(product.deal),
-          minOrderAmount: product.deal.minimum_order_amount,
-          minQuantityNeeded: minQty,
           dealExpired: product.deal.expires_at ? new Date(product.deal.expires_at) < new Date() : false
         });
       }

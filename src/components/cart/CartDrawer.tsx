@@ -3,9 +3,10 @@ import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
 import DealInput from './DealInput';
 import Link from 'next/link';
+import { Deal } from '@/types/product';
 
-// Helper function to check if deal is valid for product
-const isDealValidForProduct = (deal: any, originalPrice: number, quantity: number): boolean => {
+// Helper function to check if deal is valid for product - 🔥 FIXED: Proper typing
+const isDealValidForProduct = (deal: Deal, originalPrice: number, quantity: number): boolean => {
   if (!deal || !deal.is_active) return false;
   
   // Check expiration
@@ -88,7 +89,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
             <>
               <ul className="divide-y divide-gray-200 dark:divide-gray-700 mb-6">
                 {items.map(item => {
-                  // 🔥 UPDATED: Check if deal is valid for this specific item
+                  // Check if deal is valid for this specific item
                   const hasValidDeal = item.deal && item.originalPrice && 
                     isDealValidForProduct(item.deal, item.originalPrice, item.quantity);
                   
@@ -112,7 +113,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm truncate">{item.name}</div>
                         
-                        {/* 🔥 UPDATED: Show pricing based on deal validity */}
+                        {/* Show pricing based on deal validity */}
                         {item.originalPrice && item.productDiscountAmount && hasValidDeal ? (
                           <div className="text-sm">
                             <span className="text-gray-500 dark:text-gray-400 line-through mr-2">
@@ -139,7 +140,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                           ${(item.price * item.quantity).toFixed(2)}
                         </div>
                         
-                        {/* 🔥 UPDATED: Show deal status */}
+                        {/* Show deal status */}
                         {item.deal && (
                           <div className="mt-1">
                             {hasValidDeal && item.productDiscountAmount ? (
