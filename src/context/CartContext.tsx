@@ -49,9 +49,24 @@ const isDealValid = (deal: Deal): boolean => {
   return true;
 };
 
+// NEW: Helper function to check if product-level deal meets minimum order amount
+const isDealValidForProduct = (deal: Deal, productPrice: number, quantity: number): boolean => {
+  if (!isDealValid(deal)) return false;
+  
+  // Check if total value of this product meets minimum order amount
+  const productTotal = productPrice * quantity;
+  if (deal.minimum_order_amount && productTotal < deal.minimum_order_amount) {
+    console.log(`🚫 Product deal ${deal.code} not applied: Product total $${productTotal} < Min order $${deal.minimum_order_amount}`);
+    return false;
+  }
+  
+  console.log(`✅ Product deal ${deal.code} valid: Product total $${productTotal} >= Min order $${deal.minimum_order_amount || 0}`);
+  return true;
+};
+
 // Helper function to calculate product discount
-const calculateProductDiscount = (originalPrice: number, deal: Deal): number => {
-  if (!isDealValid(deal)) return 0;
+const calculateProductDiscount = (originalPrice: number, deal: Deal, quantity: number): number => {
+  if (!isDealValidForProduct(deal, originalPrice, quantity)) return 0;
   
   let discountAmount = 0;
   if (deal.discount_type === 'percentage') {
@@ -95,6 +110,33 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [appliedDeal, setAppliedDeal] = useState<AppliedDeal | null>(null);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
+  // NEW: Function to recalculate product discounts when quantities change
+  const recalculateProductDiscounts = useCallback((cartItems: CartItem[]): CartItem[] => {
+    return cartItems.map(item => {
+      if (item.deal && item.originalPrice) {
+        // Recalculate discount based on current quantity
+        const discountAmount = calculateProductDiscount(item.originalPrice, item.deal, item.quantity);
+        const discountedPrice = item.originalPrice - discountAmount;
+        
+        console.log(`🔄 Recalculating discount for ${item.name}:`, {
+          originalPrice: item.originalPrice,
+          quantity: item.quantity,
+          productTotal: item.originalPrice * item.quantity,
+          minOrderAmount: item.deal.minimum_order_amount,
+          discountAmount,
+          finalPrice: discountedPrice
+        });
+        
+        return {
+          ...item,
+          productDiscountAmount: discountAmount,
+          price: discountedPrice
+        };
+      }
+      return item;
+    });
+  }, []);
+
   // Load cart from localStorage on mount
   useEffect(() => {
     try {
@@ -104,7 +146,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (savedCart) {
         const parsedCart = JSON.parse(savedCart);
         if (Array.isArray(parsedCart)) {
-          setItems(parsedCart);
+          // Recalculate discounts on load to ensure they're still valid
+          const recalculatedCart = recalculateProductDiscounts(parsedCart);
+          setItems(recalculatedCart);
         } else {
           console.warn('Invalid cart data in localStorage, resetting to empty array');
           setItems([]);
@@ -123,7 +167,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('cart');
       localStorage.removeItem('appliedDeal');
     }
-  }, []);
+  }, [recalculateProductDiscounts]);
 
   // Save cart to localStorage whenever it changes
   useEffect(() => {
@@ -150,39 +194,51 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const safeItems = Array.isArray(prevItems) ? prevItems : [];
       const existingItem = safeItems.find(item => item.id === newItem.id);
       
-      // Calculate product-level discount if item has a deal
-      let processedItem = { ...newItem };
-      if (newItem.deal && isDealValid(newItem.deal)) {
-        const originalPrice = newItem.price;
-        const discountAmount = calculateProductDiscount(originalPrice, newItem.deal);
-        const discountedPrice = originalPrice - discountAmount;
-        
-        processedItem = {
-          ...newItem,
-          originalPrice,
-          productDiscountAmount: discountAmount,
-          price: discountedPrice
-        };
-        
-        console.log('🎉 Applied product discount:', {
-          originalPrice,
-          discountAmount,
-          finalPrice: discountedPrice,
-          deal: newItem.deal.code
-        });
-      }
-      
       if (existingItem) {
-        return safeItems.map(item =>
+        // Update existing item quantity
+        const updatedItems = safeItems.map(item =>
           item.id === newItem.id
-            ? { ...item, quantity: item.quantity + (processedItem.quantity || 1) }
+            ? { ...item, quantity: item.quantity + (newItem.quantity || 1) }
             : item
         );
+        // Recalculate discounts after quantity change
+        return recalculateProductDiscounts(updatedItems);
       } else {
-        return [...safeItems, { ...processedItem, quantity: processedItem.quantity || 1 }];
+        // Add new item
+        let processedItem = { ...newItem };
+        
+        // Calculate product-level discount if item has a deal
+        if (newItem.deal && isDealValid(newItem.deal)) {
+          const originalPrice = newItem.price;
+          const quantity = newItem.quantity || 1;
+          const discountAmount = calculateProductDiscount(originalPrice, newItem.deal, quantity);
+          const discountedPrice = originalPrice - discountAmount;
+          
+          processedItem = {
+            ...newItem,
+            originalPrice,
+            productDiscountAmount: discountAmount,
+            price: discountedPrice,
+            quantity
+          };
+          
+          console.log('🎉 Applied product discount:', {
+            originalPrice,
+            quantity,
+            productTotal: originalPrice * quantity,
+            minOrderAmount: newItem.deal.minimum_order_amount,
+            discountAmount,
+            finalPrice: discountedPrice,
+            deal: newItem.deal.code
+          });
+        } else {
+          processedItem.quantity = newItem.quantity || 1;
+        }
+        
+        return [...safeItems, processedItem];
       }
     });
-  }, []);
+  }, [recalculateProductDiscounts]);
 
   const removeFromCart = useCallback((id: string) => {
     console.log('🗑️ Removing from cart:', id);
@@ -202,11 +258,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setItems(prevItems => {
       const safeItems = Array.isArray(prevItems) ? prevItems : [];
-      return safeItems.map(item =>
+      const updatedItems = safeItems.map(item =>
         item.id === id ? { ...item, quantity } : item
       );
+      // Recalculate discounts after quantity change
+      return recalculateProductDiscounts(updatedItems);
     });
-  }, [removeFromCart]);
+  }, [removeFromCart, recalculateProductDiscounts]);
 
   const clearCart = useCallback(() => {
     console.log('🧹 Clearing cart');

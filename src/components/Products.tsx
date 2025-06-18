@@ -46,8 +46,8 @@ const Products = () => {
       image: product.image,
       description: product.description,
       clientpathurl: product.about_url,
-      deal_id: product.deal_id, // NEW: Include deal_id
-      deal: product.deal, // NEW: Include deal object
+      deal_id: product.deal_id, // Include deal_id
+      deal: product.deal, // Include deal object
       quantity: 1,
     });
 
@@ -78,9 +78,21 @@ const Products = () => {
     return true;
   };
 
+  // NEW: Helper function to check if deal would be valid for a given quantity
+  const isDealValidForQuantity = (deal: Deal, productPrice: number, quantity: number): boolean => {
+    if (!isDealValid(deal)) return false;
+    
+    const productTotal = productPrice * quantity;
+    if (deal.minimum_order_amount && productTotal < deal.minimum_order_amount) {
+      return false;
+    }
+    
+    return true;
+  };
+
   // Helper function to calculate discounted price
-  const getDiscountedPrice = (originalPrice: number, deal: Deal) => {
-    if (!deal || !isDealValid(deal)) return originalPrice;
+  const getDiscountedPrice = (originalPrice: number, deal: Deal, quantity: number = 1) => {
+    if (!deal || !isDealValidForQuantity(deal, originalPrice, quantity)) return originalPrice;
     
     let discountAmount = 0;
     if (deal.discount_type === 'percentage') {
@@ -100,6 +112,12 @@ const Products = () => {
     return Math.max(0.01, originalPrice - discountAmount);
   };
 
+  // NEW: Helper function to get minimum quantity needed for deal
+  const getMinQuantityForDeal = (deal: Deal, productPrice: number): number => {
+    if (!deal || !deal.minimum_order_amount) return 1;
+    return Math.ceil(deal.minimum_order_amount / productPrice);
+  };
+
   useEffect(() => {
     console.log('🔍 Products Debug - User Status:', {
       isLoggedIn: 'Check your auth state here',
@@ -111,11 +129,15 @@ const Products = () => {
     // Log each product's deal status
     products.forEach(product => {
       if (product.deal) {
+        const minQty = getMinQuantityForDeal(product.deal, product.price);
         console.log(`📦 Product "${product.title}":`, {
+          price: product.price,
           hasDeal: !!product.deal,
           dealCode: product.deal.code,
           dealActive: product.deal.is_active,
           dealValid: isDealValid(product.deal),
+          minOrderAmount: product.deal.minimum_order_amount,
+          minQuantityNeeded: minQty,
           dealExpired: product.deal.expires_at ? new Date(product.deal.expires_at) < new Date() : false
         });
       }
@@ -159,7 +181,9 @@ const Products = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {products.map((product) => {
               const hasValidDeal = product.deal && isDealValid(product.deal);
-              const discountedPrice = hasValidDeal ? getDiscountedPrice(product.price, product.deal!) : product.price;
+              const minQuantityForDeal = hasValidDeal ? getMinQuantityForDeal(product.deal!, product.price) : 1;
+              const dealValidForSingleItem = hasValidDeal && isDealValidForQuantity(product.deal!, product.price, 1);
+              const discountedPrice = dealValidForSingleItem ? getDiscountedPrice(product.price, product.deal!, 1) : product.price;
               
               return (
                 <Card key={product.id} className="h-full">
@@ -175,13 +199,21 @@ const Products = () => {
                       />
                     )}
                     
-                    {/* Deal Badge */}
+                    {/* Deal Badge - Only show if deal is valid for single item OR show minimum quantity needed */}
                     {hasValidDeal && (
-                      <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-                        {product.deal!.discount_type === 'percentage' 
-                          ? `${product.deal!.discount_value}% OFF` 
-                          : `$${product.deal!.discount_value} OFF`
-                        }
+                      <div className="absolute top-2 right-2">
+                        {dealValidForSingleItem ? (
+                          <div className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                            {product.deal!.discount_type === 'percentage' 
+                              ? `${product.deal!.discount_value}% OFF` 
+                              : `$${product.deal!.discount_value} OFF`
+                            }
+                          </div>
+                        ) : (
+                          <div className="bg-orange-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                            Buy {minQuantityForDeal}+ for deal
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -200,6 +232,11 @@ const Products = () => {
                         <p className="text-xs text-green-600 dark:text-green-400">
                           {product.deal!.description}
                         </p>
+                        {!dealValidForSingleItem && (
+                          <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                            Min order: ${product.deal!.minimum_order_amount}
+                          </p>
+                        )}
                       </div>
                     )}
                     
