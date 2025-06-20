@@ -3,6 +3,24 @@ import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
 import DealInput from './DealInput';
 import Link from 'next/link';
+import { Deal } from '@/types/product';
+
+// Helper function to check if deal is valid for product - 🔥 FIXED: Proper typing
+const isDealValidForProduct = (deal: Deal, originalPrice: number, quantity: number): boolean => {
+  if (!deal || !deal.is_active) return false;
+  
+  // Check expiration
+  if (deal.expires_at && new Date(deal.expires_at) < new Date()) return false;
+  
+  // Check usage limit
+  if (deal.usage_limit && deal.usage_count >= deal.usage_limit) return false;
+  
+  // Check if total order value meets minimum requirement
+  const totalOrderValue = originalPrice * quantity;
+  if (deal.minimum_order_amount && totalOrderValue < deal.minimum_order_amount) return false;
+  
+  return true;
+};
 
 export default function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { 
@@ -10,7 +28,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
     removeFromCart, 
     totalItems, 
     subtotal, 
-    productDiscountTotal, // NEW: Get product discount total
+    productDiscountTotal,
     finalTotal, 
     appliedDeal,
     proceedToCheckout, 
@@ -27,7 +45,6 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
     } catch (error) {
       console.error('❌ CartDrawer: Checkout failed:', error);
       
-      // Show more specific error message
       const errorMessage = error instanceof Error 
         ? error.message 
         : 'Checkout failed. Please try again.';
@@ -71,66 +88,84 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
           ) : (
             <>
               <ul className="divide-y divide-gray-200 dark:divide-gray-700 mb-6">
-                {items.map(item => (
-                  <li key={item.id} className="py-4 flex items-center">
-                    {item.image && (
-                      <div className="relative w-12 h-12 mr-3 flex-shrink-0">
-                        <Image
-                          src={item.image}
-                          alt={item.name}
-                          fill
-                          sizes="48px"
-                          className="object-cover rounded"
-                        />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm truncate">{item.name}</div>
-                      
-                      {/* Show original price if discounted */}
-                      {item.originalPrice && item.productDiscountAmount ? (
-                        <div className="text-sm">
-                          <span className="text-gray-500 dark:text-gray-400 line-through mr-2">
-                            ${item.originalPrice.toFixed(2)}
-                          </span>
-                          <span className="text-red-600 dark:text-red-400 font-medium">
+                {items.map(item => {
+                  // Check if deal is valid for this specific item
+                  const hasValidDeal = item.deal && item.originalPrice && 
+                    isDealValidForProduct(item.deal, item.originalPrice, item.quantity);
+                  
+                  const minOrderValueNeeded = item.deal?.minimum_order_amount || 0;
+                  const currentItemValue = (item.originalPrice || item.price) * item.quantity;
+                  const additionalValueNeeded = Math.max(0, minOrderValueNeeded - currentItemValue);
+                  
+                  return (
+                    <li key={item.id} className="py-4 flex items-center">
+                      {item.image && (
+                        <div className="relative w-12 h-12 mr-3 flex-shrink-0">
+                          <Image
+                            src={item.image}
+                            alt={item.name}
+                            fill
+                            sizes="48px"
+                            className="object-cover rounded"
+                          />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate">{item.name}</div>
+                        
+                        {/* Show pricing based on deal validity */}
+                        {item.originalPrice && item.productDiscountAmount && hasValidDeal ? (
+                          <div className="text-sm">
+                            <span className="text-gray-500 dark:text-gray-400 line-through mr-2">
+                              ${item.originalPrice.toFixed(2)}
+                            </span>
+                            <span className="text-red-600 dark:text-red-400 font-medium">
+                              ${item.price.toFixed(2)}
+                            </span>
+                            <span className="text-xs text-green-600 dark:text-green-400 block">
+                              Save ${productDiscountTotal.toFixed(2)}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
                             ${item.price.toFixed(2)}
-                          </span>
-                          <span className="text-xs text-green-600 dark:text-green-400 block">
-                            Save ${item.productDiscountAmount.toFixed(2)} each
-                          </span>
-                        </div>
-                      ) : (
+                          </div>
+                        )}
+                        
                         <div className="text-sm text-gray-500 dark:text-gray-400">
-                          ${item.price.toFixed(2)}
+                          Qty: {item.quantity}
                         </div>
-                      )}
-                      
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        Qty: {item.quantity}
-                      </div>
-                      
-                      <div className="text-sm font-medium">
-                        ${(item.price * item.quantity).toFixed(2)}
-                      </div>
-                      
-                      {/* Show deal badge if item has a deal */}
-                      {item.deal && item.productDiscountAmount && (
-                        <div className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded mt-1 inline-block">
-                          🎉 {item.deal.code}
+                        
+                        <div className="text-sm font-medium">
+                          ${(item.price * item.quantity).toFixed(2)}
                         </div>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => removeFromCart(item.id)}
-                      className="ml-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </li>
-                ))}
+                        
+                        {/* Show deal status */}
+                        {item.deal && (
+                          <div className="mt-1">
+                            {hasValidDeal && item.productDiscountAmount ? (
+                              <div className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded inline-block">
+                                🎉 {item.deal.description} - Active
+                              </div>
+                            ) : (
+                              <div className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-1 rounded inline-block">
+                                ⏳ {item.deal.code} - Need ${additionalValueNeeded.toFixed(2)} more
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => removeFromCart(item.id)}
+                        className="ml-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
 
               {/* Deal Input */}
@@ -148,7 +183,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
               <span>${subtotal.toFixed(2)}</span>
             </div>
             
-            {/* NEW: Show product-level discounts */}
+            {/* Product-level discounts */}
             {productDiscountTotal > 0 && (
               <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
                 <span>Product Discounts</span>
@@ -169,7 +204,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
               <span>${finalTotal.toFixed(2)}</span>
             </div>
             
-            {/* NEW: Show total savings */}
+            {/* Total savings */}
             {(productDiscountTotal > 0 || appliedDeal) && (
               <div className="flex justify-between text-sm text-green-600 dark:text-green-400 font-medium">
                 <span>Total Savings</span>

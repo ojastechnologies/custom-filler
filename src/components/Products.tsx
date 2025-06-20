@@ -6,7 +6,7 @@ import Card from './ui/Card';
 import Button from './ui/Button';
 import { useCart } from '@/context/CartContext';
 import { fetchProducts } from '@/services/productsService';
-import { Deal, ProductType } from '@/types/product';
+import { ProductType } from '@/types/product';
 
 const Products = () => {
   const { addToCart } = useCart();
@@ -46,8 +46,8 @@ const Products = () => {
       image: product.image,
       description: product.description,
       clientpathurl: product.about_url,
-      deal_id: product.deal_id, // NEW: Include deal_id
-      deal: product.deal, // NEW: Include deal object
+      deal_id: product.deal_id,
+      deal: product.deal,
       quantity: 1,
     });
 
@@ -78,27 +78,27 @@ const Products = () => {
     return true;
   };
 
-  // Helper function to calculate discounted price
-  const getDiscountedPrice = (originalPrice: number, deal: Deal) => {
-    if (!deal || !isDealValid(deal)) return originalPrice;
+  // // Helper function to calculate discounted price
+  // const getDiscountedPrice = (originalPrice: number, deal: Deal) => {
+  //   if (!deal || !isDealValid(deal)) return originalPrice;
     
-    let discountAmount = 0;
-    if (deal.discount_type === 'percentage') {
-      discountAmount = originalPrice * (deal.discount_value / 100);
-    } else {
-      discountAmount = deal.discount_value;
-    }
+  //   let discountAmount = 0;
+  //   if (deal.discount_type === 'percentage') {
+  //     discountAmount = originalPrice * (deal.discount_value / 100);
+  //   } else {
+  //     discountAmount = deal.discount_value;
+  //   }
     
-    // Apply maximum discount limit if set
-    if (deal.maximum_discount_amount && discountAmount > deal.maximum_discount_amount) {
-      discountAmount = deal.maximum_discount_amount;
-    }
+  //   // Apply maximum discount limit if set
+  //   if (deal.maximum_discount_amount && discountAmount > deal.maximum_discount_amount) {
+  //     discountAmount = deal.maximum_discount_amount;
+  //   }
     
-    // Ensure discount doesn't exceed original price
-    discountAmount = Math.min(discountAmount, originalPrice - 0.01);
+  //   // Ensure discount doesn't exceed original price
+  //   discountAmount = Math.min(discountAmount, originalPrice - 0.01);
     
-    return Math.max(0.01, originalPrice - discountAmount);
-  };
+  //   return Math.max(0.01, originalPrice - discountAmount);
+  // };
 
   useEffect(() => {
     console.log('🔍 Products Debug - User Status:', {
@@ -159,7 +159,7 @@ const Products = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {products.map((product) => {
               const hasValidDeal = product.deal && isDealValid(product.deal);
-              const discountedPrice = hasValidDeal ? getDiscountedPrice(product.price, product.deal!) : product.price;
+              // 🔥 FIXED: Don't show discounted price on product card since discount depends on quantity
               
               return (
                 <Card key={product.id} className="h-full">
@@ -191,15 +191,33 @@ const Products = () => {
                       <p className="mt-2 text-gray-600 dark:text-gray-400 line-clamp-3">{product.description}</p>
                     )}
                     
-                    {/* Deal Information */}
+                    {/* 🔥 UPDATED: Deal Information with minimum order requirement */}
                     {hasValidDeal && (
-                      <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded">
-                        <p className="text-xs text-green-700 dark:text-green-300 font-medium">
-                          🎉 Deal: {product.deal!.code}
-                        </p>
-                        <p className="text-xs text-green-600 dark:text-green-400">
+                      <div className="mt-2 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                        <div className="flex items-center mb-1">
+                          <span className="text-sm font-bold text-green-700 dark:text-green-300">
+                            🎉 {product.deal!.code}
+                          </span>
+                        </div>
+                        <p className="text-xs text-green-600 dark:text-green-400 mb-2">
                           {product.deal!.description}
                         </p>
+                        
+                        {/* Show minimum order requirement */}
+                        {product.deal!.minimum_order_amount && (
+                          <div className="bg-white dark:bg-gray-800 rounded px-2 py-1 border border-green-300 dark:border-green-600">
+                            <p className="text-xs text-green-700 dark:text-green-300 font-medium">
+                              💰 Buy ${product.deal!.minimum_order_amount.toFixed(2)} worth to get{' '}
+                              {product.deal!.discount_type === 'percentage' 
+                                ? `${product.deal!.discount_value}% off`
+                                : `$${product.deal!.discount_value} off`
+                              } each item
+                            </p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                              Need {Math.ceil(product.deal!.minimum_order_amount / product.price)} items minimum
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
                     
@@ -212,23 +230,12 @@ const Products = () => {
                     
                     <div className="mt-4 flex items-center justify-between">
                       <div className="flex flex-col">
-                        {hasValidDeal ? (
-                          <>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-lg font-bold text-green-600 dark:text-green-400">
-                                ${discountedPrice.toFixed(2)}
-                              </span>
-                              <span className="text-sm text-gray-500 dark:text-gray-400 line-through">
-                                ${product.price.toFixed(2)}
-                              </span>
-                            </div>
-                            <span className="text-xs text-green-600 dark:text-green-400">
-                              Save ${(product.price - discountedPrice).toFixed(2)}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-lg font-bold text-gray-900 dark:text-white">
-                            ${product.price.toFixed(2)}
+                        <span className="text-lg font-bold text-gray-900 dark:text-white">
+                          ${product.price.toFixed(2)}
+                        </span>
+                        {hasValidDeal && product.deal!.minimum_order_amount && (
+                          <span className="text-xs text-green-600 dark:text-green-400">
+                            Potential savings available!
                           </span>
                         )}
                       </div>

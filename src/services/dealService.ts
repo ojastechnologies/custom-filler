@@ -226,9 +226,13 @@ export const validateDealCode = async (code: string, cartItems: CartItem[]): Pro
       };
     }
 
-    // Calculate cart total
-    const cartTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-    console.log('💰 Cart total for deal validation:', cartTotal);
+    // 🔥 FIXED: Calculate cart total after product discounts
+    const cartTotal = cartItems.reduce((total, item) => {
+      // Use the current price (which is already discounted if product deal applies)
+      return total + (item.price * item.quantity);
+    }, 0);
+    
+    console.log('💰 Cart total for deal validation (after product discounts):', cartTotal);
 
     // Check minimum order amount
     if (deal.minimum_order_amount && cartTotal < deal.minimum_order_amount) {
@@ -251,7 +255,7 @@ export const validateDealCode = async (code: string, cartItems: CartItem[]): Pro
       discountAmount = deal.maximum_discount_amount;
     }
 
-    // 🔥 IMPORTANT: Ensure discount doesn't exceed cart total (leave at least $0.50)
+    // Ensure discount doesn't exceed cart total (leave at least $0.50)
     const maxAllowedDiscount = Math.max(0, cartTotal - 0.50);
     discountAmount = Math.min(discountAmount, maxAllowedDiscount);
 
