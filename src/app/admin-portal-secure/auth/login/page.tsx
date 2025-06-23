@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import LoginForm from '@/components/auth/LoginForm';
+import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Admin Login - Aero Tech Labs',
@@ -19,6 +20,30 @@ export default function LoginPage() {
           </p>
         </div>
         <LoginForm />
+        
+        {/* Additional Help Links */}
+        <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="text-center space-y-2">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Need help accessing your account?
+            </p>
+            <div className="flex justify-center space-x-4 text-xs">
+              <Link 
+                href="/admin-portal-secure/auth/forgot-password" 
+                className="text-primary-600 hover:text-primary-500 dark:text-primary-400"
+              >
+                Reset Password
+              </Link>
+              <span className="text-gray-300 dark:text-gray-600">|</span>
+              <Link 
+                href="/" 
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              >
+                Back to Home
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     </main>
   );

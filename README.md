@@ -77,3 +77,29 @@ Expired Card: 4000000000000069
 
 # /admin-portal-secure/auth/login
 # /admin-portal-secure/auth/register
+
+# Forget Password
+
+Email Templates Configuration:
+Go to your Supabase Dashboard
+Navigate to Authentication > Email Templates
+Configure the Reset Password template:
+<h2>Reset Your Password</h2>
+<p>Hi there,</p>
+<p>You have requested to reset your password for your Aero Tech Labs admin account.</p>
+<p>Click the link below to reset your password:</p>
+<p><a href="{{ .SiteURL }}/admin-portal-secure/auth/reset-password?access_token={{ .TokenHash }}&type=recovery">Reset Password</a></p>
+<p>If you didn't request this, you can safely ignore this email.</p>
+<p>This link will expire in 24 hours.</p>
+<p>Best regards,<br>Aero Tech Labs Team</p>
+
+Copy
+
+Apply
+
+Site URL Configuration:
+Go to Authentication > URL Configuration
+Set your Site URL to: http://localhost:3000 (for development) or your production domain
+Add Redirect URLs:
+http://localhost:3000/admin-portal-secure/auth/reset-password
+https://yourdomain.com/admin-portal-secure/auth/reset-password (for production)

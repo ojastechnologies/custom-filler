@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
+import Link from 'next/link';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -10,6 +12,14 @@ export default function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const { user, loading } = useAuth();
+
+  // Handle redirect when user is already logged in
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, loading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +45,24 @@ export default function LoginForm() {
     }
   };
 
+  // Show loading state while auth context is loading
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  // Don't render the form if user is already logged in
+  if (user) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-600 dark:text-gray-400">Redirecting to dashboard...</p>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
@@ -58,9 +86,18 @@ export default function LoginForm() {
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Password
-        </label>
+        <div className="flex justify-between items-center">
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Password
+          </label>
+          {/* NEW: Forgot Password Link */}
+          <Link 
+            href="/admin-portal-secure/auth/forgot-password" 
+            className="text-sm text-primary-600 hover:text-primary-500 dark:text-primary-400"
+          >
+            Forgot password?
+          </Link>
+        </div>
         <input
           id="password"
           type="password"
@@ -78,6 +115,16 @@ export default function LoginForm() {
       >
         {isLoading ? 'Signing in...' : 'Sign In'}
       </button>
+
+      {/* NEW: Additional Links */}
+      <div className="text-center space-y-2">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Don't have an account?{' '}
+          <Link href="/admin-portal-secure/auth/register" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
+            Create one here
+          </Link>
+        </p>
+      </div>
     </form>
   );
 }
