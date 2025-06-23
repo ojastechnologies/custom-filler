@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
@@ -11,7 +11,6 @@ export default function ForgotPasswordForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +67,7 @@ export default function ForgotPasswordForm() {
             className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
           />
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            We'll send you a link to reset your password.
+            We&apos;ll send you a link to reset your password.
           </p>
         </div>
 
