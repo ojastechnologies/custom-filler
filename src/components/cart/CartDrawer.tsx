@@ -149,7 +149,7 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
                               </div>
                             ) : (
                               <div className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-1 rounded inline-block">
-                                ⏳ {item.deal.code} - Need ${additionalValueNeeded.toFixed(2)} more
+                                ⏳ Need ${additionalValueNeeded.toFixed(2)} more
                               </div>
                             )}
                           </div>

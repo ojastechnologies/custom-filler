@@ -537,7 +537,20 @@ export const updateProduct = async (
     if (imageUrl !== undefined) updateData.thumbnail_url = imageUrl;
     if (updates.about_url !== undefined) updateData.about_url = updates.about_url;
     if (updates.clientpathurl !== undefined) updateData.clientpathurl = updates.clientpathurl;
-    if (updates.deal_id !== undefined) updateData.assigned_deal_id = updates.deal_id; // 🔥 Map deal_id to assigned_deal_id
+    
+    // 🔥 FIX: Properly handle deal_id - convert empty string to null
+    if (updates.deal_id !== undefined) {
+      // Convert empty string or null to null for database
+      updateData.assigned_deal_id = (updates.deal_id === '' || updates.deal_id === null || updates.deal_id === undefined) ? null : updates.deal_id;
+      
+      console.log('[updateProduct] 🎫 Deal ID processing:', {
+        originalValue: updates.deal_id,
+        processedValue: updateData.assigned_deal_id,
+        isEmptyString: updates.deal_id === '',
+        isNull: updates.deal_id === null,
+        willSetToNull: updateData.assigned_deal_id === null
+      });
+    }
     
     console.log('[updateProduct] 📋 Final update data:', updateData);
     console.log('[updateProduct] 🔄 Calling Supabase update...');
@@ -546,9 +559,7 @@ export const updateProduct = async (
       .from('products')
       .update(updateData)
       .eq('id', id)
-      .select(`
-        *
-      `);
+      .select('*');
       
     console.log('[updateProduct] 📡 Supabase response received');
     console.log('[updateProduct] 📊 Data:', data);
@@ -598,6 +609,31 @@ export const updateProduct = async (
     }
     
     console.log('[updateProduct] ✅ Product updated successfully:', data[0].name);
+    console.log('[updateProduct] 📊 Updated assigned_deal_id in DB:', data[0].assigned_deal_id);
+    
+    // 🔥 FIX: Fetch deal information if assigned, otherwise set to undefined
+    let dealInfo: Deal | undefined = undefined;
+    if (data[0].assigned_deal_id) {
+      console.log('[updateProduct] 🎫 Fetching deal information for:', data[0].assigned_deal_id);
+      try {
+        const { data: dealData, error: dealError } = await supabase
+          .from('deals')
+          .select('*')
+          .eq('id', data[0].assigned_deal_id)
+          .single();
+
+        if (dealError) {
+          console.warn('[updateProduct] ⚠️ Could not fetch deal info:', dealError?.message);
+        } else if (dealData) {
+          dealInfo = dealData as Deal;
+          console.log('[updateProduct] ✅ Deal info fetched:', dealInfo.code);
+        }
+      } catch (dealFetchError) {
+        console.warn('[updateProduct] ⚠️ Exception fetching deal:', dealFetchError);
+      }
+    } else {
+      console.log('[updateProduct] 🎫 No deal assigned (assigned_deal_id is null), setting deal to undefined');
+    }
     
     const result: ProductType = {
       id: data[0].id,
@@ -608,14 +644,19 @@ export const updateProduct = async (
       category: data[0].category,
       about_url: data[0].about_url,
       clientpathurl: data[0].clientpathurl,
-      deal_id: data[0].assigned_deal_id, // 🔥 Map back to deal_id
-      deal: data[0].deals
+      deal_id: data[0].assigned_deal_id, // 🔥 This will be null if no deal
+      deal: dealInfo // 🔥 This will be undefined if no deal
     };
     
-    console.log('[updateProduct] 🎉 Returning result:', result);
+    console.log('[updateProduct] 🎉 Returning result:', {
+      productName: result.title,
+      dealId: result.deal_id,
+      dealCode: result.deal?.code || 'No deal assigned'
+    });
+    
     return result;
-  } catch (err ) {
- 
+  } catch (err) {
+    console.error('[updateProduct] 💥 Exception during update:', err);
     throw err;
   }
 };

@@ -1,15 +1,41 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import Card from './ui/Card';
 import Button from './ui/Button';
+import LoadingSpinner from './ui/LoadingSpinner';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
 import { fetchProducts } from '@/services/productsService';
-import { ProductType } from '@/types/product';
+import { ProductType, Deal } from '@/types/product';
 
-const Products = () => {
+interface ProductsProps {
+  /** Whether this is being used as a section on home page */
+  isHomeSection?: boolean;
+  /** Maximum number of products to display (useful for home section) */
+  maxProducts?: number;
+  /** Custom title for the section */
+  title?: string;
+  /** Custom subtitle/description */
+  subtitle?: string;
+  /** Whether to show "View All Products" link */
+  showViewAllLink?: boolean;
+  /** Custom CSS classes for the container */
+  containerClassName?: string;
+}
+
+const Products = ({ 
+  isHomeSection = false,
+  maxProducts,
+  title = "Featured Products",
+  subtitle = "Quality aerosol products for various applications",
+  showViewAllLink = false,
+  containerClassName = ""
+}: ProductsProps) => {
   const { addToCart } = useCart();
+  const { loading: authLoading } = useAuth();
   const [addedToCart, setAddedToCart] = useState<Record<string, boolean>>({});
   const [products, setProducts] = useState<ProductType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,11 +46,11 @@ const Products = () => {
       try {
         setLoading(true);
         const data = await fetchProducts();
-        if (data.length === 0) {
-          setProducts([]);
-        } else {
-          setProducts(data);
-        }
+        
+        // Apply maxProducts limit if specified (useful for home section)
+        const displayProducts = maxProducts ? data.slice(0, maxProducts) : data;
+        
+        setProducts(displayProducts);
         setError(null);
       } catch {
         setError('Failed to load products. Please try again later.');
@@ -35,7 +61,7 @@ const Products = () => {
     };
 
     loadProducts();
-  }, []);
+  }, [maxProducts]);
 
   const handleAddToCart = (product: ProductType) => {
     // Add the product to cart with ALL fields including deal information
@@ -51,7 +77,7 @@ const Products = () => {
       quantity: 1,
     });
 
-    console.log('🛒 Added to cart with deal info:', {
+    console.log(`🛒 ${isHomeSection ? 'Home Section' : 'Products Page'} - Added to cart:`, {
       id: product.id,
       name: product.title,
       price: product.price,
@@ -65,44 +91,33 @@ const Products = () => {
     }, 2000);
   };
 
-  // Helper function to check if deal is valid
-  const isDealValid = (deal: { is_active: boolean; expires_at?: string; usage_limit?: number; usage_count?: number }) => {
+  // Helper function to check if deal is valid - wrapped in useCallback
+  const isDealValid = useCallback((deal: Deal): boolean => {
     if (!deal || !deal.is_active) return false;
     
     // Check expiration
     if (deal.expires_at && new Date(deal.expires_at) < new Date()) return false;
     
     // Check usage limit
-    if (deal.usage_limit && deal.usage_count! >= deal.usage_limit) return false;
+    if (deal.usage_limit && deal.usage_count >= deal.usage_limit) return false;
     
     return true;
+  }, []);
+
+  // Determine grid columns based on number of products (for home section)
+  const getGridClass = () => {
+    if (isHomeSection) {
+      if (products.length === 1) return "grid-cols-1 max-w-sm";
+      if (products.length === 2) return "grid-cols-1 md:grid-cols-2 max-w-2xl";
+      if (products.length === 3) return "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 max-w-4xl";
+      return "grid-cols-1 md:grid-cols-2 lg:grid-cols-4 max-w-6xl";
+    }
+    return "grid-cols-1 md:grid-cols-2 lg:grid-cols-4";
   };
 
-  // // Helper function to calculate discounted price
-  // const getDiscountedPrice = (originalPrice: number, deal: Deal) => {
-  //   if (!deal || !isDealValid(deal)) return originalPrice;
-    
-  //   let discountAmount = 0;
-  //   if (deal.discount_type === 'percentage') {
-  //     discountAmount = originalPrice * (deal.discount_value / 100);
-  //   } else {
-  //     discountAmount = deal.discount_value;
-  //   }
-    
-  //   // Apply maximum discount limit if set
-  //   if (deal.maximum_discount_amount && discountAmount > deal.maximum_discount_amount) {
-  //     discountAmount = deal.maximum_discount_amount;
-  //   }
-    
-  //   // Ensure discount doesn't exceed original price
-  //   discountAmount = Math.min(discountAmount, originalPrice - 0.01);
-    
-  //   return Math.max(0.01, originalPrice - discountAmount);
-  // };
-
+  // Debug logging
   useEffect(() => {
-    console.log('🔍 Products Debug - User Status:', {
-      isLoggedIn: 'Check your auth state here',
+    console.log(`🔍 ${isHomeSection ? 'Home Section' : 'Products Page'} Debug:`, {
       productsCount: products.length,
       productsWithDeals: products.filter(p => p.deal).length,
       productsWithValidDeals: products.filter(p => p.deal && isDealValid(p.deal)).length
@@ -120,27 +135,27 @@ const Products = () => {
         });
       }
     });
-  }, [products]);
+  }, [products, isDealValid, isHomeSection]);
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
-      <section className="py-12 bg-white dark:bg-gray-800">
+      <section className={`py-12 ${isHomeSection ? 'bg-gray-50 dark:bg-gray-900' : 'bg-white dark:bg-gray-800'} ${containerClassName}`}>
         <div className="container mx-auto px-4 text-center">
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
-          </div>
+          <LoadingSpinner />
         </div>
       </section>
     );
   }
 
   return (
-    <section className="py-12 bg-white dark:bg-gray-800">
+    <section className={`py-12 ${isHomeSection ? 'bg-gray-50 dark:bg-gray-900' : 'bg-white dark:bg-gray-800'} ${containerClassName}`}>
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Featured Products</h2>
-          <p className="mt-4 text-xl text-gray-600 dark:text-gray-400">
-            Quality aerosol products for various applications
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+            {title}
+          </h2>
+          <p className={`mt-4 text-gray-600 dark:text-gray-400 ${isHomeSection ? 'text-lg max-w-3xl mx-auto' : 'text-xl'}`}>
+            {subtitle}
           </p>
         </div>
         
@@ -153,18 +168,19 @@ const Products = () => {
         
         {products.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-gray-600 dark:text-gray-400">No products available at the moment.</p>
+            <p className="text-gray-600 dark:text-gray-400">
+              No products available at the moment.
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className={`grid ${getGridClass()} gap-8 ${isHomeSection ? 'mx-auto' : ''}`}>
             {products.map((product) => {
               const hasValidDeal = product.deal && isDealValid(product.deal);
-              // 🔥 FIXED: Don't show discounted price on product card since discount depends on quantity
               
               return (
                 <Card key={product.id} className="h-full">
                   <div className="h-48 bg-gray-200 dark:bg-gray-700 relative">
-                    {product.image && (
+                    {product.image && product.image !== "/placeholder-product.jpg" ? (
                       <Image 
                         src={product.image} 
                         alt={product.title} 
@@ -173,9 +189,15 @@ const Products = () => {
                         className="object-cover"
                         priority={false}
                       />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <span className="text-gray-500 dark:text-gray-400">
+                          Product Image
+                        </span>
+                      </div>
                     )}
                     
-                    {/* Deal Badge */}
+                    {/* Deal Badge - NO CODE SHOWN */}
                     {hasValidDeal && (
                       <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
                         {product.deal!.discount_type === 'percentage' 
@@ -185,20 +207,20 @@ const Products = () => {
                       </div>
                     )}
                   </div>
+                  
                   <div className="p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{product.title}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {product.title}
+                    </h3>
                     {product.description && (
-                      <p className="mt-2 text-gray-600 dark:text-gray-400 line-clamp-3">{product.description}</p>
+                      <p className="mt-2 text-gray-600 dark:text-gray-400 line-clamp-3">
+                        {product.description}
+                      </p>
                     )}
                     
-                    {/* 🔥 UPDATED: Deal Information with minimum order requirement */}
+                    {/* Deal Information - NO CODE SHOWN */}
                     {hasValidDeal && (
                       <div className="mt-2 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                        <div className="flex items-center mb-1">
-                          <span className="text-sm font-bold text-green-700 dark:text-green-300">
-                            🎉 {product.deal!.code}
-                          </span>
-                        </div>
                         <p className="text-xs text-green-600 dark:text-green-400 mb-2">
                           {product.deal!.description}
                         </p>
@@ -233,11 +255,7 @@ const Products = () => {
                         <span className="text-lg font-bold text-gray-900 dark:text-white">
                           ${product.price.toFixed(2)}
                         </span>
-                        {hasValidDeal && product.deal!.minimum_order_amount && (
-                          <span className="text-xs text-green-600 dark:text-green-400">
-                            Potential savings available!
-                          </span>
-                        )}
+                 
                       </div>
                       <Button
                         variant={addedToCart[product.id] ? 'secondary' : 'primary'}
@@ -251,6 +269,18 @@ const Products = () => {
                 </Card>
               );
             })}
+          </div>
+        )}
+        
+        {/* Show "View All Products" link only for home section */}
+        {showViewAllLink && isHomeSection && (
+          <div className="mt-10 text-center">
+            <Link 
+              href="/products" 
+              className="inline-block px-5 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 transition-colors"
+            >
+              View All Products
+            </Link>
           </div>
         )}
       </div>
