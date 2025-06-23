@@ -67,3 +67,13 @@ Cards for Testing Specific Scenarios:
 Declined Card: 4000000000000002
 Insufficient Funds: 4000000000009995
 Expired Card: 4000000000000069
+
+
+
+
+
+
+# Your admin URLs would be:
+
+# /admin-portal-secure/auth/login
+# /admin-portal-secure/auth/register

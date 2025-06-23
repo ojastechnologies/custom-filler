@@ -14,6 +14,7 @@ import ImageUploader from '@/components/admin/ImageUploader';
 import DealManagement from '@/components/admin/DealManagement';
 import { ProductType } from '@/types/product';
 import { supabase } from '@/lib/supabaseClient';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 import { debugStorageBucket } from '@/services/productsService';
 
@@ -51,6 +52,16 @@ export default function DashboardPage() {
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    productId: string;
+    productName: string;
+  }>({
+    isOpen: false,
+    productId: '',
+    productName: ''
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // NEW: Load deals when component mounts
   useEffect(() => {
@@ -84,7 +95,7 @@ export default function DashboardPage() {
           localStorage.removeItem('supabase.auth.refresh_token');
           localStorage.removeItem('supabase.auth.access_token');
         }
-        router.push('/auth/enter-portal-9f3b2');
+        router.push('/admin-portal-secure/auth/login');
       });
     }
   }, [user, loading, router]);
@@ -96,7 +107,7 @@ export default function DashboardPage() {
       const supabaseSession = !!data?.session;
       if (!user && !supabaseSession) {
         // No session anywhere: redirect
-        router.push('/auth/enter-portal-9f3b2');
+        router.push('/admin-portal-secure/auth/login');
       } else if (!user && supabaseSession) {
         // Supabase has session but AuthContext does not: force reload to sync context
         window.location.reload();
@@ -264,15 +275,32 @@ export default function DashboardPage() {
     setShowForm(true);
   };
 
-  // Handle product delete
-  const handleDelete = async (id: string) => {
+  // Handle product delete - open dialog
+  const handleDelete = (product: ProductType) => {
     if (!isAdmin) return;
     
-    if (!window.confirm('Are you sure you want to delete this product?')) return;
+    setDeleteDialog({
+      isOpen: true,
+      productId: product.id,
+      productName: product.title
+    });
+  };
+
+  // Confirm delete
+  const confirmDelete = async () => {
+    if (!deleteDialog.productId) return;
     
     try {
-      await deleteProduct(id);
-      setProducts(products.filter(product => product.id !== id));
+      setIsDeleting(true);
+      await deleteProduct(deleteDialog.productId);
+      setProducts(products.filter(product => product.id !== deleteDialog.productId));
+      
+      // Close dialog
+      setDeleteDialog({
+        isOpen: false,
+        productId: '',
+        productName: ''
+      });
     } catch (err: unknown) {
       console.error('Error deleting product:', err);
       if (err instanceof Error) {
@@ -280,7 +308,20 @@ export default function DashboardPage() {
       } else {
         setError('Failed to delete product');
       }
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  // Close delete dialog
+  const closeDeleteDialog = () => {
+    if (isDeleting) return; // Prevent closing while deleting
+    
+    setDeleteDialog({
+      isOpen: false,
+      productId: '',
+      productName: ''
+    });
   };
 
   // Reset form
@@ -674,7 +715,7 @@ export default function DashboardPage() {
                                   Edit
                                 </button>
                                 <button
-                                  onClick={() => handleDelete(product.id)}
+                                  onClick={() => handleDelete(product)}
                                   className="flex-1 px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-medium transition-colors flex items-center justify-center"
                                 >
                                   Delete
@@ -755,6 +796,19 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
+      
+      <ConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        onClose={closeDeleteDialog}
+        onConfirm={confirmDelete}
+        title="Delete Product"
+        message={`Are you sure you want to delete "${deleteDialog.productName}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={isDeleting}
+      />
+      
       <Footer />
     </>
   );

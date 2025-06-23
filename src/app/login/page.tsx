@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 
 // import LoginForm from '@/components/auth/LoginForm';
 // import Header from '@/components/layout/Header';
@@ -11,7 +11,6 @@ export const metadata: Metadata = {
 };
 
 export default function LoginPage() {
-  redirect('/auth/enter-portal-9f3b2');
-
-  return null;
+  // Always return 404 for public access
+  notFound();
 }
