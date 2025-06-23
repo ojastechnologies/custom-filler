@@ -54,7 +54,7 @@ const InchFillingPage = () => {
         setTextContent(finalContent);
       } catch {
         setTextContent(defaultTextContent);
-        setError('Failed to load content.');
+        
       } finally {
         setLoading(false);
       }
