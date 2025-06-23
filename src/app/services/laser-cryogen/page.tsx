@@ -449,9 +449,61 @@ const LaserCryogenPage = () => {
 
           {/* Main Content */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
-            {/* Section 1 - Editable */}
-            <div className={`mb-8 ${editMode === 1 ? 'ring-2 ring-blue-500 ring-opacity-50 rounded-lg p-4' : ''}`}>
-              <div dangerouslySetInnerHTML={{ __html: paragraph1 }} />
+            {/* Manufacturer Section with Side-by-Side Layout */}
+            <div className="mb-12">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                {/* Left Side - Editable Content */}
+                <div className="space-y-6">
+                  <div 
+                    className="prose prose-lg dark:prose-invert max-w-none"
+                    dangerouslySetInnerHTML={{
+                      __html: `
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                          We Are The Manufacturer - Buy Directly From Us
+                        </h2>
+                        <p class="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
+                          We manufacture the 1000 gram cylinder containing High Purity Grade 1,1,1,3-Tetrafluoropropene, 
+                          the next generation of safe, non-flammable, non-toxic, non-ozone depleting and non-global warming 
+                          potential (Low GWP) fluorocarbon gas approved for medical devices.
+                        </p>
+                        <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
+                          We tested in Laser Surgical equipment and it works perfectly. Our CGA 600 cylinder is a perfect 
+                          retrofit into all laser equipment including Candela.
+                        </p>
+                      `
+                    }}
+                  />
+                </div>
+
+                {/* Right Side - Product Image */}
+                <div className="relative">
+                  <div className="sticky top-8">
+                    <div className="relative overflow-hidden rounded-xl shadow-2xl bg-white dark:bg-gray-800 p-4">
+                      <Image
+                        src="/images/laser_cryogen.png"
+                        alt="Laser Cryogen Product - 1000 gram cylinder containing High Purity Grade 1,1,1,3-Tetrafluoropropene"
+                        width={400}
+                        height={300}
+                        className="w-full h-auto rounded-lg object-cover"
+                        style={{ maxHeight: '300px' }}
+                        priority
+                      />
+                      
+                      {/* Product Info Overlay */}
+                      {/* <div className="absolute bottom-4 left-4 right-4 bg-gradient-to-t from-black/80 to-transparent text-white p-3 rounded-lg">
+                        <p className="text-sm font-semibold">1000g Cylinder</p>
+                        <p className="text-xs opacity-90">CGA 600 Compatible</p>
+                      </div> */}
+                      
+                 
+                    </div>
+                    
+                    {/* Decorative Elements */}
+                    <div className="absolute -top-4 -right-4 w-20 h-20 bg-primary-100 dark:bg-primary-900 rounded-full opacity-30 animate-pulse"></div>
+                    <div className="absolute -bottom-4 -left-4 w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full opacity-30 animate-pulse" style={{ animationDelay: '1s' }}></div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* MSDS Download and ORDER NOW Buttons - NOT EDITABLE */}
