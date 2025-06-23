@@ -12,17 +12,11 @@ import { fetchProducts } from '@/services/productsService';
 import { ProductType, Deal } from '@/types/product';
 
 interface ProductsProps {
-  /** Whether this is being used as a section on home page */
   isHomeSection?: boolean;
-  /** Maximum number of products to display (useful for home section) */
   maxProducts?: number;
-  /** Custom title for the section */
   title?: string;
-  /** Custom subtitle/description */
   subtitle?: string;
-  /** Whether to show "View All Products" link */
   showViewAllLink?: boolean;
-  /** Custom CSS classes for the container */
   containerClassName?: string;
 }
 
@@ -178,8 +172,8 @@ const Products = ({
               const hasValidDeal = product.deal && isDealValid(product.deal);
               
               return (
-                <Card key={product.id} className="h-full">
-                  <div className="h-48 bg-gray-200 dark:bg-gray-700 relative">
+                <Card key={product.id} className="h-full flex flex-col">
+                  <div className="h-48 bg-gray-200 dark:bg-gray-700 relative flex-shrink-0">
                     {product.image && product.image !== "/placeholder-product.jpg" ? (
                       <Image 
                         src={product.image} 
@@ -202,68 +196,76 @@ const Products = ({
                       <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
                         {product.deal!.discount_type === 'percentage' 
                           ? `${product.deal!.discount_value}% OFF` 
-                          : `$${product.deal!.discount_value} OFF`
+                          : `${product.deal!.discount_value} OFF`
                         }
                       </div>
                     )}
                   </div>
                   
-                  <div className="p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {product.title}
-                    </h3>
-                    {product.description && (
-                      <p className="mt-2 text-gray-600 dark:text-gray-400 line-clamp-3">
-                        {product.description}
-                      </p>
-                    )}
-                    
-                    {/* Deal Information - NO CODE SHOWN */}
-                    {hasValidDeal && (
-                      <div className="mt-2 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                        <p className="text-xs text-green-600 dark:text-green-400 mb-2">
-                          {product.deal!.description}
+                  {/* Flexible content area that expands/contracts */}
+                  <div className="flex flex-col flex-1 min-h-0">
+                    {/* Main content section - grows to fill space */}
+                    <div className="p-6 flex-1 overflow-hidden">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                        {product.title}
+                      </h3>
+                      
+                      {product.description && (
+                        <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-3">
+                          {product.description}
                         </p>
-                        
-                        {/* Show minimum order requirement */}
-                        {product.deal!.minimum_order_amount && (
-                          <div className="bg-white dark:bg-gray-800 rounded px-2 py-1 border border-green-300 dark:border-green-600">
-                            <p className="text-xs text-green-700 dark:text-green-300 font-medium">
-                              💰 Buy ${product.deal!.minimum_order_amount.toFixed(2)} worth to get{' '}
-                              {product.deal!.discount_type === 'percentage' 
-                                ? `${product.deal!.discount_value}% off`
-                                : `$${product.deal!.discount_value} off`
-                              } each item
-                            </p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                              Need {Math.ceil(product.deal!.minimum_order_amount / product.price)} items minimum
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                      )}
+                      
+                      {/* Deal Information - NO CODE SHOWN */}
+                      {hasValidDeal && (
+                        <div className="mb-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                          <p className="text-xs text-green-600 dark:text-green-400 mb-2">
+                            {product.deal!.description}
+                          </p>
+                          
+                          {/* Show minimum order requirement */}
+                          {product.deal!.minimum_order_amount && (
+                            <div className="bg-white dark:bg-gray-800 rounded px-2 py-1 border border-green-300 dark:border-green-600">
+                              <p className="text-xs text-green-700 dark:text-green-300 font-medium">
+                                💰 Buy ${product.deal!.minimum_order_amount.toFixed(2)} worth to get{' '}
+                                {product.deal!.discount_type === 'percentage' 
+                                  ? `${product.deal!.discount_value}% off`
+                                  : `${product.deal!.discount_value} off`
+                                } each item
+                              </p>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                Need {Math.ceil(product.deal!.minimum_order_amount / product.price)} items minimum
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Show about_url if available */}
+                      {product.about_url && (
+                        <p className="text-xs text-blue-600 dark:text-blue-400 truncate">
+                          More info: {product.about_url}
+                        </p>
+                      )}
+                    </div>
                     
-                    {/* Show about_url if available */}
-                    {product.about_url && (
-                      <p className="mt-2 text-xs text-blue-600 dark:text-blue-400 truncate">
-                        More info: {product.about_url}
-                      </p>
-                    )}
-                    
-                    <div className="mt-4 flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <span className="text-lg font-bold text-gray-900 dark:text-white">
-                          ${product.price.toFixed(2)}
-                        </span>
-                 
+                    {/* FIXED HEIGHT BOTTOM SECTION - Always same position */}
+                    <div className="flex-shrink-0 p-6 pt-4 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
+                      <div className="flex items-center justify-between h-10">
+                        <div className="flex flex-col justify-center">
+                          <span className="text-lg font-bold text-gray-900 dark:text-white leading-none">
+                            ${product.price.toFixed(2)}
+                          </span>
+                        </div>
+                        <Button
+                          variant={addedToCart[product.id] ? 'secondary' : 'primary'}
+                          size="sm"
+                          onClick={() => handleAddToCart(product)}
+                          className="flex-shrink-0"
+                        >
+                          {addedToCart[product.id] ? 'Added ✓' : 'Add to Cart'}
+                        </Button>
                       </div>
-                      <Button
-                        variant={addedToCart[product.id] ? 'secondary' : 'primary'}
-                        size="sm"
-                        onClick={() => handleAddToCart(product)}
-                      >
-                        {addedToCart[product.id] ? 'Added ✓' : 'Add to Cart'}
-                      </Button>
                     </div>
                   </div>
                 </Card>
