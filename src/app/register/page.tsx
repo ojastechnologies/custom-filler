@@ -9,8 +9,8 @@ export const metadata: Metadata = {
 export default function RegisterPage() {
   return (
     <AnimatedNotFound
-      title="Registration Unavailable"
-      message="Public registration is currently disabled. Please contact the administrator for access."
+      title="Not Found"
+      message=""
       showHomeButton={true}
     />
   );

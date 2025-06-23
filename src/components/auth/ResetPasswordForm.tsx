@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import Button from '@/components/ui/Button';
-import PasswordStrengthIndicator from './PasswordStrengthIndicator';
 
 export default function ResetPasswordForm() {
   const [password, setPassword] = useState('');
@@ -55,7 +54,7 @@ export default function ResetPasswordForm() {
         setSuccess('Password updated successfully! Redirecting to login...');
         // Redirect to login after a short delay
         setTimeout(() => {
-          router.push('/admin-portal-secure/auth/login');
+          router.push('/auth/enter-portal-9f3b2');
         }, 2000);
       }
     } catch (error) {
@@ -94,9 +93,8 @@ export default function ResetPasswordForm() {
             placeholder="Enter your new password"
             className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
           />
-          <PasswordStrengthIndicator password={password} />
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Use at least 8 characters with a mix of letters, numbers, and symbols
+            Password must be at least 6 characters long
           </p>
         </div>
 

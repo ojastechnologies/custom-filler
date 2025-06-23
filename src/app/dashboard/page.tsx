@@ -95,7 +95,7 @@ export default function DashboardPage() {
           localStorage.removeItem('supabase.auth.refresh_token');
           localStorage.removeItem('supabase.auth.access_token');
         }
-        router.push('/admin-portal-secure/auth/login');
+        router.push('/auth/enter-portal-9f3b2');
       });
     }
   }, [user, loading, router]);
@@ -106,8 +106,8 @@ export default function DashboardPage() {
     supabase.auth.getSession().then(({ data }) => {
       const supabaseSession = !!data?.session;
       if (!user && !supabaseSession) {
-        // No session anywhere: redirect
-        router.push('/admin-portal-secure/auth/login');
+        // UPDATED: No session anywhere: redirect to home page
+        router.push('/');
       } else if (!user && supabaseSession) {
         // Supabase has session but AuthContext does not: force reload to sync context
         window.location.reload();
@@ -156,11 +156,15 @@ export default function DashboardPage() {
           loadProducts();
         } else {
           setError('No active session. Please log in again.');
+          // OPTIONAL: Also redirect to home page after a delay
+          setTimeout(() => {
+            router.push('/');
+          }, 3000);
         }
       };
       checkAndLoadProducts();
     }
-  }, [user, loading, loadProducts, activeTab]);
+  }, [user, loading, loadProducts, activeTab, router]);
 
   // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {

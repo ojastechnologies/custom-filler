@@ -14,8 +14,8 @@ import AnimatedNotFound from '@/components/ui/AnimatedNotFound';
 export default function LoginPage() {
   return (
     <AnimatedNotFound
-      title="Access Restricted"
-      message="This page is not available for public access. If you're an administrator, please use the designated admin portal."
+      title="Not Found"
+      message="T"
       showHomeButton={true}
     />
   );

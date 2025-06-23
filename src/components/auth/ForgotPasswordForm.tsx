@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
@@ -11,6 +11,7 @@ export default function ForgotPasswordForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,7 +21,7 @@ export default function ForgotPasswordForm() {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/admin-portal-secure/auth/reset-password`,
+        redirectTo: `${window.location.origin}/auth/reset-password-9f3b2`,
       });
 
       if (error) {
@@ -67,7 +68,7 @@ export default function ForgotPasswordForm() {
             className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
           />
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            We&apos;ll send you a link to reset your password.
+            We'll send you a link to reset your password.
           </p>
         </div>
 
@@ -84,8 +85,15 @@ export default function ForgotPasswordForm() {
       <div className="mt-6 text-center space-y-2">
         <p className="text-sm text-gray-600 dark:text-gray-400">
           Remember your password?{' '}
-          <Link href="/admin-portal-secure/auth/login" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
+          <Link href="/auth/enter-portal-9f3b2" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
             Back to Sign In
+          </Link>
+        </p>
+        
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Don't have an account?{' '}
+          <Link href="/auth/register-9f3b2" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
+            Create one here
           </Link>
         </p>
       </div>

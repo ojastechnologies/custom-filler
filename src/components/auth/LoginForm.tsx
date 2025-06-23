@@ -90,9 +90,9 @@ export default function LoginForm() {
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Password
           </label>
-          {/* NEW: Forgot Password Link */}
+          {/* UPDATED: Forgot Password Link with Hidden Route */}
           <Link 
-            href="/admin-portal-secure/auth/forgot-password" 
+            href="/auth/forgot-password-9f3b2" 
             className="text-sm text-primary-600 hover:text-primary-500 dark:text-primary-400"
           >
             Forgot password?
@@ -116,11 +116,11 @@ export default function LoginForm() {
         {isLoading ? 'Signing in...' : 'Sign In'}
       </button>
 
-      {/* NEW: Additional Links */}
+      {/* UPDATED: Register link with correct hidden route */}
       <div className="text-center space-y-2">
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Don&apos;t have an account?{' '}
-          <Link href="/admin-portal-secure/auth/register" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
+          Don't have an account?{' '}
+          <Link href="/auth/register-9f3b2" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
             Create one here
           </Link>
         </p>
