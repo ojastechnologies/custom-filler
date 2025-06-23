@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import AnimatedNotFound from '@/components/ui/AnimatedNotFound';
 
 export const metadata: Metadata = {
   title: 'Create Account - Aero Tech Labs',
@@ -7,6 +7,11 @@ export const metadata: Metadata = {
 };
 
 export default function RegisterPage() {
-  // Always return 404 for public access
-  notFound();
+  return (
+    <AnimatedNotFound
+      title="Registration Unavailable"
+      message="Public registration is currently disabled. Please contact the administrator for access."
+      showHomeButton={true}
+    />
+  );
 }

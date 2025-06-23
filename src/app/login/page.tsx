@@ -1,5 +1,4 @@
 import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 
 // import LoginForm from '@/components/auth/LoginForm';
 // import Header from '@/components/layout/Header';
@@ -10,7 +9,14 @@ export const metadata: Metadata = {
   description: 'Sign in to your Aero Tech Labs account',
 };
 
+import AnimatedNotFound from '@/components/ui/AnimatedNotFound';
+
 export default function LoginPage() {
-  // Always return 404 for public access
-  notFound();
+  return (
+    <AnimatedNotFound
+      title="Access Restricted"
+      message="This page is not available for public access. If you're an administrator, please use the designated admin portal."
+      showHomeButton={true}
+    />
+  );
 }
