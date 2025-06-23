@@ -191,8 +191,6 @@ export default function DashboardPage() {
       setError('Product price must be greater than 0');
       return;
     }
-
-    console.log('📝 Form submission - deal_id:', formData.deal_id);
     const selectedDeal = deals.find(d => d.id === formData.deal_id);
     console.log('📝 Form submission - selected deal:', selectedDeal);
     
@@ -212,9 +210,10 @@ export default function DashboardPage() {
           category: formData.category,
           about_url: formData.about_url,
           clientpathurl: formData.clientpathurl,
-          deal_id: formData.deal_id || undefined, // NEW: Include deal_id
+          deal_id: formData.deal_id, // 🔥 Pass as-is, service will handle empty string conversion
           imageFile: selectedFile || undefined,
         });
+        
         setProducts((prev) =>
           prev.map((product) =>
             product.id === editingProduct.id ? result : product
@@ -231,10 +230,15 @@ export default function DashboardPage() {
           category: formData.category,
           about_url: formData.about_url,
           clientpathurl: formData.clientpathurl,
-          deal_id: formData.deal_id || undefined, // NEW: Include deal_id
+          deal_id: formData.deal_id, // 🔥 Pass as-is, service will handle empty string conversion
         });
         setProducts([...products, { ...result }]);
       }
+      
+      // 🔥 IMPORTANT: Reload products to ensure fresh data from database
+      console.log('🔄 Reloading products from database to ensure fresh data...');
+      await loadProducts();
+      
       resetForm();
     } catch (err: unknown) {
       console.error('Error saving product:', err);
