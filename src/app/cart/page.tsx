@@ -229,7 +229,7 @@ export default function CartPage() {
                                 {item.deal && item.productDiscountAmount && (
                                   <div className="mb-2">
                                     <span className="inline-flex items-center px-3 py-1 text-xs font-semibold bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 text-green-800 dark:text-green-200 rounded-full border border-green-200 dark:border-green-700">
-                                      🎉 {item.deal.code} - {item.deal.description}
+                                      🎉   {item.deal.description}
                                     </span>
                                   </div>
                                 )}

@@ -309,12 +309,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 price: item.originalPrice
               };
               
-              console.log('⏳ Product discount removed after quantity update:', {
-                quantity,
-                totalItemValue: item.originalPrice * quantity,
-                minimumRequired: item.deal.minimum_order_amount,
-                deal: item.deal.code
-              });
+             
             }
           }
           
