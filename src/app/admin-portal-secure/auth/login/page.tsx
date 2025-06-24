@@ -1,5 +1,4 @@
 import { Metadata } from 'next';
-import { Suspense } from 'react';
 import LoginForm from '@/components/auth/LoginForm';
 import Link from 'next/link';
 
@@ -8,7 +7,7 @@ export const metadata: Metadata = {
   description: 'Admin login for Aero Tech Labs',
 };
 
-function LoginContent() {
+export default function LoginPage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
       <div className="max-w-md w-full space-y-8 p-8">
@@ -20,28 +19,20 @@ function LoginContent() {
             Sign in to access the admin dashboard
           </p>
         </div>
-        
         <LoginForm />
         
         {/* Additional Help Links */}
         <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <div className="text-center space-y-3">
+          <div className="text-center space-y-2">
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Need help accessing your account?
             </p>
             <div className="flex justify-center space-x-4 text-xs">
               <Link 
-                href="/auth/forgot-password-9f3b2" 
+                href="/admin-portal-secure/auth/forgot-password" 
                 className="text-primary-600 hover:text-primary-500 dark:text-primary-400"
               >
                 Reset Password
-              </Link>
-              <span className="text-gray-300 dark:text-gray-600">|</span>
-              <Link 
-                href="/auth/register-9f3b2" 
-                className="text-primary-600 hover:text-primary-500 dark:text-primary-400"
-              >
-                Create Account
               </Link>
               <span className="text-gray-300 dark:text-gray-600">|</span>
               <Link 
@@ -55,17 +46,5 @@ function LoginContent() {
         </div>
       </div>
     </main>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={
-      <main className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
-      </main>
-    }>
-      <LoginContent />
-    </Suspense>
   );
 }

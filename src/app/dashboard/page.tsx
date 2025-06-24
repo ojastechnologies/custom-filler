@@ -14,6 +14,7 @@ import ImageUploader from '@/components/admin/ImageUploader';
 import DealManagement from '@/components/admin/DealManagement';
 import { ProductType } from '@/types/product';
 import { supabase } from '@/lib/supabaseClient';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 import { debugStorageBucket } from '@/services/productsService';
 
@@ -51,6 +52,16 @@ export default function DashboardPage() {
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    productId: string;
+    productName: string;
+  }>({
+    isOpen: false,
+    productId: '',
+    productName: ''
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // NEW: Load deals when component mounts
   useEffect(() => {
@@ -95,8 +106,8 @@ export default function DashboardPage() {
     supabase.auth.getSession().then(({ data }) => {
       const supabaseSession = !!data?.session;
       if (!user && !supabaseSession) {
-        // No session anywhere: redirect
-        router.push('/auth/enter-portal-9f3b2');
+        // UPDATED: No session anywhere: redirect to home page
+        router.push('/');
       } else if (!user && supabaseSession) {
         // Supabase has session but AuthContext does not: force reload to sync context
         window.location.reload();
@@ -145,11 +156,15 @@ export default function DashboardPage() {
           loadProducts();
         } else {
           setError('No active session. Please log in again.');
+          // OPTIONAL: Also redirect to home page after a delay
+          setTimeout(() => {
+            router.push('/');
+          }, 3000);
         }
       };
       checkAndLoadProducts();
     }
-  }, [user, loading, loadProducts, activeTab]);
+  }, [user, loading, loadProducts, activeTab, router]);
 
   // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -264,15 +279,32 @@ export default function DashboardPage() {
     setShowForm(true);
   };
 
-  // Handle product delete
-  const handleDelete = async (id: string) => {
+  // Handle product delete - open dialog
+  const handleDelete = (product: ProductType) => {
     if (!isAdmin) return;
     
-    if (!window.confirm('Are you sure you want to delete this product?')) return;
+    setDeleteDialog({
+      isOpen: true,
+      productId: product.id,
+      productName: product.title
+    });
+  };
+
+  // Confirm delete
+  const confirmDelete = async () => {
+    if (!deleteDialog.productId) return;
     
     try {
-      await deleteProduct(id);
-      setProducts(products.filter(product => product.id !== id));
+      setIsDeleting(true);
+      await deleteProduct(deleteDialog.productId);
+      setProducts(products.filter(product => product.id !== deleteDialog.productId));
+      
+      // Close dialog
+      setDeleteDialog({
+        isOpen: false,
+        productId: '',
+        productName: ''
+      });
     } catch (err: unknown) {
       console.error('Error deleting product:', err);
       if (err instanceof Error) {
@@ -280,7 +312,20 @@ export default function DashboardPage() {
       } else {
         setError('Failed to delete product');
       }
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  // Close delete dialog
+  const closeDeleteDialog = () => {
+    if (isDeleting) return; // Prevent closing while deleting
+    
+    setDeleteDialog({
+      isOpen: false,
+      productId: '',
+      productName: ''
+    });
   };
 
   // Reset form
@@ -615,67 +660,72 @@ export default function DashboardPage() {
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {products.map((product) => (
-                        <div key={product.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                          {/* Product Image */}
+                        <div key={product.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md h-full flex flex-col">
+                         
                           {product.image && (
-                            <div className="relative w-full h-48 mb-4">
+                            <div className="relative w-full h-48 mb-4 flex-shrink-0">
                               <Image
                                 src={product.image}
                                 alt={product.title}
                                 fill
-                                className="object-cover rounded-lg"
+                                className="object-cover rounded-t-lg"
                               />
                             </div>
                           )}
                           
-                          {/* Product Info */}
-                          <h3 className="text-lg font-semibold mb-2">{product.title}</h3>
-                          <p className="text-gray-600 dark:text-gray-300 mb-2">${product.price.toFixed(2)}</p>
-                          
-                          {/* 🔥 NEW: Deal Association Display */}
-                          {product.deal ? (
-                            <div className="mb-3">
-                              <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                🎉 {product.deal.code}
-                              </div>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                {product.deal.discount_type === 'percentage' 
-                                  ? `${product.deal.discount_value}% off`
-                                  : `$${product.deal.discount_value} off`
-                                }
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                {product.deal.description}
-                              </p>
+                          <div className="flex flex-col flex-1 min-h-0 p-6 pt-2">
+                            <div className="flex-1 overflow-hidden">
+                              {/* Product Info */}
+                              <h3 className="text-lg font-semibold mb-2 line-clamp-2">{product.title}</h3>
+                              <p className="text-gray-600 dark:text-gray-300 mb-3 text-lg font-bold">${product.price.toFixed(2)}</p>
+                              
+                              {product.deal ? (
+                                <div className="mb-3">
+                                  <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                    🎉 {product.deal.code}
+                                  </div>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
+                                    {product.deal.discount_type === 'percentage' 
+                                      ? `${product.deal.discount_value}% off`
+                                      : `${product.deal.discount_value} off`
+                                    }
+                                  </p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                                    {product.deal.description}
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="mb-3">
+                                  <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                                    No deal assigned
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {product.description && (
+                                <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-2">
+                                  {product.description}
+                                </p>
+                              )}
                             </div>
-                          ) : (
-                            <div className="mb-3">
-                              <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-                                No deal assigned
+                            
+                            {/* FIXED HEIGHT BOTTOM SECTION - Always same position */}
+                            <div className="flex-shrink-0 pt-4 mt-4 border-t border-gray-100 dark:border-gray-700">
+                              <div className="flex gap-2 h-10">
+                                <button
+                                  onClick={() => handleEdit(product)}
+                                  className="flex-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium transition-colors flex items-center justify-center"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(product)}
+                                  className="flex-1 px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-medium transition-colors flex items-center justify-center"
+                                >
+                                  Delete
+                                </button>
                               </div>
                             </div>
-                          )}
-                          
-                          {product.description && (
-                            <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2">
-                              {product.description}
-                            </p>
-                          )}
-                          
-                          {/* Action Buttons */}
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleEdit(product)}
-                              className="flex-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDelete(product.id)}
-                              className="flex-1 px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
-                            >
-                              Delete
-                            </button>
                           </div>
                         </div>
                       ))}
@@ -684,7 +734,6 @@ export default function DashboardPage() {
                 </Card>
               </>
             ) : (
-              /* Deals Tab Content */
               isAdmin && <DealManagement />
             )}
             
@@ -751,6 +800,19 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
+      
+      <ConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        onClose={closeDeleteDialog}
+        onConfirm={confirmDelete}
+        title="Delete Product"
+        message={`Are you sure you want to delete "${deleteDialog.productName}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={isDeleting}
+      />
+      
       <Footer />
     </>
   );

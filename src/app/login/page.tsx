@@ -1,5 +1,4 @@
 import { Metadata } from 'next';
-import { redirect } from 'next/navigation';
 
 // import LoginForm from '@/components/auth/LoginForm';
 // import Header from '@/components/layout/Header';
@@ -10,8 +9,14 @@ export const metadata: Metadata = {
   description: 'Sign in to your Aero Tech Labs account',
 };
 
-export default function LoginPage() {
-  redirect('/auth/enter-portal-9f3b2');
+import AnimatedNotFound from '@/components/ui/AnimatedNotFound';
 
-  return null;
+export default function LoginPage() {
+  return (
+    <AnimatedNotFound
+      title="Not Found"
+      message="T"
+      showHomeButton={true}
+    />
+  );
 }

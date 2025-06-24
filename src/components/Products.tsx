@@ -12,17 +12,11 @@ import { fetchProducts } from '@/services/productsService';
 import { ProductType, Deal } from '@/types/product';
 
 interface ProductsProps {
-  /** Whether this is being used as a section on home page */
   isHomeSection?: boolean;
-  /** Maximum number of products to display (useful for home section) */
   maxProducts?: number;
-  /** Custom title for the section */
   title?: string;
-  /** Custom subtitle/description */
   subtitle?: string;
-  /** Whether to show "View All Products" link */
   showViewAllLink?: boolean;
-  /** Custom CSS classes for the container */
   containerClassName?: string;
 }
 
@@ -104,15 +98,12 @@ const Products = ({
     return true;
   }, []);
 
-  // Determine grid columns based on number of products (for home section)
+  // Determine grid columns based on number of products - EXACT SAME AS ProductsSection
   const getGridClass = () => {
-    if (isHomeSection) {
-      if (products.length === 1) return "grid-cols-1 max-w-sm";
-      if (products.length === 2) return "grid-cols-1 md:grid-cols-2 max-w-2xl";
-      if (products.length === 3) return "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 max-w-4xl";
-      return "grid-cols-1 md:grid-cols-2 lg:grid-cols-4 max-w-6xl";
-    }
-    return "grid-cols-1 md:grid-cols-2 lg:grid-cols-4";
+    if (products.length === 1) return "grid-cols-1 max-w-sm";
+    if (products.length === 2) return "grid-cols-1 md:grid-cols-2 max-w-2xl";
+    if (products.length === 3) return "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 max-w-4xl";
+    return "grid-cols-1 md:grid-cols-2 lg:grid-cols-4 max-w-6xl";
   };
 
   // Debug logging
@@ -173,20 +164,23 @@ const Products = ({
             </p>
           </div>
         ) : (
-          <div className={`grid ${getGridClass()} gap-8 ${isHomeSection ? 'mx-auto' : ''}`}>
+          <div className={`grid ${getGridClass()} gap-6 mx-auto`}>
             {products.map((product) => {
               const hasValidDeal = product.deal && isDealValid(product.deal);
               
               return (
-                <Card key={product.id} className="h-full">
-                  <div className="h-48 bg-gray-200 dark:bg-gray-700 relative">
+                <Card
+                  key={product.id}
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1"
+                >
+                  <div className="relative h-48 flex items-center justify-center bg-gray-100 dark:bg-gray-700 p-2">
                     {product.image && product.image !== "/placeholder-product.jpg" ? (
-                      <Image 
-                        src={product.image} 
-                        alt={product.title} 
+                      <Image
+                        src={product.image}
+                        alt={product.title}
                         fill
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                        className="object-cover"
+                        className="object-contain p-2"
                         priority={false}
                       />
                     ) : (
@@ -202,25 +196,26 @@ const Products = ({
                       <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
                         {product.deal!.discount_type === 'percentage' 
                           ? `${product.deal!.discount_value}% OFF` 
-                          : `$${product.deal!.discount_value} OFF`
+                          : `${product.deal!.discount_value} OFF`
                         }
                       </div>
                     )}
                   </div>
                   
-                  <div className="p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  <div className="p-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                       {product.title}
                     </h3>
+                    
                     {product.description && (
-                      <p className="mt-2 text-gray-600 dark:text-gray-400 line-clamp-3">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-3">
                         {product.description}
                       </p>
                     )}
                     
                     {/* Deal Information - NO CODE SHOWN */}
                     {hasValidDeal && (
-                      <div className="mt-2 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <div className="mb-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                         <p className="text-xs text-green-600 dark:text-green-400 mb-2">
                           {product.deal!.description}
                         </p>
@@ -232,7 +227,7 @@ const Products = ({
                               💰 Buy ${product.deal!.minimum_order_amount.toFixed(2)} worth to get{' '}
                               {product.deal!.discount_type === 'percentage' 
                                 ? `${product.deal!.discount_value}% off`
-                                : `$${product.deal!.discount_value} off`
+                                : `${product.deal!.discount_value} off`
                               } each item
                             </p>
                             <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
@@ -245,17 +240,17 @@ const Products = ({
                     
                     {/* Show about_url if available */}
                     {product.about_url && (
-                      <p className="mt-2 text-xs text-blue-600 dark:text-blue-400 truncate">
+                      <p className="text-xs text-blue-600 dark:text-blue-400 mb-3 truncate">
                         More info: {product.about_url}
                       </p>
                     )}
                     
+                    {/* ORIGINAL PRICE AND BUTTON LAYOUT */}
                     <div className="mt-4 flex items-center justify-between">
                       <div className="flex flex-col">
                         <span className="text-lg font-bold text-gray-900 dark:text-white">
                           ${product.price.toFixed(2)}
                         </span>
-                 
                       </div>
                       <Button
                         variant={addedToCart[product.id] ? 'secondary' : 'primary'}

@@ -67,7 +67,6 @@ const TwentyMMFillingPage = () => {
       } catch {
         setParagraph1(defaultParagraph1);
         setParagraph2(defaultParagraph2);
-        setError('Failed to load content.');
       } finally {
         setLoading(false);
       }

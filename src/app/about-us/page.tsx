@@ -41,7 +41,6 @@ export default function AboutUs() {
       } catch {
         setParagraph1(defaultParagraph1);
         setParagraph2(defaultParagraph2);
-        setError('Failed to load About Us content.');
       } finally {
         setLoading(false);
       }

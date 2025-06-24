@@ -89,7 +89,6 @@ const NonFlammablePropellantPage = () => {
         setParagraph1(defaultParagraph1);
         setParagraph2(defaultParagraph2);
         setParagraph3(defaultParagraph3);
-        setError('Failed to load content.');
       } finally {
         setLoading(false);
       }
