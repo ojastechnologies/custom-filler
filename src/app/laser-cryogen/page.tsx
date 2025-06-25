@@ -6,9 +6,10 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useAuth } from '@/context/AuthContext';
 import { CartItem, useCart } from '@/context/CartContext';
-import { fetchLaserCryogenContent, updateLaserCryogenContent } from '../../../services/laserCryogenService';
-import { fetchProducts } from '../../../services/productsService';
+import { fetchLaserCryogenContent, updateLaserCryogenContent } from '../../services/laserCryogenService';
+import { fetchProducts } from '../../services/productsService';
 import { ProductType } from '@/types/product';
+import Link from 'next/link';
 
 // Default content for the two editable sections
 const defaultParagraph1 = `<div class="text-center mb-6">
@@ -108,15 +109,16 @@ const LaserCryogenPage = () => {
 
         // Load products and find the laser cryogen product
         const products = await fetchProducts();
+        debugger;
         const laserProduct = products.find(product => 
-          product.clientpathurl === 'services/laser-cryogen'
+          
+          product.clientpathurl === 'laser-cryogen'
         );
         
         if (laserProduct) {
           setLaserCryogenProduct(laserProduct);
           console.log('✅ Found laser cryogen product:', laserProduct);
         } else {
-          console.warn('⚠️ Laser cryogen product not found in database');
           setLaserCryogenProduct(null);
           // Don't set error here - just log the warning
         }
@@ -398,7 +400,7 @@ const LaserCryogenPage = () => {
             </div>
           )}
 
-          {/* Product Not Found Warning */}
+          {/* Product Not Found Warning
           {!laserCryogenProduct && !loading && (
             <div className="mb-6 p-4 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg text-yellow-700 dark:text-yellow-300">
               <div className="flex items-center">
@@ -408,7 +410,7 @@ const LaserCryogenPage = () => {
                 Product not found in database. Order functionality is disabled.
               </div>
             </div>
-          )}
+          )} */}
 
           {/* Admin Controls */}
           {user?.role === 'admin' && (
@@ -521,22 +523,28 @@ const LaserCryogenPage = () => {
               <button
                 onClick={() => laserCryogenProduct && handleAddToCart(laserCryogenProduct)}
                 disabled={!laserCryogenProduct || addedToCart}
-                className={`inline-block px-6 py-3 font-medium rounded-md transition-colors ${
+                className={`inline-block px-6 py-3 font-medium rounded-md transition-colors mr-4 ${
                   !laserCryogenProduct
-                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed opacity-50'
                     : addedToCart
                     ? 'bg-green-500 text-white hover:bg-green-600'
                     : 'bg-primary-600 text-white hover:bg-primary-700'
                 }`}
                 title={!laserCryogenProduct ? 'Product not available in database' : ''}
               >
-                {!laserCryogenProduct 
-                  ? 'Product Not Available' 
-                  : addedToCart 
+                {addedToCart 
                   ? 'Added ✓' 
                   : 'ORDER NOW'
                 }
               </button>
+
+              {/* VIEW CART Button */}
+              <Link
+                href="/cart"
+                className="inline-block px-6 py-3 bg-gray-200 text-gray-800 font-medium rounded-md hover:bg-gray-300 transition-colors"
+              >
+                View Cart
+              </Link>
             </div>
 
             {/* Section 2 - Editable */}

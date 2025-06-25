@@ -32,7 +32,7 @@ const ServicesSection = () => {
       title: 'Laser Cryogen',
       description: 'High Purity Grade 1,1,1,3-Tetrafluoropropene, the next generation of safe, non-flammable, non-toxic, non-ozone depleting fluorocarbon gas for medical devices.',
       image: '/images/laser_cryogen.png',
-      link: '/services/laser-cryogen'
+      link: '/laser-cryogen'
     }
  
   ];

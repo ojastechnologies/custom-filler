@@ -138,6 +138,13 @@ const Products = ({
     );
   }
 
+  const linkToProductsPage = (product: ProductType) => {
+    //redirect to clientPathUrl
+    console.warn("Redirecting to clientPathUrl:", product.clientpathurl);
+    if (product.clientpathurl) {
+      window.location.href = product.clientpathurl;
+    }
+  };
   return (
     <section className={`py-12 ${isHomeSection ? 'bg-gray-50 dark:bg-gray-900' : 'bg-white dark:bg-gray-800'} ${containerClassName}`}>
       <div className="container mx-auto px-4">
@@ -171,100 +178,105 @@ const Products = ({
               return (
                 <Card
                   key={product.id}
-                  className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1"
-                >
-                  <div className="relative h-48 flex items-center justify-center bg-gray-100 dark:bg-gray-700 p-2">
-                    {product.image && product.image !== "/placeholder-product.jpg" ? (
-                      <Image
-                        src={product.image}
-                        alt={product.title}
-                        fill
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                        className="object-contain p-2"
-                        priority={false}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <span className="text-gray-500 dark:text-gray-400">
-                          Product Image
-                        </span>
-                      </div>
-                    )}
-                    
-                    {/* Deal Badge - NO CODE SHOWN */}
-                    {hasValidDeal && (
-                      <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-                        {product.deal!.discount_type === 'percentage' 
-                          ? `${product.deal!.discount_value}% OFF` 
-                          : `${product.deal!.discount_value} OFF`
-                        }
-                      </div>
-                    )}
-                  </div>
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer"
                   
-                  <div className="p-4">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                      {product.title}
-                    </h3>
+                >
+                  <div onClick={() => linkToProductsPage(product)} className="flex flex-col h-full">
+                    <div className="relative h-48 flex items-center justify-center bg-gray-100 dark:bg-gray-700 p-2">
+                      {product.image && product.image !== "/placeholder-product.jpg" ? (
+                        <Image
+                          src={product.image}
+                          alt={product.title}
+                          fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                          className="object-cover p-2"
+                          priority={false}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-gray-500 dark:text-gray-400">
+                            Product Image
+                          </span>
+                        </div>
+                      )}
+                      
+                      {/* Deal Badge - NO CODE SHOWN */}
+                      {hasValidDeal && (
+                        <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                          {product.deal!.discount_type === 'percentage' 
+                            ? `${product.deal!.discount_value}% OFF` 
+                            : `${product.deal!.discount_value} OFF`
+                          }
+                        </div>
+                      )}
+                    </div>
                     
-                    {product.description && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-3">
-                        {product.description}
-                      </p>
-                    )}
-                    
-                    {/* Deal Information - NO CODE SHOWN */}
-                    {hasValidDeal && (
-                      <div className="mb-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                        <p className="text-xs text-green-600 dark:text-green-400 mb-2">
-                          {product.deal!.description}
+                    <div className="p-4 flex flex-col flex-grow">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                        {product.title}
+                      </h3>
+                      
+                      {product.description && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-3">
+                          {product.description}
                         </p>
-                        
-                        {/* Show minimum order requirement */}
-                        {product.deal!.minimum_order_amount && (
-                          <div className="bg-white dark:bg-gray-800 rounded px-2 py-1 border border-green-300 dark:border-green-600">
-                            <p className="text-xs text-green-700 dark:text-green-300 font-medium">
-                              💰 Buy ${product.deal!.minimum_order_amount.toFixed(2)} worth to get{' '}
-                              {product.deal!.discount_type === 'percentage' 
-                                ? `${product.deal!.discount_value}% off`
-                                : `${product.deal!.discount_value} off`
-                              } each item
-                            </p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                              Need {Math.ceil(product.deal!.minimum_order_amount / product.price)} items minimum
-                            </p>
-                          </div>
-                        )}
+                      )}
+                      
+                      {/* Deal Information - NO CODE SHOWN */}
+                      {hasValidDeal && (
+                        <div className="mb-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                          <p className="text-xs text-green-600 dark:text-green-400 mb-2">
+                            {product.deal!.description}
+                          </p>
+                          
+                          {/* Show minimum order requirement */}
+                          {product.deal!.minimum_order_amount && (
+                            <div className="bg-white dark:bg-gray-800 rounded px-2 py-1 border border-green-300 dark:border-green-600">
+                              <p className="text-xs text-green-700 dark:text-green-300 font-medium">
+                                💰 Buy ${product.deal!.minimum_order_amount.toFixed(2)} worth to get{' '}
+                                {product.deal!.discount_type === 'percentage' 
+                                  ? `${product.deal!.discount_value}% off`
+                                  : `${product.deal!.discount_value} off`
+                                } each item
+                              </p>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                Need {Math.ceil(product.deal!.minimum_order_amount / product.price)} items minimum
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Show about_url if available */}
+                      {product.about_url && (
+                        <p className="text-xs text-blue-600 dark:text-blue-400 mb-3 truncate">
+                          More info: {product.about_url}
+                        </p>
+                      )}
+                      
+                      {/* PRICE AND BUTTON LAYOUT - STICKY TO BOTTOM */}
+                      <div className="mt-auto pt-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 -mx-4 -mb-4 px-4 pb-4 flex items-center justify-between">
+                        <div className="flex flex-col">
+                          <span className="text-lg font-bold text-gray-900 dark:text-white">
+                            ${product.price.toFixed(2)}
+                          </span>
+                        </div>
+                        <Button
+                          variant={addedToCart[product.id] ? 'success' : 'primary'}
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddToCart(product);
+                          }}
+                        >
+                          {addedToCart[product.id] ? 'Added ✓' : 'Add to Cart'}
+                        </Button>
                       </div>
-                    )}
-                    
-                    {/* Show about_url if available */}
-                    {product.about_url && (
-                      <p className="text-xs text-blue-600 dark:text-blue-400 mb-3 truncate">
-                        More info: {product.about_url}
-                      </p>
-                    )}
-                    
-                    {/* ORIGINAL PRICE AND BUTTON LAYOUT */}
-                    <div className="mt-4 flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <span className="text-lg font-bold text-gray-900 dark:text-white">
-                          ${product.price.toFixed(2)}
-                        </span>
-                      </div>
-                      <Button
-                        variant={addedToCart[product.id] ? 'secondary' : 'primary'}
-                        size="sm"
-                        onClick={() => handleAddToCart(product)}
-                      >
-                        {addedToCart[product.id] ? 'Added ✓' : 'Add to Cart'}
-                      </Button>
                     </div>
                   </div>
                 </Card>
               );
-            })}
-          </div>
+            })}          </div>
         )}
         
         {/* Show "View All Products" link only for home section */}

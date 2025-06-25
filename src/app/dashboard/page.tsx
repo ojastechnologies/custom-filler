@@ -23,7 +23,7 @@ const SERVICE_CATEGORIES = [
   { name: '1 Inch Opening Contract Filling', path: 'services/1-inch-filling' },
   { name: '20 mm Opening Contract Aerosol Filling', path: 'services/20mm-filling' },
   { name: 'NON FLAMMABLE PROPELLANTS', path: 'services/non-flammable-propellant' },
-  { name: 'LASER CRYOGEN', path: 'services/laser-cryogen' }
+  { name: 'LASER CRYOGEN', path: 'laser-cryogen' }
 ];
 
 export default function DashboardPage() {
