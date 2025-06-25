@@ -12,7 +12,7 @@ const carouselItems = [
     description: "Contract Aerosol Filling of Your Products with We manufacture the 1000 gram cylinder containing High Purity Grade 1,1,1,3-Tetrafluoropropene, the next generation of safe, non-flammable, non-toxic, non-ozone depleting and non-global warming potential (Low GWP) fluorocarbon gas approved for medical devices.Non-Flammable Propellents HFC134a and HFO12342e",
     image: "/images/laser_cryogen.png",
     buttonText: "Learn More",
-    buttonLink: "/services/laser-cryogen"
+    buttonLink: "/laser-cryogen"
   },
   {
     id: 2,

@@ -91,7 +91,7 @@ const Header = () => {
               <Link href="/products" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
                 Products
               </Link>
-              <Link href="/services/laser-cryogen" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
+              <Link href="/laser-cryogen" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
                 Laser Cryogen
               </Link>
             </nav>
@@ -281,7 +281,7 @@ const Header = () => {
                   Products
                 </Link>
                 <Link 
-                  href="/services/laser-cryogen" 
+                  href="/laser-cryogen" 
                   className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
