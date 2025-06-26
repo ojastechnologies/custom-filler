@@ -480,7 +480,7 @@ const LaserCryogenPage = () => {
                 {/* Right Side - Product Image */}
                 <div className="relative">
                   <div className="sticky top-8">
-                    <div className="relative overflow-hidden rounded-xl shadow-2xl bg-white dark:bg-gray-800 p-4">
+                    <div className="relative overflow-hidden rounded-xl bg-white dark:bg-gray-800 p-4">
                       <Image
                         src="/images/laser_cryogen.png"
                         alt="Laser Cryogen Product - 1000 gram cylinder containing High Purity Grade 1,1,1,3-Tetrafluoropropene"
@@ -499,52 +499,50 @@ const LaserCryogenPage = () => {
                       
                  
                     </div>
-                    
-                    {/* Decorative Elements */}
-                    <div className="absolute -top-4 -right-4 w-20 h-20 bg-primary-100 dark:bg-primary-900 rounded-full opacity-30 animate-pulse"></div>
-                    <div className="absolute -bottom-4 -left-4 w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full opacity-30 animate-pulse" style={{ animationDelay: '1s' }}></div>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* MSDS Download and ORDER NOW Buttons - NOT EDITABLE */}
-            <div className="mb-8 text-center">
-              <a
-                href="/msds.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors mr-4"
-              >
-                Download MSDS
-              </a>
-              
-              {/* ORDER NOW Button - Enable/Disable based on product availability */}
-              <button
-                onClick={() => laserCryogenProduct && handleAddToCart(laserCryogenProduct)}
-                disabled={!laserCryogenProduct || addedToCart}
-                className={`inline-block px-6 py-3 font-medium rounded-md transition-colors mr-4 ${
-                  !laserCryogenProduct
-                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed opacity-50'
-                    : addedToCart
-                    ? 'bg-green-500 text-white hover:bg-green-600'
-                    : 'bg-primary-600 text-white hover:bg-primary-700'
-                }`}
-                title={!laserCryogenProduct ? 'Product not available in database' : ''}
-              >
-                {addedToCart 
-                  ? 'Added ✓' 
-                  : 'ORDER NOW'
-                }
-              </button>
+            <div className="mb-8">
+              <div className="flex flex-col sm:flex-row sm:justify-center items-center gap-3 sm:gap-4">
+                <a
+                  href="/msds.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors text-center"
+                >
+                  Download MSDS
+                </a>
+                
+                {/* ORDER NOW Button - Enable/Disable based on product availability */}
+                <button
+                  onClick={() => laserCryogenProduct && handleAddToCart(laserCryogenProduct)}
+                  disabled={!laserCryogenProduct || addedToCart}
+                  className={`w-full sm:w-auto px-6 py-3 font-medium rounded-md transition-colors ${
+                    !laserCryogenProduct
+                      ? 'bg-gray-400 text-gray-600 cursor-not-allowed opacity-50'
+                      : addedToCart
+                      ? 'bg-green-500 text-white hover:bg-green-600'
+                      : 'bg-primary-600 text-white hover:bg-primary-700'
+                  }`}
+                  title={!laserCryogenProduct ? 'Product not available in database' : ''}
+                >
+                  {addedToCart 
+                    ? 'Added ✓' 
+                    : 'ORDER NOW'
+                  }
+                </button>
 
-              {/* VIEW CART Button */}
-              <Link
-                href="/cart"
-                className="inline-block px-6 py-3 bg-gray-200 text-gray-800 font-medium rounded-md hover:bg-gray-300 transition-colors"
-              >
-                View Cart
-              </Link>
+                {/* VIEW CART Button */}
+                <Link
+                  href="/cart"
+                  className="w-full sm:w-auto px-6 py-3 bg-gray-200 text-gray-800 font-medium rounded-md hover:bg-gray-300 transition-colors text-center"
+                >
+                  View Cart
+                </Link>
+              </div>
             </div>
 
             {/* Section 2 - Editable */}
@@ -578,7 +576,7 @@ const LaserCryogenPage = () => {
                       alt={laserCryogenProduct.title}
                       width={300}
                       height={200}
-                      className="w-full h-auto rounded-lg shadow-md object-cover"
+                      className="w-full h-auto rounded-lg object-cover"
                       style={{ maxHeight: '200px' }}
                       onError={handleImageError}
                       priority
