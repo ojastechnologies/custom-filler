@@ -209,7 +209,7 @@ const Hero = () => {
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.7, delay: 0.4 }}
               >
-                <div className="p-6 md:p-12 w-full">
+                <div className="p-6 md:p-12 w-full pb-16 md:pb-12">
                   <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 leading-tight">
                     {carouselItems[currentSlide].title}
                   </h1>
@@ -222,7 +222,7 @@ const Hero = () => {
                   
                   <button
                     onClick={handleButtonClick}
-                    className="relative z-20 inline-flex items-center px-5 py-2.5 md:px-6 md:py-3 bg-white hover:bg-primary-50 text-primary-700 font-medium rounded-lg transition-colors"
+                    className="relative z-10 inline-flex items-center px-5 py-2.5 md:px-6 md:py-3 bg-white hover:bg-primary-50 text-primary-700 font-medium rounded-lg transition-colors mb-4 md:mb-0"
                   >
                     {carouselItems[currentSlide].buttonText}
                     <svg className="w-4 h-4 md:w-5 md:h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -269,19 +269,21 @@ const Hero = () => {
         )}
   
         {!isVideoPlaying && (
-          <div className="absolute bottom-4 md:bottom-6 left-0 right-0 z-10 flex justify-center space-x-2 md:space-x-3">
-            {carouselItems.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => !isVideoPlaying && setCurrentSlide(index)}
-                className={`h-2 md:h-2.5 rounded-full transition-all duration-300 ${
-                  index === currentSlide
-                    ? 'bg-white w-8 md:w-10'
-                    : 'bg-white/30 w-2 md:w-2.5 hover:bg-white/50'
-                }`}
-                aria-label={`Go to slide ${index + 1}`}
-              />
-            ))}
+          <div className="absolute bottom-6 md:bottom-6 left-0 right-0 z-50 flex justify-center space-x-2 md:space-x-3 pointer-events-none">
+            <div className="pointer-events-auto flex space-x-2 md:space-x-3">
+              {carouselItems.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => !isVideoPlaying && setCurrentSlide(index)}
+                  className={`h-2 md:h-2.5 rounded-full transition-all duration-300 ${
+                    index === currentSlide
+                      ? 'bg-white w-8 md:w-10'
+                      : 'bg-white/30 w-2 md:w-2.5 hover:bg-white/50'
+                  }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>
