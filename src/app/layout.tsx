@@ -11,9 +11,16 @@ const inter = Inter({ subsets: ["latin"] });
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.customfiller.com'
 
 export const metadata: Metadata = {
-  title: {
-    default: 'Custom Filler - Professional Filling Services',
-    template: '%s | Custom Filler'
+  title: 'Custom Filler',
+  icons: {
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
   },
   description: 'Professional custom filling services including 1-inch filling, 20mm filling, non-flammable propellant, and laser cryogen solutions.',
   keywords: ['custom filling', 'aerosol filling', '1 inch filling', '20mm filling', 'non-flammable propellant', 'laser cryogen'],
