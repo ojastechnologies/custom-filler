@@ -32,6 +32,7 @@ export default function CheckoutSuccessPage() {
   const sessionId = searchParams.get('session_id');
   const orderId = searchParams.get('order_id');
   const orderNumber = searchParams.get('order_number');
+  const sessionAddress = searchParams.get('session_address');
 
   useEffect(() => {
     console.log('✅ Checkout successful!');
@@ -39,45 +40,57 @@ export default function CheckoutSuccessPage() {
     console.log('Order ID:', orderId);
     console.log('Order Number:', orderNumber);
 
-    const fetchOrderDetailsAndSendEmail = async () => {
-      if (!sessionId || !orderNumber) return;
+const fetchOrderDetailsAndSendEmail = async () => {
+  if (!sessionId || !orderNumber) return;
 
-      try {
-        const response = await fetch(`/api/stripe/get-order-details?session_id=${sessionId}`);
-        if (!response.ok) throw new Error('Failed to fetch order details');
-        const orderDetails: OrderDetails = await response.json();
+  try {
+    // Fetch order details
+    const response = await fetch(`/api/stripe/get-order-details?session_id=${sessionId}`);
+    if (!response.ok) throw new Error('Failed to fetch order details');
+    const orderDetails: OrderDetails = await response.json();
 
-        const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'aerosol@comcast.net';
-        const orderItemsFormatted = orderDetails.order_items
-          .map(item => `${item.name} (Qty: ${item.quantity}, Price: $${item.price.toFixed(2)})`)
-          .join('\n');
+    // Fetch invoice to get PDF link
+    const invoiceResponse = await fetch(`/api/stripe/get-invoice?session_id=${sessionId}`);
+    if (!invoiceResponse.ok) throw new Error('Failed to fetch invoice');
+    const invoiceData: InvoiceData = await invoiceResponse.json();
+    console.log('Invoice data:', invoiceData); // Log to inspect
+    const pdfLink = invoiceData.invoice_pdf || invoiceData.invoice_url || invoiceData.hosted_invoice_url || 'N/A';
+    console.log('PDF Link:', pdfLink); // Log to verify
 
-        const emailParams: EmailParams = {
-          to_email: contactEmail,
-          order_number: orderNumber,
-          session_id: sessionId,
-          reply_to: contactEmail,
-          customer_name: orderDetails.customer_name,
-          order_date: orderDetails.order_date,
-          order_items: orderItemsFormatted,
-          total_amount: orderDetails.total_amount.toFixed(2),
-          shipping_address: orderDetails.shipping_address,
-        };
+    if (pdfLink === 'N/A') {
+      console.warn('No valid PDF link found in invoice data');
+    }
 
-        const result = await sendOrderConfirmationEmail(emailParams);
-        setEmailStatus(result);
-        if (!result.success) {
-          console.error('❌ Email sending failed:', result.error);
-        }
-      } catch (error) {
-        console.error('❌ Error fetching order details or sending email:', error);
-      } finally {
-        // Clear cart after everything
-        localStorage.removeItem('cart');
-        localStorage.removeItem('appliedDeal');
-        setLoading(false);
-      }
+    const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'aerosol@comcast.net';
+    const orderItemsFormatted = orderDetails.order_items
+      .map(item => `${item.name} (Qty: ${item.quantity}, Price: $${item.price.toFixed(2)})`)
+      .join(', ');
+    const emailParams: EmailParams = {
+      to_email: contactEmail,
+      order_number: orderNumber,
+      session_id: sessionId,
+      reply_to: contactEmail,
+      customer_name: orderDetails.customer_name,
+      order_date: orderDetails.order_date,
+      order_items: orderItemsFormatted,
+      total_amount: orderDetails.total_amount.toFixed(2),
+      pdf_link: pdfLink,
     };
+
+    console.log('Email params:', emailParams);
+    const result = await sendOrderConfirmationEmail(emailParams);
+    setEmailStatus(result);
+    if (!result.success) {
+      console.error('❌ Email sending failed:', result.error);
+    }
+  } catch (error) {
+    console.error('❌ Error fetching order details, invoice, or sending email:', error);
+  } finally {
+    localStorage.removeItem('cart');
+    localStorage.removeItem('appliedDeal');
+    setLoading(false);
+  }
+};
 
     fetchOrderDetailsAndSendEmail();
   }, [sessionId, orderId, orderNumber]);

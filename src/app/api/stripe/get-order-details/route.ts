@@ -17,7 +17,8 @@ export async function GET(request: Request) {
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
       expand: ['line_items', 'customer_details', 'shipping'], // Correct expansion
     });
-
+    console.log('Session data:', session);
+debugger;
     const orderDetails = {
       customer_name: session.customer_details?.name || 'Customer',
       customer_email: session.customer_details?.email || '',
@@ -32,6 +33,7 @@ export async function GET(request: Request) {
         price: (item.amount_total || 0) / 100,
       })) || [],
       total_amount: (session.amount_total || 0) / 100,
+      pdf_link: session.invoice?.toString() || 'N/A',
     //   shipping_address: session.shipping?.address
     //     ? `${session.shipping.address.line1 || ''}${
     //         session.shipping.address.line2 ? ` ${session.shipping.address.line2}` : ''
@@ -40,7 +42,6 @@ export async function GET(request: Request) {
     //       }, ${session.shipping.address.country || ''}`.trim()
     //     : 'N/A',
     };
-
     return NextResponse.json(orderDetails);
   } catch (error) {
     console.error('Error fetching order details:', error);

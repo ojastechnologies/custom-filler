@@ -10,6 +10,7 @@ export interface EmailParams {
   order_items?: string;
   total_amount?: string;
   shipping_address?: string;
+  pdf_link?: string; // New field for PDF link
 }
 
 export const sendOrderConfirmationEmail = async ({
@@ -22,6 +23,7 @@ export const sendOrderConfirmationEmail = async ({
   order_items = 'N/A',
   total_amount = 'N/A',
   shipping_address = 'N/A',
+  pdf_link = 'N/A',
 }: EmailParams): Promise<{ success: boolean; error?: string }> => {
   try {
     debugger;
@@ -38,6 +40,7 @@ export const sendOrderConfirmationEmail = async ({
       order_items,
       total_amount,
       shipping_address,
+      pdf_link,
     };
 
     console.log('Sending email with params:', templateParams);
