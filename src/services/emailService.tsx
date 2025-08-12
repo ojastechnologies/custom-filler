@@ -22,7 +22,7 @@ export const sendOrderConfirmationEmail = async ({
   order_date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
   order_items = 'N/A',
   total_amount = 'N/A',
-  shipping_address = 'N/A',
+//   shipping_address = 'N/A',
   pdf_link = 'N/A',
 }: EmailParams): Promise<{ success: boolean; error?: string }> => {
   try {
@@ -39,7 +39,7 @@ export const sendOrderConfirmationEmail = async ({
       order_date,
       order_items,
       total_amount,
-      shipping_address,
+    //   shipping_address,
       pdf_link,
     };
 
