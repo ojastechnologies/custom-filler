@@ -6,6 +6,7 @@ const nextConfig = {
       'via.placeholder.com',
       'customfiller.com',
       'vrfpayooyasvetbxkjam.supabase.co', // Add your Supabase project domain here
+      'xzyakpzikyjpvpujfczh.supabase.co', // Add your Supabase project domain here
     ],
   },
   // eslint: {

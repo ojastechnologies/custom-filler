@@ -5,11 +5,21 @@ import { useSearchParams } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Link from 'next/link';
+import { sendOrderConfirmationEmail, EmailParams } from '@/services/emailService';
 
 interface InvoiceData {
   invoice_url?: string;
   invoice_pdf?: string;
   hosted_invoice_url?: string;
+}
+
+interface OrderDetails {
+  customer_name: string;
+  customer_email: string;
+  order_date: string;
+  order_items: { name: string; quantity: number; price: number }[];
+  total_amount: number;
+  shipping_address: string;
 }
 
 export default function CheckoutSuccessPage() {
@@ -18,9 +28,9 @@ export default function CheckoutSuccessPage() {
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
   const [invoiceError, setInvoiceError] = useState<string | null>(null);
+  const [emailStatus, setEmailStatus] = useState<{ success: boolean; error?: string } | null>(null);
   const sessionId = searchParams.get('session_id');
   const orderId = searchParams.get('order_id');
-  debugger;
   const orderNumber = searchParams.get('order_number');
 
   useEffect(() => {
@@ -29,14 +39,50 @@ export default function CheckoutSuccessPage() {
     console.log('Order ID:', orderId);
     console.log('Order Number:', orderNumber);
 
-    // Clear cart from localStorage
-    localStorage.removeItem('cart');
-    localStorage.removeItem('appliedDeal');
-    
-    setLoading(false);
+    const fetchOrderDetailsAndSendEmail = async () => {
+      if (!sessionId || !orderNumber) return;
+
+      try {
+        const response = await fetch(`/api/stripe/get-order-details?session_id=${sessionId}`);
+        if (!response.ok) throw new Error('Failed to fetch order details');
+        const orderDetails: OrderDetails = await response.json();
+
+        const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'aerosol@comcast.net';
+        const orderItemsFormatted = orderDetails.order_items
+          .map(item => `${item.name} (Qty: ${item.quantity}, Price: $${item.price.toFixed(2)})`)
+          .join('\n');
+
+        const emailParams: EmailParams = {
+          to_email: contactEmail,
+          order_number: orderNumber,
+          session_id: sessionId,
+          reply_to: contactEmail,
+          customer_name: orderDetails.customer_name,
+          order_date: orderDetails.order_date,
+          order_items: orderItemsFormatted,
+          total_amount: orderDetails.total_amount.toFixed(2),
+          shipping_address: orderDetails.shipping_address,
+        };
+
+        const result = await sendOrderConfirmationEmail(emailParams);
+        setEmailStatus(result);
+        if (!result.success) {
+          console.error('❌ Email sending failed:', result.error);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching order details or sending email:', error);
+      } finally {
+        // Clear cart after everything
+        localStorage.removeItem('cart');
+        localStorage.removeItem('appliedDeal');
+        setLoading(false);
+      }
+    };
+
+    fetchOrderDetailsAndSendEmail();
   }, [sessionId, orderId, orderNumber]);
 
-  // Function to fetch invoice from Stripe
+  // Function to fetch invoice from Stripe (unchanged)
   const fetchInvoice = async () => {
     if (!sessionId) {
       setInvoiceError('No session ID available');
@@ -66,7 +112,6 @@ export default function CheckoutSuccessPage() {
       
       setInvoiceData(data);
       
-      // If we have a direct invoice URL, open it
       if (data.invoice_url || data.hosted_invoice_url) {
         const invoiceUrl = data.invoice_url || data.hosted_invoice_url;
         window.open(invoiceUrl, '_blank');
@@ -113,6 +158,12 @@ export default function CheckoutSuccessPage() {
               
               <p className="text-gray-600 dark:text-gray-400 mb-6">
                 Thank you for your order. We&apos;ve received your payment and will process your order shortly.
+                {emailStatus && emailStatus.success && (
+                  <span> A confirmation email has been sent to {process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'aerosol@comcast.net'}.</span>
+                )}
+                {emailStatus && !emailStatus.success && (
+                  <span className="text-red-600"> Failed to send confirmation email: {emailStatus.error}</span>
+                )}
               </p>
               
               {orderId && (
@@ -129,7 +180,7 @@ export default function CheckoutSuccessPage() {
                 </div>
               )}
 
-              {/* Invoice Section */}
+              {/* Invoice Section (unchanged) */}
               <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                 <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
                   📄 Receipt
@@ -197,12 +248,6 @@ export default function CheckoutSuccessPage() {
                 >
                   Continue Shopping
                 </Link>
-                {/* <Link
-                  href="/dashboard"
-                  className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                >
-                  View Dashboard
-                </Link> */}
               </div>
             </div>
           </div>
