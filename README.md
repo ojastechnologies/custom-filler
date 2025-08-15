@@ -37,7 +37,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 
 
-## stripe payment test
+## Stripe Payment Test
 
 Step 1: Get Stripe Test Keys (Free)
 Go to https://dashboard.stripe.com/register
