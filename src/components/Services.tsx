@@ -40,7 +40,7 @@ const services = [
       'Custom labeling available',
     ],
     image: '/images/service-placeholder.jpg',
-    link: '/laser-cryogen',
+    link: '/envirolase-laser-cryogen-coolant',
   },
   {
     id: 'service-4',

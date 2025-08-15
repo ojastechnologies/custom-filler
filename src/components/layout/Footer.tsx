@@ -95,7 +95,7 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link href="/laser-cryogen" className="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400">
+                <Link href="/envirolase-laser-cryogen-coolant" className="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400">
                   Laser Cryogen
                 </Link>
               </li>

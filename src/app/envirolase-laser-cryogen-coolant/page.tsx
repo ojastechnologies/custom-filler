@@ -112,7 +112,7 @@ const LaserCryogenPage = () => {
         debugger;
         const laserProduct = products.find(product => 
           
-          product.clientpathurl === 'laser-cryogen'
+          product.clientpathurl === 'envirolase-laser-cryogen-coolant'
         );
         
         if (laserProduct) {
