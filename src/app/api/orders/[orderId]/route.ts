@@ -25,10 +25,10 @@ export async function GET(
         order_items (
           id,
           product_id,
-          name,
-          price,
+          product_name,
+          unit_price,
           quantity,
-          image,
+          product_image,
           total_price,
           product_discount_amount,
           stripe_product_id,

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useCart } from '@/context/CartContext';
 import Card from '@/components/ui/Card';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function CartPage() {
   const { 
@@ -103,10 +104,13 @@ export default function CartPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     {item.image && (
-                      <img 
+                      <Image 
                         src={item.image} 
                         alt={item.name}
-                        className="w-16 h-16 object-cover rounded"
+                        width={64}
+                        height={64}
+                        className="object-cover rounded"
+                        priority={false}
                       />
                     )}
                     <div>
