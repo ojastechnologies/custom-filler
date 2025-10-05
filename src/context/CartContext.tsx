@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { validateDealCode, Deal } from '@/services/dealService';
-import { createOrderInDatabase, updateOrderWithStripeInfo, CreateOrderData } from '@/services/ordersService';
+import { createOrderInDatabase, CreateOrderData } from '@/services/ordersService';
 
 // Update the Product and CartItem interfaces to include deal information
 export interface Product {
@@ -15,6 +15,8 @@ export interface Product {
   clientpathurl?: string;
   deal_id?: string;
   deal?: Deal;
+  stripe_product_id?: string;
+  stripe_price_id?: string;
 }
 
 export interface CartItem {
@@ -29,6 +31,8 @@ export interface CartItem {
   deal?: Deal;
   originalPrice?: number; // NEW: Store original price before product discount
   productDiscountAmount?: number; // NEW: Store product-level discount amount (applied once)
+  stripe_product_id?: string;
+  stripe_price_id?: string;
 }
 
 export interface AppliedDeal {
@@ -94,7 +98,7 @@ interface CartContextType {
   appliedDeal: AppliedDeal | null;
   applyDeal: (code: string) => Promise<{ isValid: boolean; message: string }>;
   removeDeal: () => void;
-  proceedToCheckout: (customerEmail?: string) => Promise<void>;
+  proceedToCheckout: () => Promise<void>; // 🔥 FIXED: Removed customerEmail parameter
   isCheckingOut: boolean;
 }
 
@@ -308,8 +312,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 productDiscountAmount: 0,
                 price: item.originalPrice
               };
-              
-             
             }
           }
           
@@ -367,7 +369,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAppliedDeal(null);
   }, []);
 
-  const proceedToCheckout = useCallback(async (customerEmail?: string) => {
+  // 🔥 FIXED: Removed customerEmail parameter since Stripe will collect it
+  const proceedToCheckout = useCallback(async () => {
     try {
       setIsCheckingOut(true);
       
@@ -382,7 +385,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // 🔥 FIXED: Calculate totals properly
       const subtotal = safeItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const productDiscountTotal = safeItems.reduce((sum, item) => 
-        sum + (item.productDiscountAmount || 0), 0 // Applied once per item, not per quantity
+        sum + ((item.productDiscountAmount || 0) * item.quantity), 0
       );
       
       // 🔥 FIXED: Cart discount is applied once to the entire cart, not per item
@@ -414,11 +417,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Order total must be at least $0.50');
       }
 
-      // Create order in database
+      // 🔥 FIXED: Create order without customer email - Stripe will update it later
       const orderData: CreateOrderData = {
-        customer_email: customerEmail || 'guest@example.com',
-        customer_name: undefined,
-        customer_phone: undefined,
+        customer_email: 'pending@stripe.com', // Temporary email, will be updated from Stripe
+        customer_name: undefined, // Will be updated from Stripe session
+        customer_phone: undefined, // Will be updated from Stripe session
         subtotal: subtotal + productDiscountTotal, // Original subtotal before any discounts
         shipping_cost: 0,
         tax_amount: 0,
@@ -428,19 +431,26 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         deal_code: appliedDeal?.deal?.code,
         discount_amount: cartDiscountAmount + productDiscountTotal, // Total of both discount types
         items: safeItems.map(item => ({
-          id: item.id,
+          id: item.id, // 🔥 FIXED: Use id to match the expected interface
           name: item.name,
           price: item.originalPrice || item.price, // Store original price
           quantity: item.quantity,
-          image: item.image,
-          description: item.description,
-          clientpathurl: item.clientpathurl,
+          image: item.image || '',
+          description: item.description || '',
+          clientpathurl: item.clientpathurl || '',
+          // Additional fields for order tracking (these don't conflict with the base interface)
+          product_id: item.id,
+          discounted_price: item.price,
           deal_id: item.deal_id,
-          product_discount_amount: item.productDiscountAmount || 0
+          product_discount_amount: item.productDiscountAmount || 0,
+          stripe_product_id: item.stripe_product_id,
+          stripe_price_id: item.stripe_price_id,
+          total_price: item.price * item.quantity
         }))
       };
 
-      console.log('📝 Creating order in database:', orderData);
+      console.log('📝 Creating order in database (customer email will be updated from Stripe)');
+      
       const createdOrder = await createOrderInDatabase(orderData);
       console.log('✅ Order created in database:', createdOrder.order_number);
 
@@ -456,7 +466,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('- Success URL:', successUrl);
       console.log('- Cancel URL:', cancelUrl);
 
-      // Prepare checkout data for Stripe
+      // 🔥 FIXED: Prepare complete checkout data for Stripe (no customer email required)
       const checkoutData = {
         orderId: createdOrder.id,
         orderNumber: createdOrder.order_number,
@@ -465,11 +475,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           name: item.name,
           price: item.price, // Use discounted price for Stripe
           quantity: item.quantity,
-          image: item.image,
-          description: item.description,
-          clientpathurl: item.clientpathurl,
-          originalPrice: item.originalPrice,
-          productDiscountAmount: item.productDiscountAmount
+          image: item.image || '',
+          description: item.description || '',
+          clientpathurl: item.clientpathurl || '',
+          originalPrice: item.originalPrice || item.price,
+          productDiscountAmount: item.productDiscountAmount || 0,
+          stripe_product_id: item.stripe_product_id, // 🔥 FIXED: Include for Stripe
+          stripe_price_id: item.stripe_price_id // 🔥 FIXED: Include for Stripe
         })),
         appliedDeal: appliedDeal ? {
           deal: {
@@ -481,17 +493,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           },
           discountAmount: cartDiscountAmount // This is the actual calculated discount amount
         } : undefined,
-        customerEmail: customerEmail || undefined,
+        // 🔥 FIXED: Don't provide customerEmail - let Stripe collect it
+        customerEmail: undefined,
         successUrl: successUrl,
         cancelUrl: cancelUrl
       };
 
-      console.log('📤 Sending checkout data to Stripe:');
-      console.log('- Order ID:', checkoutData.orderId);
-      console.log('- Items count:', checkoutData.items.length);
-      console.log('- Applied deal:', checkoutData.appliedDeal);
-      console.log('- Success URL present:', !!checkoutData.successUrl);
-      console.log('- Cancel URL present:', !!checkoutData.cancelUrl);
+      console.log('📤 Sending checkout data to Stripe (Stripe will collect customer email)');
 
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
@@ -522,9 +530,22 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const { url, sessionId } = responseData;
       
+      // 🔥 FIXED: Update order with Stripe session ID via API call instead of direct import
       if (sessionId) {
-        await updateOrderWithStripeInfo(createdOrder.id, sessionId);
-        console.log('✅ Order updated with Stripe session ID');
+        try {
+          const updateResponse = await fetch(`/api/stripe/session/${sessionId}`, {
+            method: 'GET'
+          });
+          
+          if (updateResponse.ok) {
+            console.log('✅ Order updated with complete Stripe session data');
+          } else {
+            console.warn('⚠️ Could not update order with Stripe data, but checkout will continue');
+          }
+        } catch (updateError) {
+          console.warn('⚠️ Error updating order with Stripe data:', updateError);
+          // Don't fail the checkout for this
+        }
       }
       
       if (url) {
@@ -539,7 +560,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setIsCheckingOut(false);
     }
-  }, [items, appliedDeal]);
+  }, [items, appliedDeal]); // 🔥 FIXED: Removed customerEmail dependency
 
   // 🔥 FIXED: Update the totals calculation
   const safeItems = Array.isArray(items) ? items : [];

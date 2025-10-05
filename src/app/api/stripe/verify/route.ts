@@ -1,24 +1,34 @@
 import { NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe';
+import { getServerStripe } from '@/lib/stripe';
 
 export async function GET() {
   try {
+    // Get the server-side Stripe instance
+    const stripe = getServerStripe();
+    
     // Test if Stripe is properly configured
     const account = await stripe.accounts.retrieve();
     
     return NextResponse.json({
       success: true,
-      message: 'Stripe is properly configured!',
-      testMode: !account.charges_enabled, // In test mode, charges_enabled is usually false
-      accountId: account.id,
+      account: {
+        id: account.id,
+        country: account.country,
+        default_currency: account.default_currency,
+        email: account.email,
+        type: account.type
+      }
     });
-  } catch (error) {
-    console.error('Stripe verification error:', error);
+  } catch (error: unknown) {
+    console.error('❌ Stripe verification failed:', error);
+    
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    
     return NextResponse.json(
       { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error',
-        message: 'Stripe configuration issue'
+        success: false,
+        error: 'Stripe verification failed',
+        details: errorMessage 
       },
       { status: 500 }
     );

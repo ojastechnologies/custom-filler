@@ -116,7 +116,7 @@ export default function CheckoutPage() {
       console.log('✅ Order created successfully:', result.order.id);
 
       // Now proceed to Stripe checkout with the order ID
-      await proceedToCheckout(customerInfo.email);
+      await proceedToCheckout();
       
       // Clear cart after successful order creation
       clearCart();

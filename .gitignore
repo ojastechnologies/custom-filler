@@ -47,3 +47,9 @@ next-env.d.ts
 .env.production.local
 .env.development
 .env.production
+
+#Ignore vscode AI rules
+.github/instructions/codacy.instructions.md
+
+
+supabase/prod-data.sql

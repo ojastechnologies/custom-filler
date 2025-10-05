@@ -1,38 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe';
-import Stripe from 'stripe';
+import { getServerStripe } from '@/lib/stripe';
 
-interface InvoiceData {
-  // Invoice-specific fields
-  invoice_id?: string;
-  invoice_url?: string;
-  invoice_pdf?: string;
-  hosted_invoice_url?: string;
-  status?: string;
-  amount_paid?: number;
-  currency?: string;
-  
-  // Charge/Payment Intent fields
-  charge_id?: string;
-  receipt_url?: string;
-  amount?: number;
-  payment_method?: string;
-  
-  // Session fallback fields
-  session_id?: string;
-  amount_total?: number;
-  payment_status?: string;
-  customer_email?: string;
-  
-  // Error/message fields
-  error?: string;
-  message?: string;
-}
-
-export async function GET(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const sessionId = searchParams.get('session_id');
+    const body = await request.json();
+    const { sessionId } = body;
 
     if (!sessionId) {
       return NextResponse.json(
@@ -41,153 +13,54 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    console.log('🧾 Fetching invoice for session:', sessionId);
+    console.log('🔍 Fetching invoice for session:', sessionId);
+
+    // Get the server-side Stripe instance
+    const stripe = getServerStripe();
 
     // Get the checkout session
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
       expand: ['invoice', 'payment_intent']
     });
 
-    console.log('📋 Session retrieved:', {
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Session not found' },
+        { status: 404 }
+      );
+    }
+
+    // Extract relevant session data
+    const sessionData = {
       id: session.id,
+      status: session.status,
       payment_status: session.payment_status,
-      invoice: session.invoice ? 'Present' : 'None',
-      payment_intent: session.payment_intent ? 'Present' : 'None'
+      amount_total: session.amount_total,
+      currency: session.currency,
+      customer_email: session.customer_details?.email,
+      customer_name: session.customer_details?.name,
+      created: session.created,
+      invoice: session.invoice,
+      payment_intent: session.payment_intent
+    };
+
+    console.log('✅ Session data retrieved successfully');
+
+    return NextResponse.json({
+      success: true,
+      session: sessionData
     });
 
-    let invoiceData: InvoiceData = {};
-
-    // Try to get invoice from session
-    if (session.invoice) {
-      const invoice = session.invoice as Stripe.Invoice;
-      console.log('📄 Invoice found from session:', invoice.id);
-      
-      invoiceData = {
-        invoice_id: invoice.id,
-        invoice_url: invoice.hosted_invoice_url || undefined,
-        invoice_pdf: invoice.invoice_pdf || undefined,
-        hosted_invoice_url: invoice.hosted_invoice_url || undefined,
-        status: invoice.status || undefined,
-        amount_paid: invoice.amount_paid,
-        currency: invoice.currency
-      };
-    } 
-    // If no invoice, try to get payment intent receipt
-    else if (session.payment_intent) {
-      const paymentIntent = session.payment_intent as Stripe.PaymentIntent;
-      console.log('💳 Payment Intent found:', paymentIntent.id);
-
-      // Get the latest charge from payment intent
-      if (paymentIntent.latest_charge) {
-        const charge = await stripe.charges.retrieve(
-          paymentIntent.latest_charge as string
-        );
-        
-        console.log('🧾 Charge found:', charge.id);
-        
-        invoiceData = {
-          charge_id: charge.id,
-          receipt_url: charge.receipt_url || undefined,
-          invoice_url: charge.receipt_url || undefined, // Use receipt_url as invoice_url for consistency
-          hosted_invoice_url: charge.receipt_url || undefined,
-          amount: charge.amount,
-          currency: charge.currency,
-          status: charge.status || undefined,
-          payment_method: charge.payment_method_details?.type
-        };
-      }
-    }
-    // Last resort: Create an invoice for the session
-    else {
-      console.log('📝 No invoice found, attempting to create one...');
-      
-      try {
-        // Get customer from session
-        let customerId = session.customer as string;
-        
-        // If no customer, create one
-        if (!customerId) {
-          const customer = await stripe.customers.create({
-            email: session.customer_details?.email || session.customer_email || undefined,
-            name: session.customer_details?.name || undefined,
-            phone: session.customer_details?.phone || undefined,
-          });
-          customerId = customer.id;
-          console.log('👤 Created customer:', customerId);
-        }
-
-        // Create invoice items based on line items
-        const lineItems = await stripe.checkout.sessions.listLineItems(sessionId);
-        
-        for (const item of lineItems.data) {
-          await stripe.invoiceItems.create({
-            customer: customerId,
-            amount: item.amount_total,
-            currency: session.currency || 'usd',
-            description: item.description || undefined,
-          });
-        }
-
-        // Create and finalize invoice
-        const invoice = await stripe.invoices.create({
-          customer: customerId,
-          auto_advance: true,
-          collection_method: 'charge_automatically',
-        });
-
-        if (invoice.id) {
-          const finalizedInvoice = await stripe.invoices.finalizeInvoice(invoice.id);
-          
-          console.log('✅ Created invoice:', finalizedInvoice.id);
-          
-          invoiceData = {
-            invoice_id: finalizedInvoice.id,
-            invoice_url: finalizedInvoice.hosted_invoice_url || undefined,
-            invoice_pdf: finalizedInvoice.invoice_pdf || undefined,
-            hosted_invoice_url: finalizedInvoice.hosted_invoice_url || undefined,
-            status: finalizedInvoice.status || undefined,
-            amount_paid: finalizedInvoice.amount_paid,
-            currency: finalizedInvoice.currency
-          };
-        }
-        
-      } catch (createError) {
-        console.error('❌ Error creating invoice:', createError);
-        // Fall back to basic session info
-        invoiceData = {
-          session_id: session.id,
-          amount_total: session.amount_total || undefined,
-          currency: session.currency || undefined,
-          payment_status: session.payment_status,
-          error: 'Could not create invoice, but payment was successful'
-        };
-      }
-    }
-
-    // If we still don't have any invoice URL, provide session details
-    if (!invoiceData.invoice_url && !invoiceData.receipt_url && !invoiceData.hosted_invoice_url) {
-      console.log('⚠️ No invoice URL available, providing session summary');
-      invoiceData = {
-        ...invoiceData,
-        session_id: session.id,
-        amount_total: session.amount_total || undefined,
-        currency: session.currency || undefined,
-        payment_status: session.payment_status,
-        customer_email: session.customer_details?.email || session.customer_email || undefined,
-        message: 'Payment successful - Invoice generation in progress'
-      };
-    }
-
-    console.log('✅ Returning invoice data:', invoiceData);
-    
-    return NextResponse.json(invoiceData);
-
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ Error fetching invoice:', error);
     
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    
     return NextResponse.json(
-      { error: `Failed to fetch invoice: ${errorMessage}` },
+      { 
+        error: 'Failed to fetch invoice data',
+        details: errorMessage 
+      },
       { status: 500 }
     );
   }
