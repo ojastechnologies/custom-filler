@@ -25,8 +25,6 @@ export async function GET(
     });
 
     console.log('✅ Stripe session retrieved:', session.id);
-    console.log('📧 Customer email from session:', session.customer_email);
-    console.log('👤 Customer details:', session.customer_details);
 
     // Extract customer information
     const customerInfo = {
@@ -35,8 +33,6 @@ export async function GET(
       phone: session.customer_details?.phone || '',
       address: session.customer_details?.address || null
     };
-
-    console.log('📋 Extracted customer info:', customerInfo);
 
     // Extract payment information
     const paymentInfo = {
@@ -69,93 +65,78 @@ export async function GET(
       lineItems
     };
 
-    // Update order using existing schema structure (individual address fields)
+    // 🔥 OPTIMIZED: Only update order if customer information is missing
     if (session.metadata?.order_id) {
-      console.log('📝 Updating order with customer information from Stripe session');
-      
       const orderId = session.metadata.order_id;
       
-      // First, let's check what the current order status is and what values are allowed
+      // First, check if the order already has customer information
       const { data: currentOrder, error: fetchCurrentError } = await supabase
         .from('orders')
-        .select('status')
+        .select('customer_email, customer_name, stripe_session_id')
         .eq('id', orderId)
         .single();
 
       if (fetchCurrentError) {
         console.error('❌ Error fetching current order:', fetchCurrentError);
       } else {
-        console.log('📋 Current order status:', currentOrder?.status);
-      }
-      
-      // Build base update object using existing individual address fields
-      const baseUpdateData: Record<string, unknown> = {
-        customer_email: customerInfo.email,
-        customer_name: customerInfo.name || null,
-        customer_phone: customerInfo.phone || null,
-        stripe_session_id: sessionId,
-        stripe_payment_intent_id: paymentInfo.payment_intent_id,
-        updated_at: new Date().toISOString()
-      };
+        console.log('📋 Current order data:', {
+          customer_email: currentOrder?.customer_email,
+          customer_name: currentOrder?.customer_name,
+          stripe_session_id: currentOrder?.stripe_session_id
+        });
 
-      // Add shipping address fields if available
-      if (customerInfo.address) {
-        baseUpdateData.shipping_line1 = customerInfo.address.line1 || null;
-        baseUpdateData.shipping_line2 = customerInfo.address.line2 || null;
-        baseUpdateData.shipping_city = customerInfo.address.city || null;
-        baseUpdateData.shipping_state = customerInfo.address.state || null;
-        baseUpdateData.shipping_postal_code = customerInfo.address.postal_code || null;
-        baseUpdateData.shipping_country = customerInfo.address.country || null;
-      }
+        // 🔥 CRITICAL CHECK: Only update if customer info is missing or incomplete
+        const needsUpdate = 
+          !currentOrder?.customer_name || 
+          currentOrder?.customer_email === 'pending@stripe.com' ||
+          !currentOrder?.stripe_session_id;
 
-      // Create complete update data with status
-      const updateData = {
-        ...baseUpdateData,
-        status: 'processing' // Valid statuses: 'pending', 'processing', 'shipped', 'delivered', 'cancelled'
-      };
-
-      console.log('📤 Update data being sent:', updateData);
-
-      // Try the update with 'processing' status first
-      const { data: updatedOrder, error: updateError } = await supabase
-        .from('orders')
-        .update(updateData)
-        .eq('id', orderId)
-        .select('*')
-        .single();
-
-      if (updateError) {
-        console.error('❌ Error updating order with status "processing":', updateError);
-        
-        // If 'processing' doesn't work, try other valid statuses
-        const validStatuses = ['pending', 'shipped', 'delivered', 'cancelled'];
-        
-        for (const statusToTry of validStatuses) {
-          console.log(`🔄 Trying valid status: ${statusToTry}`);
+        if (needsUpdate) {
+          console.log('📝 Customer information missing - updating order with Stripe data');
           
-          const { error: statusTestError } = await supabase
+          // Build update object using existing individual address fields
+          const baseUpdateData: Record<string, unknown> = {
+            customer_email: customerInfo.email,
+            customer_name: customerInfo.name || null,
+            customer_phone: customerInfo.phone || null,
+            stripe_session_id: sessionId,
+            stripe_payment_intent_id: paymentInfo.payment_intent_id,
+            status: 'processing',
+            updated_at: new Date().toISOString()
+          };
+
+          // Add shipping address fields if available
+          if (customerInfo.address) {
+            baseUpdateData.shipping_line1 = customerInfo.address.line1 || null;
+            baseUpdateData.shipping_line2 = customerInfo.address.line2 || null;
+            baseUpdateData.shipping_city = customerInfo.address.city || null;
+            baseUpdateData.shipping_state = customerInfo.address.state || null;
+            baseUpdateData.shipping_postal_code = customerInfo.address.postal_code || null;
+            baseUpdateData.shipping_country = customerInfo.address.country || null;
+          }
+
+          console.log('📤 Updating order with:', baseUpdateData);
+
+          // Update the order with customer information
+          const { data: updatedOrder, error: updateError } = await supabase
             .from('orders')
-            .update({
-              ...baseUpdateData,
-              status: statusToTry
-            })
+            .update(baseUpdateData)
             .eq('id', orderId)
             .select('*')
             .single();
 
-          if (!statusTestError) {
-            console.log(`✅ Successfully updated with status: ${statusToTry}`);
-            break;
+          if (updateError) {
+            console.error('❌ Error updating order:', updateError);
           } else {
-            console.log(`❌ Status ${statusToTry} failed:`, statusTestError.message);
+            console.log('✅ Order updated successfully:', {
+              order_number: updatedOrder?.order_number,
+              customer_email: updatedOrder?.customer_email,
+              customer_name: updatedOrder?.customer_name
+            });
           }
+        } else {
+          console.log('✅ Order already has complete customer information - skipping update');
         }
-      } else {
-        console.log('✅ Order updated successfully with status "processing":', {
-          order_number: updatedOrder?.order_number,
-          customer_email: updatedOrder?.customer_email,
-          status: updatedOrder?.status
-        });
       }
 
       // Fetch the complete order data with items for the response
@@ -175,16 +156,6 @@ export async function GET(
         `)
         .eq('id', orderId)
         .single();
-
-      if (fetchError) {
-        console.error('❌ Error fetching updated order:', fetchError);
-      } else {
-        console.log('✅ Fetched updated order:', {
-          order_number: orderWithItems?.order_number,
-          customer_email: orderWithItems?.customer_email,
-          status: orderWithItems?.status
-        });
-      }
 
       if (!fetchError && orderWithItems) {
         // Format the order response to match expected interface
@@ -214,7 +185,7 @@ export async function GET(
           success: true,
           stripeData,
           order: formattedOrder,
-          message: 'Order updated with customer information from Stripe session'
+          message: 'Order data retrieved successfully'
         });
       }
     } else {

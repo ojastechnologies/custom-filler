@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Card from '@/components/ui/Card';
+import { useCart } from '@/context/CartContext';
 
 interface CardHeaderProps {
   children: React.ReactNode;
@@ -166,16 +167,28 @@ export default function CheckoutSuccessPage() {
   const [stripeData, setStripeData] = useState<StripeSessionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dataFetched, setDataFetched] = useState(false);
+  const [cartCleared, setCartCleared] = useState(false);
+
+  // Get cart context for clearing cart
+  const { clearCart } = useCart();
 
   useEffect(() => {
+    // Prevent repeated API calls by checking if data is already fetched
+    if (dataFetched) {
+      console.log('✅ Data already fetched, skipping API call');
+      return;
+    }
+
     const fetchOrderDetails = async () => {
       try {
         if (!sessionId && !orderId) {
           setError('No order information found');
+          setLoading(false);
           return;
         }
 
-        console.log('🔍 Fetching order details:', { sessionId, orderId, orderNumber });
+        console.log('🔍 Fetching order details (ONCE):', { sessionId, orderId, orderNumber });
 
         // If we have a session ID, fetch complete data from Stripe
         if (sessionId) {
@@ -214,6 +227,9 @@ export default function CheckoutSuccessPage() {
           }
         }
 
+        // Mark data as fetched to prevent repeated calls
+        setDataFetched(true);
+
       } catch (err) {
         console.error('❌ Error fetching order details:', err);
         setError('Failed to load order details');
@@ -223,7 +239,42 @@ export default function CheckoutSuccessPage() {
     };
 
     fetchOrderDetails();
-  }, [sessionId, orderId, orderNumber, orderDetails]);
+  }, [sessionId, orderId, orderNumber, dataFetched, orderDetails]);
+
+  // Clear cart after successful order confirmation
+  useEffect(() => {
+    // Only clear cart if:
+    // 1. We have order data (either from Stripe or database)
+    // 2. Payment was successful
+    // 3. Cart hasn't been cleared yet
+    // 4. Data has been fetched (to avoid clearing during loading)
+    const hasOrderData = orderDetails || stripeData;
+    const paymentSuccessful = stripeData?.paymentInfo?.payment_status === 'paid' || 
+                             stripeData?.paymentInfo?.payment_status === 'complete' ||
+                             orderDetails?.status === 'processing' ||
+                             orderDetails?.status === 'shipped' ||
+                             orderDetails?.status === 'delivered';
+
+    if (hasOrderData && paymentSuccessful && !cartCleared && dataFetched) {
+      console.log('🛒 Clearing cart after successful order confirmation');
+      clearCart();
+      setCartCleared(true);
+      
+      // Store in localStorage to prevent cart clearing on page refresh
+      localStorage.setItem(`order_${orderId || sessionId}_cart_cleared`, 'true');
+    }
+  }, [orderDetails, stripeData, cartCleared, dataFetched, clearCart, orderId, sessionId]);
+
+  // Check if cart was already cleared for this order on component mount
+  useEffect(() => {
+    const orderKey = orderId || sessionId;
+    if (orderKey) {
+      const alreadyCleared = localStorage.getItem(`order_${orderKey}_cart_cleared`);
+      if (alreadyCleared === 'true') {
+        setCartCleared(true);
+      }
+    }
+  }, [orderId, sessionId]);
 
   if (loading) {
     return (
@@ -281,6 +332,12 @@ export default function CheckoutSuccessPage() {
                 <p className="text-lg text-gray-600 mt-2">
                   Thank you for your order, {displayName}
                 </p>
+                {/* Show cart cleared confirmation */}
+                {cartCleared && (
+                  <p className="text-sm text-blue-600 mt-1">
+                    ✅ Your cart has been cleared
+                  </p>
+                )}
               </div>
               
               {orderNumber && (
@@ -423,6 +480,10 @@ export default function CheckoutSuccessPage() {
               <p>✅ Order confirmation has been sent to {displayEmail}</p>
               <p>📦 We&apos;ll send you tracking information once your order ships</p>
               <p>💬 Questions? Contact our support team</p>
+              {/* Cart clearing confirmation */}
+              {cartCleared && (
+                <p className="text-blue-600">🛒 Your shopping cart has been cleared</p>
+              )}
             </div>
           </CardContent>
         </Card>
