@@ -269,6 +269,18 @@ export class AzureEmailService {
   private generateOrderConfirmationHTML(data: OrderConfirmationData): string {
     // Format the date to be more human-readable
     const formattedDate = this.formatDate(data.orderDate);
+    // Format phone number
+    const formattedPhone = this.formatPhoneNumber(data.customerPhone);
+    
+    // Log shipping address for debugging
+    console.log('📧 Email Template - Shipping Address Data:', {
+      line1: data.shippingAddress?.line1,
+      line2: data.shippingAddress?.line2,
+      city: data.shippingAddress?.city,
+      state: data.shippingAddress?.state,
+      postalCode: data.shippingAddress?.postalCode,
+      country: data.shippingAddress?.country
+    });
     
     return `
 <!DOCTYPE html>
@@ -277,57 +289,253 @@ export class AzureEmailService {
     <meta charset="utf-8">
     <title>Order Confirmation</title>
     <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background-color: #3B82F6; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-        .order-details { background-color: #ffffff; padding: 20px; border: 1px solid #E5E7EB; border-radius: 0 0 8px 8px; }
-        .item-row { border-bottom: 1px solid #F3F4F6; padding: 10px 0; }
-        .total-row { font-weight: bold; padding: 10px 0; border-top: 2px solid #3B82F6; }
-        .address-section { margin-top: 20px; padding: 15px; background-color: #EFF6FF; border-radius: 8px; }
-        .footer { margin-top: 30px; text-align: center; color: #6B7280; font-size: 14px; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6; 
+            color: #1F2937;
+            background-color: #F9FAFB;
+            margin: 0;
+            padding: 20px;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background-color: #FFFFFF;
+        }
+        .header { 
+            background-color: #3B82F6; 
+            color: white; 
+            padding: 30px 20px; 
+            text-align: center; 
+        }
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .header p {
+            margin: 0;
+            font-size: 16px;
+            opacity: 0.95;
+        }
+        .content { 
+            padding: 20px; 
+        }
+        .order-number {
+            background-color: #EFF6FF;
+            border: 1px solid #DBEAFE;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .order-number h2 {
+            color: #3B82F6;
+            margin: 0 0 5px 0;
+            font-size: 20px;
+        }
+        .order-number p {
+            color: #6B7280;
+            margin: 0;
+            font-size: 14px;
+        }
+        .section { 
+            background-color: #FFFFFF;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px; 
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .section h3 {
+            color: #1F2937;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0 0 12px 0;
+            display: flex;
+            align-items: center;
+        }
+        .section-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+        }
+        .info-row { 
+            padding: 6px 0;
+            font-size: 14px;
+        }
+        .info-row:not(:last-child) {
+            border-bottom: 1px solid #F3F4F6;
+        }
+        .info-label { 
+            font-weight: 600; 
+            color: #6B7280;
+            display: inline-block;
+            min-width: 80px;
+        }
+        .info-value { 
+            color: #1F2937;
+        }
+        .item-row { 
+            background-color: #F9FAFB;
+            border: 1px solid #E5E7EB;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+        .item-name {
+            font-weight: 600;
+            color: #1F2937;
+            margin-bottom: 4px;
+        }
+        .item-details {
+            color: #6B7280;
+            font-size: 14px;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 14px;
+        }
+        .summary-label {
+            color: #6B7280;
+        }
+        .summary-value {
+            color: #1F2937;
+            font-weight: 500;
+        }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            font-size: 16px;
+            font-weight: 700;
+            color: #3B82F6;
+            border-top: 2px solid #E5E7EB;
+            margin-top: 8px;
+        }
+        .address-content {
+            color: #1F2937;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        .footer { 
+            margin-top: 30px; 
+            padding-top: 20px;
+            border-top: 1px solid #E5E7EB;
+            text-align: center; 
+            color: #6B7280; 
+            font-size: 13px; 
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>Order Confirmation</h1>
+            <h1>✓ Order Confirmation</h1>
             <p>Thank you for your order, ${data.customerName}!</p>
         </div>
         
-        <div class="order-details">
-            <h2 style="color: #3B82F6;">Order #${data.orderNumber}</h2>
-            <p><strong>Order Date:</strong> ${formattedDate}</p>
-            
-            <h3>Order Items:</h3>
-            ${data.orderItems.map(item => `
-                <div class="item-row">
-                    <strong>${item.name}</strong><br>
-                    Quantity: ${item.quantity} × ${(item.price || 0).toFixed(2)} = ${(item.total || 0).toFixed(2)}
-                </div>
-            `).join('')}
-            
-            <div style="margin-top: 20px;">
-                <div>Subtotal: ${(data.subtotal || 0).toFixed(2)}</div>
-                ${data.discountAmount && data.discountAmount > 0 ? `<div style="color: #059669;">Discount: -${data.discountAmount.toFixed(2)}</div>` : ''}
-                <div>Shipping: ${(data.shippingCost || 0).toFixed(2)}</div>
-                <div>Tax: ${(data.taxAmount || 0).toFixed(2)}</div>
-                <div class="total-row" style="color: #3B82F6;">Total: ${(data.totalAmount || 0).toFixed(2)}</div>
+        <div class="content">
+            <div class="order-number">
+                <h2>Order #${data.orderNumber}</h2>
+                <p>Order Date: ${formattedDate}</p>
             </div>
-        </div>
-        
-        <div class="address-section">
-            <h3 style="color: #3B82F6;">Shipping Address:</h3>
-            <p>
-                ${data.shippingAddress.line1}<br>
-                ${data.shippingAddress.line2 ? data.shippingAddress.line2 + '<br>' : ''}
-                ${data.shippingAddress.city}, ${data.shippingAddress.state} ${data.shippingAddress.postalCode}<br>
-                ${data.shippingAddress.country}
-            </p>
-        </div>
-        
-        <div class="footer">
-            <p>If you have any questions about your order, please contact us.</p>
-            <p>Thank you for your business!</p>
+            
+            <!-- Customer Information -->
+            <div class="section">
+                <h3>
+                    <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    Customer Information
+                </h3>
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">${data.customerEmail}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Name:</span>
+                    <span class="info-value">${data.customerName}</span>
+                </div>
+                ${formattedPhone ? `
+                <div class="info-row">
+                    <span class="info-label">Phone:</span>
+                    <span class="info-value">${formattedPhone}</span>
+                </div>
+                ` : ''}
+            </div>
+
+            <!-- Shipping Address -->
+            <div class="section">
+                <h3>
+                    <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Shipping Address
+                </h3>
+                <div class="address-content">
+                    ${data.shippingAddress.line1}<br>
+                    ${data.shippingAddress.line2 ? data.shippingAddress.line2 + '<br>' : ''}
+                    ${data.shippingAddress.city}${data.shippingAddress.state ? ', ' + data.shippingAddress.state : ''} ${data.shippingAddress.postalCode}<br>
+                    ${data.shippingAddress.country}
+                </div>
+            </div>
+            
+            <!-- Order Items -->
+            <div class="section">
+                <h3>
+                    <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                    Order Items (${data.orderItems.length})
+                </h3>
+                ${data.orderItems.map(item => `
+                    <div class="item-row">
+                        <div class="item-name">${item.name}</div>
+                        <div class="item-details">
+                            Quantity: ${item.quantity} × $${(item.price || 0).toFixed(2)} = $${(item.total || 0).toFixed(2)}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+
+            <!-- Order Summary -->
+            <div class="section">
+                <h3>
+                    <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    Order Summary
+                </h3>
+                <div class="summary-row">
+                    <span class="summary-label">Subtotal:</span>
+                    <span class="summary-value">$${(data.subtotal || 0).toFixed(2)}</span>
+                </div>
+                ${data.discountAmount && data.discountAmount > 0 ? `
+                <div class="summary-row">
+                    <span class="summary-label">Discount${data.dealCode ? ` (${data.dealCode})` : ''}:</span>
+                    <span class="summary-value" style="color: #059669;">-$${data.discountAmount.toFixed(2)}</span>
+                </div>
+                ` : ''}
+                <div class="summary-row">
+                    <span class="summary-label">Shipping:</span>
+                    <span class="summary-value">$${(data.shippingCost || 0).toFixed(2)}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Tax:</span>
+                    <span class="summary-value">$${(data.taxAmount || 0).toFixed(2)}</span>
+                </div>
+                <div class="total-row">
+                    <span>Total:</span>
+                    <span>$${(data.totalAmount || 0).toFixed(2)} ${data.currency || 'USD'}</span>
+                </div>
+            </div>
+            
+            <div class="footer">
+                <p>If you have any questions about your order, please contact us.</p>
+                <p>Thank you for your business!</p>
+            </div>
         </div>
     </div>
 </body>
@@ -336,25 +544,49 @@ export class AzureEmailService {
   }
 
   private generateOrderConfirmationText(data: OrderConfirmationData): string {
+    const formattedDate = this.formatDate(data.orderDate);
+    const formattedPhone = this.formatPhoneNumber(data.customerPhone);
+    
     return `
-Order Confirmation - ${data.orderNumber}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+           ORDER CONFIRMATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Thank you for your order, ${data.customerName}!
 
-ORDER DETAILS:
-${data.orderItems.map(item => 
-  `${item.name} - Qty: ${item.quantity} × $${(item.price || 0).toFixed(2)} = $${(item.total || 0).toFixed(2)}`
-).join('\n')}
+Order #${data.orderNumber}
+Order Date: ${formattedDate}
 
-Subtotal: $${(data.subtotal || 0).toFixed(2)}
-${data.discountAmount && data.discountAmount > 0 ? `Discount: -$${data.discountAmount.toFixed(2)}\n` : ''}Shipping: $${(data.shippingCost || 0).toFixed(2)}
-Tax: $${(data.taxAmount || 0).toFixed(2)}
-Total: $${(data.totalAmount || 0).toFixed(2)}
-
-SHIPPING ADDRESS:
+─────────────────────────────────────────────
+CUSTOMER INFORMATION
+─────────────────────────────────────────────
+Email: ${data.customerEmail}
+Name: ${data.customerName}
+${formattedPhone ? `Phone: ${formattedPhone}\n` : ''}
+─────────────────────────────────────────────
+SHIPPING ADDRESS
+─────────────────────────────────────────────
 ${data.shippingAddress.line1}
-${data.shippingAddress.line2 ? data.shippingAddress.line2 + '\n' : ''}${data.shippingAddress.city}, ${data.shippingAddress.state} ${data.shippingAddress.postalCode}
+${data.shippingAddress.line2 ? data.shippingAddress.line2 + '\n' : ''}${data.shippingAddress.city}${data.shippingAddress.state ? ', ' + data.shippingAddress.state : ''} ${data.shippingAddress.postalCode}
 ${data.shippingAddress.country}
+
+─────────────────────────────────────────────
+ORDER ITEMS (${data.orderItems.length})
+─────────────────────────────────────────────
+${data.orderItems.map(item => 
+  `${item.name}
+Qty: ${item.quantity} × $${(item.price || 0).toFixed(2)} = $${(item.total || 0).toFixed(2)}`
+).join('\n\n')}
+
+─────────────────────────────────────────────
+ORDER SUMMARY
+─────────────────────────────────────────────
+Subtotal:        $${(data.subtotal || 0).toFixed(2)}
+${data.discountAmount && data.discountAmount > 0 ? `Discount${data.dealCode ? ` (${data.dealCode})` : ''}:      -$${data.discountAmount.toFixed(2)}\n` : ''}Shipping:        $${(data.shippingCost || 0).toFixed(2)}
+Tax:             $${(data.taxAmount || 0).toFixed(2)}
+─────────────────────────────────────────────
+TOTAL:           $${(data.totalAmount || 0).toFixed(2)} ${data.currency || 'USD'}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 If you have any questions about your order, please contact us.
 Thank you for your business!
@@ -364,6 +596,17 @@ Thank you for your business!
   private generateAdminNotificationHTML(data: AdminNotificationData): string {
     // Format the date to be more human-readable
     const formattedDate = this.formatDate(data.orderDate);
+    const formattedPhone = this.formatPhoneNumber(data.customerPhone);
+    
+    // Log shipping address for debugging
+    console.log('📧 Admin Email Template - Shipping Address Data:', {
+      line1: data.shippingAddress?.line1,
+      line2: data.shippingAddress?.line2,
+      city: data.shippingAddress?.city,
+      state: data.shippingAddress?.state,
+      postalCode: data.shippingAddress?.postalCode,
+      country: data.shippingAddress?.country
+    });
     
     return `
 <!DOCTYPE html>
@@ -372,14 +615,153 @@ Thank you for your business!
     <meta charset="utf-8">
     <title>New Order Notification</title>
     <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background-color: #DC2626; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-        .order-details { background-color: #ffffff; padding: 20px; border: 1px solid #E5E7EB; border-radius: 0 0 8px 8px; }
-        .item-row { border-bottom: 1px solid #F3F4F6; padding: 10px 0; }
-        .total-row { font-weight: bold; padding: 10px 0; border-top: 2px solid #DC2626; }
-        .customer-info { margin-top: 20px; padding: 15px; background-color: #FEF2F2; border-radius: 8px; }
-        .urgent { background-color: #FEE2E2; border: 1px solid #FECACA; padding: 15px; border-radius: 8px; margin-top: 20px; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6; 
+            color: #1F2937;
+            background-color: #FEF2F2;
+            margin: 0;
+            padding: 20px;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background-color: #FFFFFF;
+        }
+        .header { 
+            background-color: #DC2626; 
+            color: white; 
+            padding: 30px 20px; 
+            text-align: center; 
+        }
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .header p {
+            margin: 0;
+            font-size: 18px;
+            opacity: 0.95;
+            font-weight: 600;
+        }
+        .content { 
+            padding: 20px; 
+        }
+        .alert-box {
+            background-color: #FEE2E2;
+            border: 2px solid #FECACA;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            color: #991B1B;
+            font-weight: 600;
+        }
+        .order-info {
+            background-color: #FEF2F2;
+            border: 1px solid #FECACA;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .order-info h2 {
+            color: #DC2626;
+            margin: 0 0 5px 0;
+            font-size: 20px;
+        }
+        .order-info p {
+            color: #6B7280;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .section { 
+            background-color: #FFFFFF;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px; 
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .section h3 {
+            color: #DC2626;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0 0 12px 0;
+            display: flex;
+            align-items: center;
+        }
+        .section-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+        }
+        .info-row { 
+            padding: 6px 0;
+            font-size: 14px;
+        }
+        .info-row:not(:last-child) {
+            border-bottom: 1px solid #F3F4F6;
+        }
+        .info-label { 
+            font-weight: 600; 
+            color: #6B7280;
+            display: inline-block;
+            min-width: 80px;
+        }
+        .info-value { 
+            color: #1F2937;
+        }
+        .item-row { 
+            background-color: #F9FAFB;
+            border: 1px solid #E5E7EB;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+        .item-name {
+            font-weight: 600;
+            color: #1F2937;
+            margin-bottom: 4px;
+        }
+        .item-details {
+            color: #6B7280;
+            font-size: 14px;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 14px;
+        }
+        .summary-label {
+            color: #6B7280;
+        }
+        .summary-value {
+            color: #1F2937;
+            font-weight: 500;
+        }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            font-size: 16px;
+            font-weight: 700;
+            color: #DC2626;
+            border-top: 2px solid #E5E7EB;
+            margin-top: 8px;
+        }
+        .address-content {
+            color: #1F2937;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        .footer { 
+            margin-top: 30px; 
+            padding-top: 20px;
+            border-top: 1px solid #E5E7EB;
+            text-align: center; 
+            color: #6B7280; 
+            font-size: 13px; 
+        }
     </style>
 </head>
 <body>
@@ -389,45 +771,111 @@ Thank you for your business!
             <p>Order #${data.orderNumber}</p>
         </div>
         
-        <div class="order-details">
-            <h2 style="color: #DC2626;">Order Details</h2>
-            <p><strong>Order Date:</strong> ${formattedDate}</p>
-            <p><strong>Payment Status:</strong> ${data.paymentStatus}</p>
-            
-            <h3>Customer Information:</h3>
-            <p><strong>Name:</strong> ${data.customerName}</p>
-            <p><strong>Email:</strong> ${data.customerEmail}</p>
-            ${data.customerPhone ? `<p><strong>Phone:</strong> ${data.customerPhone}</p>` : ''}
-            
-            <h3>Order Items:</h3>
-            ${data.orderItems.map(item => `
-                <div class="item-row">
-                    <strong>${item.name}</strong><br>
-                    Quantity: ${item.quantity} × ${(item.price || 0).toFixed(2)} = ${(item.total || 0).toFixed(2)}
-                </div>
-            `).join('')}
-            
-            <div style="margin-top: 20px;">
-                <div>Subtotal: ${(data.subtotal || 0).toFixed(2)}</div>
-                ${data.discountAmount && data.discountAmount > 0 ? `<div style="color: #059669;">Discount: -${data.discountAmount.toFixed(2)}</div>` : ''}
-                <div>Shipping: ${(data.shippingCost || 0).toFixed(2)}</div>
-                <div>Tax: ${(data.taxAmount || 0).toFixed(2)}</div>
-                <div class="total-row" style="color: #DC2626;">Total: ${(data.totalAmount || 0).toFixed(2)}</div>
+        <div class="content">
+            <div class="alert-box">
+                ⚡ ACTION REQUIRED: Please process this order promptly.
             </div>
-        </div>
-        
-        <div class="customer-info">
-            <h3 style="color: #DC2626;">Shipping Address:</h3>
-            <p>
-                ${data.shippingAddress.line1}<br>
-                ${data.shippingAddress.line2 ? data.shippingAddress.line2 + '<br>' : ''}
-                ${data.shippingAddress.city}, ${data.shippingAddress.state} ${data.shippingAddress.postalCode}<br>
-                ${data.shippingAddress.country}
-            </p>
-        </div>
-        
-        <div class="urgent">
-            <p><strong>⚡ Action Required:</strong> Please process this order promptly.</p>
+
+            <div class="order-info">
+                <h2>Order Details</h2>
+                <p><strong>Order Date:</strong> ${formattedDate}</p>
+                <p><strong>Payment Status:</strong> ${data.paymentStatus}</p>
+            </div>
+            
+            <!-- Customer Information -->
+            <div class="section">
+                <h3>
+                    <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    Customer Information
+                </h3>
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">${data.customerEmail}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Name:</span>
+                    <span class="info-value">${data.customerName}</span>
+                </div>
+                ${formattedPhone ? `
+                <div class="info-row">
+                    <span class="info-label">Phone:</span>
+                    <span class="info-value">${formattedPhone}</span>
+                </div>
+                ` : ''}
+            </div>
+
+            <!-- Shipping Address -->
+            <div class="section">
+                <h3>
+                    <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Shipping Address
+                </h3>
+                <div class="address-content">
+                    ${data.shippingAddress.line1}<br>
+                    ${data.shippingAddress.line2 ? data.shippingAddress.line2 + '<br>' : ''}
+                    ${data.shippingAddress.city}${data.shippingAddress.state ? ', ' + data.shippingAddress.state : ''} ${data.shippingAddress.postalCode}<br>
+                    ${data.shippingAddress.country}
+                </div>
+            </div>
+            
+            <!-- Order Items -->
+            <div class="section">
+                <h3>
+                    <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                    Order Items (${data.orderItems.length})
+                </h3>
+                ${data.orderItems.map(item => `
+                    <div class="item-row">
+                        <div class="item-name">${item.name}</div>
+                        <div class="item-details">
+                            Quantity: ${item.quantity} × $${(item.price || 0).toFixed(2)} = $${(item.total || 0).toFixed(2)}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+
+            <!-- Order Summary -->
+            <div class="section">
+                <h3>
+                    <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    Order Summary
+                </h3>
+                <div class="summary-row">
+                    <span class="summary-label">Subtotal:</span>
+                    <span class="summary-value">$${(data.subtotal || 0).toFixed(2)}</span>
+                </div>
+                ${data.discountAmount && data.discountAmount > 0 ? `
+                <div class="summary-row">
+                    <span class="summary-label">Discount${data.dealCode ? ` (${data.dealCode})` : ''}:</span>
+                    <span class="summary-value" style="color: #059669;">-$${data.discountAmount.toFixed(2)}</span>
+                </div>
+                ` : ''}
+                <div class="summary-row">
+                    <span class="summary-label">Shipping:</span>
+                    <span class="summary-value">$${(data.shippingCost || 0).toFixed(2)}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Tax:</span>
+                    <span class="summary-value">$${(data.taxAmount || 0).toFixed(2)}</span>
+                </div>
+                <div class="total-row">
+                    <span>Total:</span>
+                    <span>$${(data.totalAmount || 0).toFixed(2)} ${data.currency || 'USD'}</span>
+                </div>
+            </div>
+            
+            <div class="footer">
+                <p>This is an automated notification from your e-commerce system.</p>
+            </div>
         </div>
     </div>
 </body>
@@ -438,35 +886,51 @@ Thank you for your business!
   private generateAdminNotificationText(data: AdminNotificationData): string {
     // Format the date to be more human-readable
     const formattedDate = this.formatDate(data.orderDate);
+    const formattedPhone = this.formatPhoneNumber(data.customerPhone);
     
     return `
-NEW ORDER NOTIFICATION - ${data.orderNumber}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      🔔 NEW ORDER NOTIFICATION 🔔
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+⚡ ACTION REQUIRED: Please process this order promptly.
+
+Order #${data.orderNumber}
 Order Date: ${formattedDate}
 Payment Status: ${data.paymentStatus}
 
-CUSTOMER:
-Name: ${data.customerName}
+─────────────────────────────────────────────
+CUSTOMER INFORMATION
+─────────────────────────────────────────────
 Email: ${data.customerEmail}
-${data.customerPhone ? `Phone: ${data.customerPhone}\n` : ''}
-
-ORDER ITEMS:
-${data.orderItems.map(item => 
-  `${item.name} - Qty: ${item.quantity} × ${(item.price || 0).toFixed(2)} = ${(item.total || 0).toFixed(2)}`
-).join('\n')}
-
-TOTALS:
-Subtotal: ${(data.subtotal || 0).toFixed(2)}
-${data.discountAmount && data.discountAmount > 0 ? `Discount: -${data.discountAmount.toFixed(2)}\n` : ''}Shipping: ${(data.shippingCost || 0).toFixed(2)}
-Tax: ${(data.taxAmount || 0).toFixed(2)}
-Total: ${(data.totalAmount || 0).toFixed(2)}
-
-SHIPPING ADDRESS:
+Name: ${data.customerName}
+${formattedPhone ? `Phone: ${formattedPhone}\n` : ''}
+─────────────────────────────────────────────
+SHIPPING ADDRESS
+─────────────────────────────────────────────
 ${data.shippingAddress.line1}
-${data.shippingAddress.line2 ? data.shippingAddress.line2 + '\n' : ''}${data.shippingAddress.city}, ${data.shippingAddress.state} ${data.shippingAddress.postalCode}
+${data.shippingAddress.line2 ? data.shippingAddress.line2 + '\n' : ''}${data.shippingAddress.city}${data.shippingAddress.state ? ', ' + data.shippingAddress.state : ''} ${data.shippingAddress.postalCode}
 ${data.shippingAddress.country}
 
-⚡ ACTION REQUIRED: Please process this order promptly.
+─────────────────────────────────────────────
+ORDER ITEMS (${data.orderItems.length})
+─────────────────────────────────────────────
+${data.orderItems.map(item => 
+  `${item.name}
+Qty: ${item.quantity} × $${(item.price || 0).toFixed(2)} = $${(item.total || 0).toFixed(2)}`
+).join('\n\n')}
+
+─────────────────────────────────────────────
+ORDER SUMMARY
+─────────────────────────────────────────────
+Subtotal:        $${(data.subtotal || 0).toFixed(2)}
+${data.discountAmount && data.discountAmount > 0 ? `Discount${data.dealCode ? ` (${data.dealCode})` : ''}:      -$${data.discountAmount.toFixed(2)}\n` : ''}Shipping:        $${(data.shippingCost || 0).toFixed(2)}
+Tax:             $${(data.taxAmount || 0).toFixed(2)}
+─────────────────────────────────────────────
+TOTAL:           $${(data.totalAmount || 0).toFixed(2)} ${data.currency || 'USD'}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This is an automated notification from your e-commerce system.
     `;
   }
   
@@ -485,6 +949,28 @@ ${data.shippingAddress.country}
       console.warn('Failed to format date:', dateString, error);
       return dateString;
     }
+  }
+
+  private formatPhoneNumber(phoneNumber?: string): string {
+    if (!phoneNumber) return '';
+    
+    // Remove all non-numeric characters
+    const cleaned = phoneNumber.replace(/\D/g, '');
+    
+    // Format based on length
+    if (cleaned.length === 10) {
+      // US format: (XXX) XXX-XXXX
+      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+    } else if (cleaned.length === 11 && cleaned[0] === '1') {
+      // US format with country code: +1 (XXX) XXX-XXXX
+      return `+1 (${cleaned.slice(1, 4)}) ${cleaned.slice(4, 7)}-${cleaned.slice(7)}`;
+    } else if (cleaned.length > 10) {
+      // International format: +XX XXX XXX XXXX
+      return `+${cleaned.slice(0, cleaned.length - 10)} ${cleaned.slice(-10, -7)} ${cleaned.slice(-7, -4)} ${cleaned.slice(-4)}`;
+    }
+    
+    // Return original if it doesn't match expected formats
+    return phoneNumber;
   }
 }
 

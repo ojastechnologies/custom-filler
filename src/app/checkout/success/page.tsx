@@ -108,8 +108,8 @@ interface OrderDetails {
   customer_email: string;
   customer_name: string;
   customer_phone: string;
-  shipping_address_line1: string;
-  shipping_address_line2?: string;
+  shipping_line1: string;
+  shipping_line2?: string;
   shipping_city: string;
   shipping_state: string;
   shipping_postal_code: string;
@@ -261,8 +261,8 @@ export default function CheckoutSuccessPage() {
         paymentStatus: 'paid',
         orderDate: order.created_at || new Date().toISOString(),
         shippingAddress: {
-          line1: order.shipping_address_line1 || '',
-          line2: order.shipping_address_line2,
+          line1: order.shipping_line1 || '',
+          line2: order.shipping_line2,
           city: order.shipping_city || '',
           state: order.shipping_state || '',
           postalCode: order.shipping_postal_code || '',
@@ -642,8 +642,8 @@ export default function CheckoutSuccessPage() {
                   <div>
                     <p className="text-sm text-gray-600">Shipping Address</p>
                     <div className="font-medium">
-                      <p>{orderDetails.shipping_address_line1}</p>
-                      {orderDetails.shipping_address_line2 && <p>{orderDetails.shipping_address_line2}</p>}
+                      <p>{orderDetails.shipping_line1}</p>
+                      {orderDetails.shipping_line2 && <p>{orderDetails.shipping_line2}</p>}
                       <p>
                         {orderDetails.shipping_city}, {orderDetails.shipping_state} {orderDetails.shipping_postal_code}
                       </p>
