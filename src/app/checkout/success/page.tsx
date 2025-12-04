@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Script from 'next/script';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Card from '@/components/ui/Card';
@@ -178,6 +179,9 @@ const markEmailAsSent = (orderIdentifier: string): void => {
 };
 
 export default function CheckoutSuccessPage() {
+  const googleTagId = process.env.NEXT_PUBLIC_GOOGLE_TAG_ID;
+  const conversionEvent1 = process.env.NEXT_PUBLIC_GOOGLE_CONVERSION_EVENT_1;
+  const conversionEvent2 = process.env.NEXT_PUBLIC_GOOGLE_CONVERSION_EVENT_2;
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id');
   const orderId = searchParams.get('order_id');
@@ -533,8 +537,32 @@ export default function CheckoutSuccessPage() {
   const displayPhone = orderDetails?.customer_phone || stripeData?.customerInfo?.phone;
   const paymentStatus = stripeData?.paymentInfo?.payment_status || 'completed';
 
+  // Get order total and transaction ID for conversion tracking
+  const orderTotal = orderDetails?.total_amount || stripeData?.paymentInfo?.amount_total || 0;
+  const transactionId = orderDetails?.order_number || orderId || sessionId || '';
+
   return (
     <div className="container mx-auto px-4 py-8">
+      {googleTagId && conversionEvent1 && (
+        <Script id="google-ads-conversion-1" strategy="afterInteractive">
+          {`gtag('event', 'conversion', {
+            'send_to': '${googleTagId}/${conversionEvent1}',
+            'value': ${orderTotal},
+            'currency': 'USD',
+            'transaction_id': '${transactionId}'
+          });`}
+        </Script>
+      )}
+      {googleTagId && conversionEvent2 && (
+        <Script id="google-ads-conversion-2" strategy="afterInteractive">
+          {`gtag('event', 'conversion', {
+            'send_to': '${googleTagId}/${conversionEvent2}',
+            'value': ${orderTotal},
+            'currency': 'USD',
+            'transaction_id': '${transactionId}'
+          });`}
+        </Script>
+      )}
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Success Header */}
         <Card className="border-blue-200">
@@ -553,7 +581,6 @@ export default function CheckoutSuccessPage() {
                   </p>
                 )}
               </div>
-              
               {orderDetails?.order_number && (
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                   <p className="text-sm text-blue-600">Order Number</p>

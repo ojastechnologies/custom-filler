@@ -5,6 +5,7 @@ import { MenuProvider } from "@/context/MenuContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import "./globals.css";
+import Script from 'next/script';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -59,9 +60,27 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const googleTagId = process.env.NEXT_PUBLIC_GOOGLE_TAG_ID;
   return (
     <html lang="en">
       <head>
+        {/* ...existing code... */}
+        {googleTagId && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${googleTagId}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${googleTagId}');
+              `}
+            </Script>
+          </>
+        )}
         <link rel="canonical" href={baseUrl} />
       </head>
       <body className={inter.className} suppressHydrationWarning={true}>
