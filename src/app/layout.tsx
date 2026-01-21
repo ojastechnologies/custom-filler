@@ -61,14 +61,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const googleTagId = process.env.NEXT_PUBLIC_GOOGLE_TAG_ID;
+  const googleAnalyticsId = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID;
   return (
     <html lang="en">
       <head>
         {/* ...existing code... */}
-        {googleTagId && (
+        {(googleTagId || googleAnalyticsId) && (
           <>
             <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${googleTagId}`}
+              src={`https://www.googletagmanager.com/gtag/js?id=${googleTagId || googleAnalyticsId}`}
               strategy="afterInteractive"
             />
             <Script id="google-analytics" strategy="afterInteractive">
@@ -76,7 +77,8 @@ export default function RootLayout({
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
                 gtag('js', new Date());
-                gtag('config', '${googleTagId}');
+                ${googleTagId ? `gtag('config', '${googleTagId}');` : ''}
+                ${googleAnalyticsId ? `gtag('config', '${googleAnalyticsId}');` : ''}
               `}
             </Script>
           </>
