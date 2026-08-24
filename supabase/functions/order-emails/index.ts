@@ -395,12 +395,22 @@ function renderHtml(m: EmailModel, isAdmin: boolean, contactEmail = ''): string 
         </tr>
       </table>
     </td></tr>
+${isAdmin ? `
+    <tr><td style="padding:0 36px 26px">
+      <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+        <td style="border-radius:8px;background:${ink};mso-padding-alt:11px 22px">
+          <a href="https://www.customfiller.com/dashboard/orders"
+             style="display:inline-block;padding:11px 22px;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:1;font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:.01em;border-radius:8px">Process this order</a>
+        </td>
+      </tr></table>
+    </td></tr>
+` : ''}
 
     <tr><td style="padding:30px 36px 30px">
       <div style="height:1px;background:${hairline};line-height:1px;font-size:0">&nbsp;</div>
       <p style="margin:16px 0 4px;font-size:12.5px;line-height:1.6;color:${muted}">
         ${isAdmin
-          ? 'A new order was placed and payment has settled. Please process it from the admin dashboard.'
+          ? 'A new order was placed and payment has settled.'
           : contactEmail
             ? `Questions about this order? Email <a href="mailto:${escapeHtml(contactEmail)}" style="color:${accent};text-decoration:none">${escapeHtml(contactEmail)}</a>&nbsp;·&nbsp;<a href="https://www.customfiller.com" style="color:${accent};text-decoration:none">customfiller.com</a>`
             : `Questions about this order? Visit <a href="https://www.customfiller.com/contact-us" style="color:${accent};text-decoration:none">customfiller.com/contact-us</a>`}
@@ -437,7 +447,7 @@ function renderText(m: EmailModel, isAdmin: boolean, contactEmail = ''): string 
     `TOTAL: ${money(m.totalAmount)} ${m.currency}`,
     '',
     ...(isAdmin
-      ? ['Automated notification from your e-commerce system.']
+      ? ['Process this order: https://www.customfiller.com/dashboard/orders', '', 'Automated notification from your e-commerce system.']
       : [contactEmail ? `Questions? Contact us: ${contactEmail}` : 'Questions? Visit https://www.customfiller.com']),
   ];
   return lines.join('\n');
