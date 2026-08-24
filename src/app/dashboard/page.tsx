@@ -390,7 +390,7 @@ export default function DashboardPage() {
 
   const initial = (user.email || '?').charAt(0).toUpperCase();
 
-  const inputClasses = "w-full h-10 px-3 rounded-md border text-sm bg-[var(--raised)] text-[var(--fg)] border-[var(--line)] placeholder:text-[var(--muted)]/60 focus:outline-none focus-visible:border-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[var(--ring)]/30 transition-[color,border-color,box-shadow] duration-150";
+  const inputClasses = "w-full h-10 px-3 rounded-md border text-sm bg-[var(--raised)] text-[var(--fg)] border-[var(--line)] placeholder:text-[var(--muted)] focus:outline-none focus-visible:border-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[var(--ring)] transition-[color,border-color,box-shadow] duration-150";
   const groupLabelClasses = "text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--muted)]";
 
   return (
@@ -421,7 +421,7 @@ export default function DashboardPage() {
               <div className="flex items-center gap-5">
                 <a
                   href="/"
-                  className="text-sm font-medium underline decoration-[var(--line)] underline-offset-4 transition-colors hover:text-[var(--fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]/40 rounded"
+                  className="text-sm font-medium underline decoration-[var(--line)] underline-offset-4 transition-colors hover:text-[var(--fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded"
                   style={{ color: 'var(--muted)' }}
                 >
                   View storefront ↗
@@ -450,7 +450,7 @@ export default function DashboardPage() {
                   </div>
                   <button
                     onClick={() => router.push('/dashboard/orders')}
-                    className="text-[13px] font-medium hover:underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]/40 rounded"
+                    className="text-[13px] font-medium hover:underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded"
                     style={{ color: 'var(--accent)' }}
                   >
                     All orders →
@@ -488,10 +488,10 @@ export default function DashboardPage() {
                       {recentOrders.map((order) => {
                         const isPending = order.status === 'pending';
                         return (
-                          <li key={order.id} role="row">
+                          <li key={order.id} role="row" style={{ borderColor: 'var(--line)' }}>
                             <button
                               onClick={() => router.push('/dashboard/orders')}
-                              className="w-full sm:grid sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto_auto_auto] gap-4 items-center text-left px-5 py-2.5 transition-colors duration-150 hover:bg-[var(--surface)] focus-visible:outline-none focus-visible:bg-[var(--surface)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--ring)]/50"
+                              className="w-full sm:grid sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto_auto_auto] gap-4 items-center text-left px-5 py-2.5 transition-colors duration-150 hover:bg-[var(--surface)] focus-visible:outline-none focus-visible:bg-[var(--surface)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--ring)]"
                               aria-label={`Order ${order.order_number}, view all orders`}
                             >
                               <span role="cell" className="font-mono text-[13px] font-medium text-[var(--fg)] truncate">
@@ -545,7 +545,7 @@ export default function DashboardPage() {
                         role="tab"
                         aria-selected={isActive}
                         onClick={() => setActiveTab(tab)}
-                        className={`relative py-2.5 px-0.5 -mb-px border-b-2 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]/40 rounded-sm ${
+                        className={`relative py-2.5 px-0.5 -mb-px border-b-2 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded-sm ${
                           isActive
                             ? 'text-[var(--fg)]'
                             : 'border-transparent text-[var(--muted)] hover:text-[var(--fg)]'
@@ -577,10 +577,10 @@ export default function DashboardPage() {
                     <p className="text-sm font-medium" style={{ color: '#b42318' }}>Couldn’t load products</p>
                     <p className="text-sm mt-0.5 text-[var(--muted)]">{error}</p>
                     <div className="flex items-center gap-4 mt-2.5">
-                      <button onClick={() => setError(null)} className="text-sm underline underline-offset-4 text-[var(--muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]/40 rounded">
+                      <button onClick={() => setError(null)} className="text-sm underline underline-offset-4 text-[var(--muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded">
                         Dismiss
                       </button>
-                      <button onClick={loadProducts} className="text-sm font-semibold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]/40 rounded" style={{ color: 'var(--accent)' }}>
+                      <button onClick={loadProducts} className="text-sm font-semibold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded" style={{ color: 'var(--accent)' }}>
                         Retry
                       </button>
                     </div>
@@ -589,7 +589,7 @@ export default function DashboardPage() {
 
                 {/* Product Form */}
                 {isAdmin && showForm && (
-                  <section aria-label="Product form" className="mb-10 rounded-xl border bg-[var(--raised)]" style={{ borderColor: 'var(--line)' }}>
+                  <section aria-label="Product form" className="mb-10 rounded-xl border bg-[var(--raised)] overflow-hidden" style={{ borderColor: 'var(--line)' }}>
                     <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'var(--line)' }}>
                       <h2 className="text-[15px] font-semibold text-[var(--fg)]">
                         {editingProduct ? 'Edit product' : 'New product'}
@@ -597,7 +597,7 @@ export default function DashboardPage() {
                       <button
                         onClick={resetForm}
                         aria-label="Close form"
-                        className="h-8 w-8 -mr-2 rounded-md flex items-center justify-center text-lg leading-none text-[var(--muted)] transition-colors duration-150 hover:bg-[var(--surface)] hover:text-[var(--fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]/40"
+                        className="h-8 w-8 -mr-2 rounded-md flex items-center justify-center text-lg leading-none text-[var(--muted)] transition-colors duration-150 hover:bg-[var(--surface)] hover:text-[var(--fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
                       >
                         ×
                       </button>
@@ -836,14 +836,14 @@ export default function DashboardPage() {
                             <div className="flex-shrink-0 pt-3.5 mt-auto flex gap-2 border-t" style={{ borderColor: 'var(--line)', marginTop: 'auto' }}>
                               <button
                                 onClick={() => handleEdit(product)}
-                                className="flex-1 h-8.5 py-1.5 rounded-md border text-[13px] font-medium transition-colors duration-150 hover:bg-[var(--accent-tint)] hover:border-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]/40"
+                                className="flex-1 py-1.5 rounded-md border text-[13px] font-medium transition-colors duration-150 hover:bg-[var(--accent-tint)] hover:border-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
                                 style={{ borderColor: 'var(--line)', color: 'var(--fg)' }}
                               >
                                 Edit
                               </button>
                               <button
                                 onClick={() => handleDelete(product)}
-                                className="flex-1 py-1.5 rounded-md border text-[13px] font-medium text-red-700 dark:text-red-300 transition-colors duration-150 hover:bg-red-50 dark:hover:bg-red-900/25 hover:border-red-300 dark:hover:border-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]/40"
+                                className="flex-1 py-1.5 rounded-md border text-[13px] font-medium text-red-700 dark:text-red-300 transition-colors duration-150 hover:bg-red-50 dark:hover:bg-red-900/25 hover:border-red-300 dark:hover:border-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
                                 style={{ borderColor: 'var(--line)' }}
                               >
                                 Delete
