@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Link from 'next/link';
 
-export default function RedirectToInvoicePage() {
+function RedirectToInvoiceContent() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
@@ -134,5 +134,19 @@ export default function RedirectToInvoicePage() {
       </main>
       <Footer />
     </>
+  );
+}
+
+export default function RedirectToInvoicePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+          <div className="w-16 h-16 animate-spin rounded-full border-t-2 border-b-2 border-primary-600"></div>
+        </div>
+      }
+    >
+      <RedirectToInvoiceContent />
+    </Suspense>
   );
 }
