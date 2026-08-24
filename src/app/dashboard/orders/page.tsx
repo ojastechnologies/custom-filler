@@ -517,7 +517,10 @@ export default function OrdersPage() {
               {/* Panel header */}
               <div className="flex items-center justify-between gap-3 px-6 py-4 border-b flex-shrink-0" style={{ borderColor: 'var(--line)' }}>
                 <div className="min-w-0">
-                  <p className="font-mono text-sm font-semibold truncate text-[var(--fg)]">#{so.order_number}</p>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <p className="font-mono text-sm font-semibold truncate text-[var(--fg)]">#{so.order_number}</p>
+                    <StatusPill status={so.status} />
+                  </div>
                   <p className="text-[13px] mt-0.5 text-[var(--muted)]">{fullDate(so.created_at)}</p>
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0">
@@ -530,7 +533,6 @@ export default function OrdersPage() {
                       Sync from Stripe
                     </button>
                   )}
-                  <StatusPill status={so.status} />
                   <button
                     onClick={closePanel}
                     aria-label="Close panel"
