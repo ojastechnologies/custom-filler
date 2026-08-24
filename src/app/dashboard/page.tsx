@@ -34,8 +34,7 @@ function formatMoney(amount: number | null | undefined, currency?: string | null
 function formatDate(iso: string | null | undefined) {
   if (!iso) return '';
   const d = new Date(iso);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
-    ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 export default function DashboardPage() {
@@ -484,6 +483,14 @@ export default function DashboardPage() {
                       ))}
                     </div>
 
+                    <div className="hidden sm:grid sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_84px_64px_104px] gap-4 px-5 py-2 border-b" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
+                      <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]">Order</span>
+                      <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]">Customer</span>
+                      <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Total</span>
+                      <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Placed</span>
+                      <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Status</span>
+                    </div>
+
                     <ul className="divide-y" style={{ borderColor: 'var(--line)' }}>
                       {recentOrders.map((order) => {
                         const isPending = order.status === 'pending';
@@ -494,13 +501,13 @@ export default function DashboardPage() {
                               className="w-full sm:grid sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_84px_64px_104px] gap-4 items-center text-left px-5 py-2.5 transition-colors duration-150 hover:bg-[var(--surface)] focus-visible:outline-none focus-visible:bg-[var(--surface)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--ring)]"
                               aria-label={`Order ${order.order_number}, view all orders`}
                             >
-                              <span role="cell" className="font-mono text-sm font-medium text-[var(--fg)] truncate">
+                              <span role="cell" className="min-w-0 font-mono text-sm font-medium text-[var(--fg)] truncate">
                                 #{order.order_number}
                               </span>
-                              <span role="cell" className="hidden sm:block text-sm truncate text-[var(--muted)]">
+                              <span role="cell" className="min-w-0 hidden sm:block text-sm truncate text-[var(--muted)]">
                                 {order.customer_name || order.customer_email || '—'}
                               </span>
-                              <span role="cell" className="hidden sm:block text-sm tabular-nums font-semibold text-right text-[var(--fg)]">
+                              <span role="cell" className="min-w-0 hidden sm:block text-sm tabular-nums font-semibold text-right text-[var(--fg)]">
                                 {formatMoney(order.total_amount)}
                               </span>
                               <span role="cell" className="hidden sm:block text-[13px] tabular-nums text-right text-[var(--muted)] whitespace-nowrap">
