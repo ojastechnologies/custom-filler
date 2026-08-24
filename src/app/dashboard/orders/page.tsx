@@ -491,7 +491,7 @@ export default function OrdersPage() {
         role="dialog"
         aria-modal="true"
         aria-label={selected ? `Order ${selected.order_number}` : 'Order details'}
-        className={`fixed top-0 right-0 z-50 h-full w-full sm:w-[480px] flex flex-col border-l shadow-[-12px_0_32px_rgba(15,23,42,0.18)] bg-[var(--raised)] transition-transform duration-200 ${
+        className={`fixed top-0 right-0 z-50 h-full w-full sm:w-[560px] lg:w-[640px] flex flex-col border-l shadow-[-12px_0_32px_rgba(15,23,42,0.18)] bg-[var(--raised)] transition-transform duration-200 ${
           panelOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
         style={{ borderColor: 'var(--line)', transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
@@ -507,7 +507,7 @@ export default function OrdersPage() {
           return (
             <>
               {/* Panel header */}
-              <div className="flex items-center justify-between gap-3 px-5 py-4 border-b flex-shrink-0" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex items-center justify-between gap-3 px-6 py-4 border-b flex-shrink-0" style={{ borderColor: 'var(--line)' }}>
                 <div className="min-w-0">
                   <p className="font-mono text-sm font-semibold truncate text-[var(--fg)]">#{so.order_number}</p>
                   <p className="text-[13px] mt-0.5 text-[var(--muted)]">{fullDate(so.created_at)}</p>
@@ -525,19 +525,19 @@ export default function OrdersPage() {
               </div>
 
               {/* Panel body */}
-              <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
+              <div className="flex-1 overflow-y-auto px-6 py-6 space-y-7">
                 {/* Customer */}
                 <section>
                   <h3 className="text-[12px] font-bold uppercase tracking-[0.14em] mb-2 text-[var(--muted)]">Customer</h3>
-                  <dl className="space-y-1.5 text-sm">
+                  <dl className="space-y-1.5 text-sm [&>div]:grid [&>div]:grid-cols-[84px_minmax(0,1fr)] [&>div]:gap-x-3 [&_dd]:min-w-0">
                     {so.customer_name && (
-                      <div className="flex gap-2"><dt className="w-14 flex-shrink-0 text-[var(--muted)]">Name</dt><dd className="font-medium text-[var(--fg)]">{so.customer_name}</dd></div>
+                      <div className="flex gap-2"><dt className="text-[var(--muted)]">Name</dt><dd className="font-medium text-[var(--fg)]">{so.customer_name}</dd></div>
                     )}
-                    <div className="flex gap-2"><dt className="w-14 flex-shrink-0 text-[var(--muted)]">Email</dt>
+                    <div className="flex gap-2"><dt className="text-[var(--muted)]">Email</dt>
                       <dd className="min-w-0"><a href={`mailto:${so.customer_email}`} className="break-all hover:underline" style={{ color: 'var(--accent)' }}>{so.customer_email}</a></dd>
                     </div>
                     {so.customer_phone && (
-                      <div className="flex gap-2"><dt className="w-14 flex-shrink-0 text-[var(--muted)]">Phone</dt>
+                      <div className="flex gap-2"><dt className="text-[var(--muted)]">Phone</dt>
                         <dd><a href={`tel:${so.customer_phone.replace(/[^+\d]/g, '')}`} className="hover:underline" style={{ color: 'var(--accent)' }}>{so.customer_phone}</a></dd>
                       </div>
                     )}
@@ -735,7 +735,7 @@ export default function OrdersPage() {
               )}
 
               {/* Panel footer: status control */}
-              <div className="flex-shrink-0 px-5 py-4 border-t bg-[var(--surface)]" style={{ borderColor: 'var(--line)' }}>
+              <div className="flex-shrink-0 px-6 py-4 border-t bg-[var(--surface)]" style={{ borderColor: 'var(--line)' }}>
                 <label htmlFor="order-status" className="block text-[13px] font-semibold uppercase tracking-wide mb-1.5 text-[var(--muted)]">
                   Order status
                 </label>
