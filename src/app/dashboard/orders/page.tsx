@@ -40,7 +40,7 @@ function fullDate(iso: string | null | undefined) {
 
 function StatusPill({ status }: { status: string }) {
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUS_PILL[status] || STATUS_PILL.cancelled}`}>
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-semibold ${STATUS_PILL[status] || STATUS_PILL.cancelled}`}>
       {status}
     </span>
   );
@@ -58,6 +58,7 @@ export default function OrdersPage() {
   const [selected, setSelected] = useState<Order | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [draftStatus, setDraftStatus] = useState('');
   const [toast, setToast] = useState<Toast>(null);
 
   // Toast auto-dismiss
@@ -134,15 +135,24 @@ export default function OrdersPage() {
     setTimeout(() => setSelected(null), 200);
   }, []);
 
-  const markProcessing = async () => {
-    if (!selected || selected.status !== 'pending') return;
+  // Keep the draft in sync with whichever order is open
+  useEffect(() => {
+    setDraftStatus(selected?.status ?? '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected?.id, selected?.status]);
+
+  const dirty = Boolean(selected && draftStatus && draftStatus !== selected.status);
+
+  const saveStatus = async () => {
+    if (!selected || !dirty) return;
+    const next = draftStatus as Order['status'];
     try {
       setIsUpdating(true);
-      await updateOrderStatus(selected.id, 'processing');
-      const updated: Order = { ...selected, status: 'processing' };
+      await updateOrderStatus(selected.id, next);
+      const updated: Order = { ...selected, status: next };
       setOrders(prev => prev.map(o => (o.id === updated.id ? updated : o)));
       setSelected(updated);
-      setToast({ message: `#${updated.order_number} marked as processing`, tone: 'success' });
+      setToast({ message: `#${updated.order_number} → ${next}`, tone: 'success' });
     } catch (err: unknown) {
       console.error('Error updating order status:', err);
       setToast({
@@ -166,10 +176,10 @@ export default function OrdersPage() {
             {/* Workspace header */}
             <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 pt-8 pb-6">
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.16em]" style={{ color: 'var(--accent)' }}>
+                <p className="text-[12px] font-bold uppercase tracking-[0.16em]" style={{ color: 'var(--accent)' }}>
                   Admin portal
                 </p>
-                <h1 className="text-[26px] leading-tight font-semibold tracking-tight text-[var(--fg)]">Orders</h1>
+                <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-[var(--fg)]">Orders</h1>
                 {!loadingOrders && (
                   <p className="text-sm mt-0.5 text-[var(--muted)]">
                     {orders.length} total{counts.pending > 0 && (
@@ -200,7 +210,7 @@ export default function OrdersPage() {
                       key={s}
                       onClick={() => setFilter(s)}
                       aria-pressed={isActive}
-                      className={`h-8 rounded-full border px-3 text-[13px] font-medium capitalize transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] ${
+                      className={`h-8 rounded-full border px-3 text-sm font-medium capitalize transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] ${
                         isActive ? 'border-transparent' : 'hover:border-[var(--accent)]'
                       }`}
                       style={{
@@ -255,12 +265,12 @@ export default function OrdersPage() {
               <section aria-label="Orders" className="rounded-xl border overflow-hidden bg-[var(--raised)]" style={{ borderColor: 'var(--line)' }}>
                 {/* Column headers */}
                 <div className="hidden md:grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_auto_auto_auto_auto] gap-4 px-5 py-2.5 border-b" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
-                  <span className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]">Order</span>
-                  <span className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]">Customer</span>
-                  <span className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Items</span>
-                  <span className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Total</span>
-                  <span className="hidden lg:block text-[10.5px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Placed</span>
-                  <span className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-right pr-5 text-[var(--muted)]">Status</span>
+                  <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]">Order</span>
+                  <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]">Customer</span>
+                  <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Items</span>
+                  <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Total</span>
+                  <span className="hidden lg:block text-[11.5px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Placed</span>
+                  <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-right pr-5 text-[var(--muted)]">Status</span>
                 </div>
 
                 <ul className="divide-y" style={{ borderColor: 'var(--line)' }}>
@@ -275,27 +285,27 @@ export default function OrdersPage() {
                           aria-haspopup="dialog"
                           aria-label={`Open order ${order.order_number}`}
                         >
-                          <span role="cell" className="block font-mono text-[13px] font-medium truncate text-[var(--fg)]">
+                          <span role="cell" className="block font-mono text-sm font-medium truncate text-[var(--fg)]">
                             #{order.order_number}
                           </span>
                           <span role="cell" className="hidden md:block min-w-0">
-                            <span className="block text-[13px] font-medium truncate text-[var(--fg)]">
+                            <span className="block text-sm font-medium truncate text-[var(--fg)]">
                               {order.customer_name || '—'}
                             </span>
-                            <span className="block text-xs truncate text-[var(--muted)]">{order.customer_email}</span>
+                            <span className="block text-[13px] truncate text-[var(--muted)]">{order.customer_email}</span>
                           </span>
-                          <span role="cell" className="hidden md:block text-[13px] tabular-nums text-right text-[var(--muted)]">
+                          <span role="cell" className="hidden md:block text-sm tabular-nums text-right text-[var(--muted)]">
                             {itemCount}
                           </span>
-                          <span role="cell" className="hidden md:block text-[13px] tabular-nums font-semibold text-right text-[var(--fg)]">
+                          <span role="cell" className="hidden md:block text-sm tabular-nums font-semibold text-right text-[var(--fg)]">
                             {money(order.total_amount)}
                           </span>
-                          <span role="cell" className="hidden lg:block text-xs tabular-nums whitespace-nowrap lg:text-right text-[var(--muted)]">
+                          <span role="cell" className="hidden lg:block text-[13px] tabular-nums whitespace-nowrap lg:text-right text-[var(--muted)]">
                             {shortDate(order.created_at)}
                           </span>
                           <span role="cell" className="flex items-center justify-start md:justify-end gap-2 mt-1.5 md:mt-0">
                             <StatusPill status={order.status} />
-                            <span className="md:hidden text-xs tabular-nums text-[var(--muted)]">
+                            <span className="md:hidden text-[13px] tabular-nums text-[var(--muted)]">
                               {money(order.total_amount)} · {itemCount} item{itemCount === 1 ? '' : 's'} · {shortDate(order.created_at)}
                             </span>
                             <span aria-hidden="true" className="hidden md:inline text-[var(--muted)]">›</span>
@@ -343,7 +353,7 @@ export default function OrdersPage() {
               <div className="flex items-center justify-between gap-3 px-5 py-4 border-b flex-shrink-0" style={{ borderColor: 'var(--line)' }}>
                 <div className="min-w-0">
                   <p className="font-mono text-sm font-semibold truncate text-[var(--fg)]">#{so.order_number}</p>
-                  <p className="text-xs mt-0.5 text-[var(--muted)]">{fullDate(so.created_at)}</p>
+                  <p className="text-[13px] mt-0.5 text-[var(--muted)]">{fullDate(so.created_at)}</p>
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0">
                   <StatusPill status={so.status} />
@@ -361,7 +371,7 @@ export default function OrdersPage() {
               <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
                 {/* Customer */}
                 <section>
-                  <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] mb-2 text-[var(--muted)]">Customer</h3>
+                  <h3 className="text-[12px] font-bold uppercase tracking-[0.14em] mb-2 text-[var(--muted)]">Customer</h3>
                   <dl className="space-y-1.5 text-sm">
                     {so.customer_name && (
                       <div className="flex gap-2"><dt className="w-14 flex-shrink-0 text-[var(--muted)]">Name</dt><dd className="font-medium text-[var(--fg)]">{so.customer_name}</dd></div>
@@ -380,7 +390,7 @@ export default function OrdersPage() {
                 {/* Shipping */}
                 {addr.length > 0 && (
                   <section>
-                    <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] mb-2 text-[var(--muted)]">Ship to</h3>
+                    <h3 className="text-[12px] font-bold uppercase tracking-[0.14em] mb-2 text-[var(--muted)]">Ship to</h3>
                     <address className="not-italic text-sm leading-relaxed text-[var(--fg)]">
                       {addr.map((line, i) => <div key={i}>{line}</div>)}
                     </address>
@@ -389,7 +399,7 @@ export default function OrdersPage() {
 
                 {/* Items */}
                 <section>
-                  <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] mb-2 text-[var(--muted)]">
+                  <h3 className="text-[12px] font-bold uppercase tracking-[0.14em] mb-2 text-[var(--muted)]">
                     Items {(so.order_items?.length ?? 0) > 0 ? `(${so.order_items!.length})` : ''}
                   </h3>
                   {(so.order_items?.length ?? 0) === 0 ? (
@@ -399,12 +409,12 @@ export default function OrdersPage() {
                       {so.order_items!.map((it: OrderItem) => (
                         <li key={it.id} className="flex items-start justify-between gap-3 px-3.5 py-2.5" style={{ borderColor: 'var(--line)' }}>
                           <div className="min-w-0">
-                            <p className="text-[13px] font-medium leading-snug text-[var(--fg)]">{it.product_name}</p>
-                            <p className="text-xs mt-0.5 tabular-nums text-[var(--muted)]">
+                            <p className="text-sm font-medium leading-snug text-[var(--fg)]">{it.product_name}</p>
+                            <p className="text-[13px] mt-0.5 tabular-nums text-[var(--muted)]">
                               Qty {it.quantity} · {money(it.unit_price)} each
                             </p>
                           </div>
-                          <span className="text-[13px] tabular-nums font-semibold flex-shrink-0 text-[var(--fg)]">
+                          <span className="text-sm tabular-nums font-semibold flex-shrink-0 text-[var(--fg)]">
                             {money(it.total_price)}
                           </span>
                         </li>
@@ -415,7 +425,7 @@ export default function OrdersPage() {
 
                 {/* Totals */}
                 <section>
-                  <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] mb-2 text-[var(--muted)]">Summary</h3>
+                  <h3 className="text-[12px] font-bold uppercase tracking-[0.14em] mb-2 text-[var(--muted)]">Summary</h3>
                   <div className="rounded-lg border px-3.5 py-3 space-y-1.5 text-sm" style={{ borderColor: 'var(--line)' }}>
                     <div className="flex justify-between"><span className="text-[var(--muted)]">Subtotal</span><span className="tabular-nums text-[var(--fg)]">{money(so.subtotal)}</span></div>
                     {(so.discount_amount ?? 0) > 0 && (
@@ -429,7 +439,7 @@ export default function OrdersPage() {
                     <div className="flex justify-between pt-2 mt-2 border-t" style={{ borderColor: 'var(--line)' }}>
                       <span className="font-semibold text-[var(--fg)]">Total</span>
                       <span className="tabular-nums text-base font-bold text-[var(--fg)]">
-                        {money(so.total_amount)} <span className="text-xs font-normal text-[var(--muted)]">{so.currency.toUpperCase()}</span>
+                        {money(so.total_amount)} <span className="text-[13px] font-normal text-[var(--muted)]">{so.currency.toUpperCase()}</span>
                       </span>
                     </div>
                   </div>
@@ -438,8 +448,8 @@ export default function OrdersPage() {
                 {/* Payment references */}
                 {(so.stripe_session_id || so.stripe_payment_intent_id) && (
                   <section>
-                    <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] mb-2 text-[var(--muted)]">Payment</h3>
-                    <div className="space-y-1 text-xs font-mono break-all text-[var(--muted)]">
+                    <h3 className="text-[12px] font-bold uppercase tracking-[0.14em] mb-2 text-[var(--muted)]">Payment</h3>
+                    <div className="space-y-1 text-[13px] font-mono break-all text-[var(--muted)]">
                       {so.stripe_payment_intent_id && <p>pi: {so.stripe_payment_intent_id}</p>}
                       {so.stripe_session_id && <p>cs: {so.stripe_session_id}</p>}
                     </div>
@@ -447,14 +457,27 @@ export default function OrdersPage() {
                 )}
               </div>
 
-              {/* Panel footer action */}
-              {so.status === 'pending' && (
-                <div className="flex-shrink-0 px-5 py-4 border-t bg-[var(--surface)]" style={{ borderColor: 'var(--line)' }}>
-                  <Button variant="primary" onClick={markProcessing} disabled={isUpdating} className="w-full">
-                    {isUpdating ? 'Updating…' : 'Mark as processing'}
+              {/* Panel footer: status control */}
+              <div className="flex-shrink-0 px-5 py-4 border-t bg-[var(--surface)]" style={{ borderColor: 'var(--line)' }}>
+                <label htmlFor="order-status" className="block text-[13px] font-semibold uppercase tracking-wide mb-1.5 text-[var(--muted)]">
+                  Order status
+                </label>
+                <div className="flex gap-2">
+                  <select
+                    id="order-status"
+                    value={draftStatus}
+                    onChange={(e) => setDraftStatus(e.target.value)}
+                    className="h-10 flex-1 min-w-0 rounded-md border px-3 text-sm capitalize bg-[var(--raised)] text-[var(--fg)] border-[var(--line)] focus:outline-none focus-visible:border-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                  >
+                    {(['pending', 'processing', 'shipped', 'delivered', 'cancelled'] as const).map(st => (
+                      <option key={st} value={st}>{st}</option>
+                    ))}
+                  </select>
+                  <Button variant="primary" onClick={saveStatus} disabled={!dirty || isUpdating}>
+                    {isUpdating ? 'Saving…' : 'Update'}
                   </Button>
                 </div>
-              )}
+              </div>
             </>
           );
         })()}
