@@ -15,7 +15,8 @@ import { supabase } from '@/lib/supabaseClient';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const mode: 'fetch' | 'apply' = body.mode === 'apply' ? 'apply' : 'fetch';
+    const mode: 'fetch' | 'apply' | 'delete' =
+      body.mode === 'apply' ? 'apply' : body.mode === 'delete' ? 'delete' : 'fetch';
     let sessionId: string | undefined = body.sessionId;
     const orderId: string | undefined = body.orderId;
 
@@ -27,6 +28,30 @@ export async function POST(request: NextRequest) {
     }
 
     // Resolve the session id from the order when not provided
+    const stripe = getServerStripe();
+
+    if (mode === 'delete') {
+      if (!orderId) return NextResponse.json({ error: 'orderId required' }, { status: 400 });
+      const { data: ord } = await supabase
+        .from('orders')
+        .select('stripe_session_id, stripe_payment_intent_id')
+        .eq('id', orderId)
+        .single();
+      if (!ord) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      if (ord.stripe_payment_intent_id)
+        return NextResponse.json({ error: 'Order has a payment intent and was paid — it cannot be deleted' }, { status: 409 });
+      let livePaid = false;
+      try {
+        const sess = await stripe.checkout.sessions.retrieve(String(ord.stripe_session_id));
+        livePaid = sess.payment_status === 'paid';
+      } catch { /* unreachable in Stripe */ }
+      if (livePaid)
+        return NextResponse.json({ error: 'Stripe reports this session as paid — reconcile instead' }, { status: 409 });
+      const { error: delErr } = await supabase.from('orders').delete().eq('id', orderId);
+      if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 });
+      return NextResponse.json({ ok: true, deleted: true });
+    }
+
     if (!sessionId) {
       const { data: ord, error: ordErr } = await supabase
         .from('orders')
@@ -45,8 +70,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Order has no checkout session id' }, { status: 400 });
     }
 
-    const stripe = getServerStripe();
-    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+        const session = await stripe.checkout.sessions.retrieve(sessionId, {
       expand: ['customer', 'payment_intent'],
     });
 

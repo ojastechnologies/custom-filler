@@ -90,6 +90,8 @@ export default function OrdersPage() {
   const [recoverData, setRecoverData] = useState<Record<string, unknown> | null>(null);
   const [recoverError, setRecoverError] = useState<string | null>(null);
   const [syncOpen, setSyncOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<Toast>(null);
 
   // Toast auto-dismiss
@@ -175,6 +177,8 @@ export default function OrdersPage() {
     setRecoverData(null);
     setRecoverError(null);
     setSyncOpen(false);
+    setConfirmDelete(false);
+    setDeleting(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected?.id, selected?.status]);
 
@@ -206,6 +210,7 @@ export default function OrdersPage() {
     if (!selected) return;
     setRecoverState('fetching');
     setRecoverError(null);
+    setConfirmDelete(false);
     try {
       const res = await fetch('/api/stripe/reconcile-manual', {
         method: 'POST',
@@ -219,6 +224,31 @@ export default function OrdersPage() {
     } catch (err: unknown) {
       setRecoverError(err instanceof Error ? err.message : 'Failed to fetch from Stripe');
       setRecoverState('idle');
+    }
+  };
+
+  const deleteRecord = async () => {
+    if (!selected) return;
+    setDeleting(true);
+    try {
+      const res = await fetch('/api/stripe/reconcile-manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: selected.id, mode: 'delete' }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Delete failed');
+      const num = selected.order_number;
+      setOrders(prev => prev.filter(o => o.id !== selected.id));
+      closePanel();
+      setSyncOpen(false);
+      setToast({ message: `#${num} deleted`, tone: 'success' });
+    } catch (err: unknown) {
+      setRecoverError(err instanceof Error ? err.message : 'Delete failed');
+      setSyncOpen(true);
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(false);
     }
   };
 
@@ -724,6 +754,43 @@ export default function OrdersPage() {
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-6">
+          {recoverError && !selected.stripe_payment_intent_id && (
+            <div className="mb-5 rounded-lg border p-4" style={{ borderColor: '#f2c4c4', background: 'rgba(180,35,24,0.05)' }}>
+              <p className="text-[13px] font-semibold" style={{ color: '#b42318' }}>
+                This checkout session could not be retrieved from Stripe.
+              </p>
+              <p className="text-xs mt-1 leading-relaxed text-[var(--muted)]">
+                The order has no payment intent id, so it was never paid. You can permanently remove this record.
+              </p>
+              {!confirmDelete ? (
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  className="mt-2.5 h-8 rounded-md border px-3 text-[13px] font-medium transition-colors duration-150 hover:bg-[var(--surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                  style={{ borderColor: '#f2c4c4', color: '#b42318' }}
+                >
+                  Delete order record
+                </button>
+              ) : (
+                <div className="flex gap-2 mt-2.5">
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    className="h-8 rounded-md border px-3 text-[13px] font-medium hover:bg-[var(--surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                    style={{ borderColor: 'var(--line)' }}
+                  >
+                    Keep it
+                  </button>
+                  <button
+                    onClick={deleteRecord}
+                    disabled={deleting}
+                    className="h-8 rounded-md px-3 text-[13px] font-semibold text-white disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                    style={{ background: '#b42318' }}
+                  >
+                    {deleting ? 'Deleting…' : 'Confirm permanent delete'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
               <h3 className="text-[12px] font-bold uppercase tracking-[0.14em] mb-2 text-[var(--muted)]">Recover from Stripe</h3>
 
               {recoverState === 'idle' && !recoverData && (
