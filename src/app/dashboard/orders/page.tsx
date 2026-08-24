@@ -686,7 +686,7 @@ export default function OrdersPage() {
         role="dialog"
         aria-modal="true"
         aria-label="Sync from Stripe"
-        className={`fixed top-0 right-0 z-[55] h-full w-full sm:w-[520px] flex flex-col border-l shadow-[-12px_0_32px_rgba(15,23,42,0.18)] bg-[var(--raised)] transition-transform duration-200 ${
+        className={`fixed top-0 right-0 z-[55] h-full w-full sm:w-[560px] lg:w-[640px] flex flex-col border-l shadow-[-12px_0_32px_rgba(15,23,42,0.18)] bg-[var(--raised)] transition-transform duration-200 ${
           syncOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
         style={{ borderColor: 'var(--line)', transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
