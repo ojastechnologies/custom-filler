@@ -472,17 +472,6 @@ export default function DashboardPage() {
                 ) : (
                   <div role="table" aria-label="Latest five orders" className="pb-1">
                     {/* Column headers */}
-                    <div
-                      role="row"
-                      className={`hidden sm:grid gap-4 px-5 pb-2 ${'grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto_auto_auto]'}`}
-                    >
-                      {['Order', 'Customer', 'Total', 'Placed', 'Status'].map(h => (
-                        <span key={h} role="columnheader" className={`${h === 'Total' || h === 'Placed' ? 'text-right' : ''} ${h === 'Status' ? 'text-center pr-6' : ''} text-[11.5px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]`}>
-                          {h}
-                        </span>
-                      ))}
-                    </div>
-
                     <div className="hidden sm:grid sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_84px_64px_104px] gap-4 px-5 py-2 border-b" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
                       <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]">Order</span>
                       <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]">Customer</span>

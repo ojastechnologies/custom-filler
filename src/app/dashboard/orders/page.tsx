@@ -31,11 +31,14 @@ function shortDate(iso: string | null | undefined) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function tableDate(iso: string | null | undefined) {
+function datePart(iso: string | null | undefined) {
   if (!iso) return '';
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ', ' +
-    d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function timePart(iso: string | null | undefined) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
 function fullDate(iso: string | null | undefined) {
@@ -302,7 +305,7 @@ export default function OrdersPage() {
               <>
               <section aria-label="Orders" className="rounded-xl border overflow-hidden bg-[var(--raised)]" style={{ borderColor: 'var(--line)' }}>
                 {/* Column headers */}
-                <div className="hidden md:grid grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_44px_84px_112px_100px_124px] gap-4 px-5 py-2.5 border-b" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
+                <div className="hidden md:grid grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_44px_84px_72px_100px_124px] gap-4 px-5 py-2.5 border-b" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
                   <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]">Order</span>
                   <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]">Customer</span>
                   <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Items</span>
@@ -320,7 +323,7 @@ export default function OrdersPage() {
                       <li key={order.id} role="row" style={{ borderColor: 'var(--line)' }}>
                         <button
                           onClick={() => openPanel(order)}
-                          className="w-full md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_44px_84px_112px_100px_124px] gap-4 items-center text-left px-5 py-3 transition-colors duration-150 hover:bg-[var(--surface)] focus-visible:outline-none focus-visible:bg-[var(--surface)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--ring)]"
+                          className="w-full md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_44px_84px_72px_100px_124px] gap-4 items-center text-left px-5 py-3 transition-colors duration-150 hover:bg-[var(--surface)] focus-visible:outline-none focus-visible:bg-[var(--surface)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--ring)]"
                           aria-haspopup="dialog"
                           aria-label={`Open order ${order.order_number}`}
                         >
@@ -342,8 +345,9 @@ export default function OrdersPage() {
                           <span role="cell" className="hidden md:block text-sm tabular-nums font-semibold text-right text-[var(--fg)]">
                             {money(order.total_amount)}
                           </span>
-                          <span role="cell" className="text-[13px] tabular-nums whitespace-nowrap text-right text-[var(--muted)]">
-                            {tableDate(order.created_at)}
+                          <span role="cell" className="flex flex-col items-end leading-tight text-[13px] tabular-nums text-right text-[var(--muted)]">
+                            <span>{datePart(order.created_at)}</span>
+                            <span>{timePart(order.created_at)}</span>
                           </span>
                           <span role="cell" className="hidden md:flex items-center justify-end">
                             {(() => {
