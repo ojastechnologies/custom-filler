@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Script from 'next/script';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
@@ -178,7 +178,7 @@ const markEmailAsSent = (orderIdentifier: string): void => {
   localStorage.setItem(`${getEmailSentKey(orderIdentifier)}_timestamp`, new Date().toISOString());
 };
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessContent() {
   const googleTagId = process.env.NEXT_PUBLIC_GOOGLE_TAG_ID;
   const conversionEvent1 = process.env.NEXT_PUBLIC_GOOGLE_CONVERSION_EVENT_1;
   const conversionEvent2 = process.env.NEXT_PUBLIC_GOOGLE_CONVERSION_EVENT_2;
@@ -819,5 +819,19 @@ export default function CheckoutSuccessPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+          <div className="w-16 h-16 animate-spin rounded-full border-t-2 border-b-2 border-primary-600"></div>
+        </div>
+      }
+    >
+      <CheckoutSuccessContent />
+    </Suspense>
   );
 }

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import Button from '@/components/ui/Button';
 
-export default function ResetPasswordForm() {
+function ResetPasswordFormContent() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -123,5 +123,13 @@ export default function ResetPasswordForm() {
         </Button>
       </form>
     </div>
+  );
+}
+
+export default function ResetPasswordForm() {
+  return (
+    <Suspense fallback={null}>
+      <ResetPasswordFormContent />
+    </Suspense>
   );
 }
