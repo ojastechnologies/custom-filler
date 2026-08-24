@@ -167,6 +167,7 @@ interface OutgoingEmail {
   subject: string;
   html: string;
   plainText: string;
+  replyTo?: { address: string; displayName?: string };
 }
 
 async function azureSendEmail(cfg: AzureConfig, fromEmail: string, message: OutgoingEmail): Promise<{ ok: boolean; detail: string }> {
@@ -180,6 +181,10 @@ async function azureSendEmail(cfg: AzureConfig, fromEmail: string, message: Outg
     },
     recipients: {
       to: message.to.map(r => ({ address: r.address, displayName: r.displayName ?? '' })),
+      // Sender is a DoNotReply mailbox — route any customer reply to a real
+      // inbox when one is configured. (In the 2023-03-31 schema, replyTo is
+      // an array nested under recipients.)
+      ...(message.replyTo ? { replyTo: [message.replyTo] } : {}),
     },
   };
 
@@ -270,7 +275,7 @@ function buildModel(order: OrderRow): EmailModel {
   };
 }
 
-function renderHtml(m: EmailModel, isAdmin: boolean): string {
+function renderHtml(m: EmailModel, isAdmin: boolean, contactEmail = ''): string {
   // Modern minimal transactional design (Stripe/Vercel-school): quiet canvas,
   // strong type hierarchy, hairlines instead of boxes. Inline styles only,
   // table layout, no images — survives Gmail/Outlook truncation rules.
@@ -396,7 +401,9 @@ function renderHtml(m: EmailModel, isAdmin: boolean): string {
       <p style="margin:16px 0 4px;font-size:12.5px;line-height:1.6;color:${muted}">
         ${isAdmin
           ? 'A new order was placed and payment has settled. Please process it from the admin dashboard.'
-          : `Questions about this order? Just reply to this email or visit <a href="https://www.customfiller.com" style="color:${accent};text-decoration:none">customfiller.com</a>.`}
+          : contactEmail
+            ? `Questions about this order? Email <a href="mailto:${escapeHtml(contactEmail)}" style="color:${accent};text-decoration:none">${escapeHtml(contactEmail)}</a>&nbsp;·&nbsp;<a href="https://www.customfiller.com" style="color:${accent};text-decoration:none">customfiller.com</a>`
+            : `Questions about this order? Visit <a href="https://www.customfiller.com/contact-us" style="color:${accent};text-decoration:none">customfiller.com/contact-us</a>`}
       </p>
       <p style="margin:0;font-size:11.5px;color:${faint}">Aero Tech Labs · Fort Lauderdale, FL · Order #${escapeHtml(m.orderNumber)}</p>
     </td></tr>
@@ -409,7 +416,7 @@ function renderHtml(m: EmailModel, isAdmin: boolean): string {
 }
 
 
-function renderText(m: EmailModel, isAdmin: boolean): string {
+function renderText(m: EmailModel, isAdmin: boolean, contactEmail = ''): string {
   const lines = [
     isAdmin ? '🔔 NEW ORDER NOTIFICATION' : 'ORDER CONFIRMATION',
     ''.padEnd(45, '─'),
@@ -428,6 +435,10 @@ function renderText(m: EmailModel, isAdmin: boolean): string {
     `Shipping: ${money(m.shippingCost)}`,
     `Tax: ${money(m.taxAmount)}`,
     `TOTAL: ${money(m.totalAmount)} ${m.currency}`,
+    '',
+    ...(isAdmin
+      ? ['Automated notification from your e-commerce system.']
+      : [contactEmail ? `Questions? Contact us: ${contactEmail}` : 'Questions? Visit https://www.customfiller.com']),
   ];
   return lines.join('\n');
 }
@@ -495,6 +506,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (!connStr || !fromEmail || !adminEmail) {
       throw new Error('Azure email env vars missing: AZURE_COMMUNICATION_CONNECTION_STRING / AZURE_FROM_EMAIL / AZURE_ADMIN_EMAIL');
     }
+
+    // Optional monitored inbox: used for the customer footer's contact link
+    // and as the Reply-To address (the sender itself is DoNotReply).
+    const contactEmail = (Deno.env.get('CONTACT_EMAIL') ?? '').trim();
     const azureCfg = parseAzureConnectionString(connStr);
 
     const results: Record<string, string> = {};
@@ -532,8 +547,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
       await deliver('customer', 'customer_notified_at', {
         to: [{ address: order.customer_email, displayName: model.customerName }],
         subject: `Order Confirmation - ${model.orderNumber}`,
-        html: renderHtml(model, false),
-        plainText: renderText(model, false),
+        html: renderHtml(model, false, contactEmail),
+        plainText: renderText(model, false, contactEmail),
+        replyTo: contactEmail ? { address: contactEmail } : undefined,
       });
     }
 

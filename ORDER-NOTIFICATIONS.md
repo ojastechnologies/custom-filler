@@ -61,8 +61,13 @@ supabase secrets set \
   AZURE_COMMUNICATION_CONNECTION_STRING="endpoint=https://...;accesskey=..." \
   AZURE_FROM_EMAIL="noreply@yourdomain" \
   AZURE_ADMIN_EMAIL="orders@yourdomain" \
-  NOTIFICATION_SHARED_SECRET="$(openssl rand -hex 24)"
+  NOTIFICATION_SHARED_SECRET="$(openssl rand -hex 24)" \
+  CONTACT_EMAIL="help@yourdomain"   # optional: footer contact link + Reply-To
 ```
+
+`CONTACT_EMAIL` is optional but recommended when `AZURE_FROM_EMAIL` is a
+DoNotReply mailbox: the customer footer links to it and customer replies are
+routed there instead of bouncing off the no-reply sender.
 
 Then put that same secret into the DB so the trigger can authenticate:
 
