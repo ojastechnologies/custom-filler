@@ -271,28 +271,21 @@ function buildModel(order: OrderRow): EmailModel {
 }
 
 function renderHtml(m: EmailModel, isAdmin: boolean): string {
-  const headerBg = isAdmin ? '#DC2626' : '#3B82F6';
-  const accent = isAdmin ? '#DC2626' : '#3B82F6';
-  const title = isAdmin ? '🔔 New Order Received!' : '✓ Order Confirmation';
-  const banner = isAdmin ? `<div style="background:#FEE2E2;border:2px solid #FECACA;border-radius:8px;padding:12px 15px;margin-bottom:20px;color:#991B1B;font-weight:600">⚡ ACTION REQUIRED: Please process this order promptly.</div>` : '';
+  // Modern minimal transactional design (Stripe/Vercel-school): quiet canvas,
+  // strong type hierarchy, hairlines instead of boxes. Inline styles only,
+  // table layout, no images — survives Gmail/Outlook truncation rules.
+  const accent = isAdmin ? '#B42318' : '#175CD3';
+  const ink = '#0F172A';
+  const bodyC = '#344054';
+  const muted = '#667085';
+  const faint = '#98A2B3';
+  const hairline = '#EAECF0';
 
-  // Suppress the shipping block when reconciliation produced no usable address.
-  const hasAddress = Boolean(m.shipping.line1?.trim() || m.shipping.city?.trim() || m.shipping.state?.trim() || m.shipping.postalCode?.trim());
+  const label = `font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:${faint};margin:0 0 10px`;
 
-  const itemRows = m.items.map(it => `
-    <tr>
-      <td style="padding:10px;border-bottom:1px solid #E5E7EB">
-        <strong>${escapeHtml(it.name)}</strong><br>
-        <span style="color:#6B7280;font-size:13px">Qty ${it.quantity} × ${money(it.price)}</span>
-      </td>
-      <td style="padding:10px;border-bottom:1px solid #E5E7EB;text-align:right;font-weight:600">${money(it.total)}</td>
-    </tr>`).join('');
-
-  const th = 'padding:8px 10px;border-bottom:2px solid #E5E7EB;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#6B7280';
-  const itemsTable = m.items.length === 0
-    ? `<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E5E7EB;border-radius:8px"><tr><td style="padding:10px;color:#6B7280;font-size:13px">No line items recorded.</td></tr></table>`
-    : `<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E5E7EB;border-collapse:separate;border-spacing:0;border-radius:8px;overflow:hidden">
-    <tr><th align="left" style="${th}">Item</th><th align="right" style="${th}">Amount</th></tr>${itemRows}</table>`;
+  const hasAddress = Boolean(
+    m.shipping.line1?.trim() || m.shipping.city?.trim() || m.shipping.state?.trim() || m.shipping.postalCode?.trim(),
+  );
 
   const addressHtml = [
     m.shipping.line1,
@@ -301,49 +294,120 @@ function renderHtml(m: EmailModel, isAdmin: boolean): string {
     m.shipping.country,
   ].filter(Boolean).map(escapeHtml).join('<br>');
 
+  const contactBlock = `
+            <p style="margin:0;font-size:14px;line-height:1.65;color:${bodyC}">
+              <strong style="color:${ink};font-weight:600">${escapeHtml(m.customerName)}</strong><br>
+              ${escapeHtml(m.customerEmail)}${m.customerPhone ? `<br>${escapeHtml(m.customerPhone)}` : ''}
+            </p>`;
+
+  const addressBlock = `
+            <p style="margin:0;font-size:14px;line-height:1.65;color:${bodyC}">${addressHtml}</p>`;
+
+  const itemRows = m.items.length === 0
+    ? `<tr><td colspan="2" style="padding:16px 0;color:${muted};font-size:13px">No line items recorded.</td></tr>`
+    : m.items.map(it => `
+        <tr>
+          <td style="padding:13px 0;border-bottom:1px solid ${hairline};vertical-align:top">
+            <div style="font-size:14px;font-weight:600;color:${ink}">${escapeHtml(it.name)}</div>
+            <div style="font-size:12.5px;color:${muted};margin-top:3px">Qty ${it.quantity} &nbsp;·&nbsp; ${money(it.price)} each</div>
+          </td>
+          <td align="right" style="padding:13px 0;border-bottom:1px solid ${hairline};vertical-align:top;font-size:14px;font-weight:600;color:${ink};white-space:nowrap">${money(it.total)}</td>
+        </tr>`).join('');
+
+  const totalsRow = (l: string, v: string) => `
+        <tr>
+          <td style="padding:5px 0;font-size:13.5px;color:${muted}">${l}</td>
+          <td align="right" style="padding:5px 0;font-size:13.5px;color:${bodyC}">${v}</td>
+        </tr>`;
+
+  const discountRow = m.discountAmount > 0
+    ? totalsRow(`Discount${m.dealCode ? ` · ${escapeHtml(m.dealCode)}` : ''}`, `<span style="color:#067647">−${money(m.discountAmount)}</span>`)
+    : '';
+
+  const statusPill = isAdmin
+    ? `<span style="display:inline-block;padding:5px 12px;border-radius:999px;background:#FEF3F2;border:1px solid #FEE4E2;color:#B42318;font-size:12px;font-weight:600">● Action required</span>`
+    : `<span style="display:inline-block;padding:5px 12px;border-radius:999px;background:#EFF8FF;border:1px solid #D1E9FF;color:#175CD3;font-size:12px;font-weight:600">✓ Paid</span>`;
+
   return `<!DOCTYPE html>
-<html><head><meta charset="utf-8"></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;line-height:1.6;color:#1F2937;background:#F9FAFB;margin:0;padding:20px">
-<div style="max-width:600px;margin:0 auto;background:#FFF">
-  <div style="background:${headerBg};color:#fff;padding:28px 20px;text-align:center">
-    <h1 style="margin:0;font-size:24px">${title}</h1>
-    <p style="margin:6px 0 0;opacity:.95">${isAdmin ? `Order #${escapeHtml(m.orderNumber)}` : `Thank you for your order, ${escapeHtml(m.customerName)}!`}</p>
-  </div>
-  <div style="padding:20px">
-    ${banner}
-    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E5E7EB;border-radius:8px;margin-bottom:16px">
-      <tr><td style="padding:14px">
-        <strong>Order</strong> #${escapeHtml(m.orderNumber)}<br>
-        <span style="color:#6B7280;font-size:13px">${escapeHtml(m.orderDate)}</span>
-        ${isAdmin ? `<br><span style="color:#6B7280;font-size:13px">Payment status: paid</span>` : ''}
-      </td></tr>
-    </table>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F4F5F7">
+<div style="background:#F4F5F7;padding:36px 16px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 
-    <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:${accent};margin:18px 0 8px">Customer</h3>
-    <p style="margin:0">${escapeHtml(m.customerName)}<br>${escapeHtml(m.customerEmail)}${m.customerPhone ? `<br>${escapeHtml(m.customerPhone)}` : ''}</p>
+  <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#FFFFFF;border:1px solid #E6E8EB;border-radius:14px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 12px 32px rgba(16,24,40,.06)">
+    <tr><td style="padding:26px 36px 0">
+      <span style="font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:${ink}">Aero&nbsp;Tech&nbsp;Labs</span>
+      <span style="color:${isAdmin ? '#DC2626' : '#2563EB'}">&nbsp;●</span>
+    </td></tr>
 
-    ${hasAddress ? `
-    <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:${accent};margin:18px 0 8px">Shipping Address</h3>
-    <p style="margin:0">${addressHtml}</p>` : ''}
+    <tr><td style="padding:18px 36px 0">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+        <td style="vertical-align:bottom">
+          <p style="${label}color:${accent}">${isAdmin ? 'New order' : 'Order confirmation'}</p>
+          <h1 style="margin:2px 0 6px;font-size:21px;font-weight:700;letter-spacing:-.01em;color:${ink}">#${escapeHtml(m.orderNumber)}</h1>
+          <p style="margin:0;font-size:13px;color:${muted}">${escapeHtml(m.orderDate)}</p>
+        </td>
+        <td align="right" style="vertical-align:bottom">${statusPill}</td>
+      </tr></table>
+    </td></tr>
 
-    <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:${accent};margin:18px 0 8px">Order Items (${m.items.length})</h3>
-    ${itemsTable}
+    <tr><td style="padding:20px 36px 0"><div style="height:1px;background:${hairline};line-height:1px;font-size:0">&nbsp;</div></td></tr>
 
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;font-size:14px">
-      <tr><td style="padding:4px 0;color:#6B7280">Subtotal</td><td align="right">${money(m.subtotal)}</td></tr>
-      ${m.discountAmount > 0 ? `<tr><td style="padding:4px 0;color:#6B7280">Discount${m.dealCode ? ` (${escapeHtml(m.dealCode)})` : ''}</td><td align="right" style="color:#059669">-${money(m.discountAmount)}</td></tr>` : ''}
-      <tr><td style="padding:4px 0;color:#6B7280">Shipping</td><td align="right">${money(m.shippingCost)}</td></tr>
-      <tr><td style="padding:4px 0;color:#6B7280">Tax</td><td align="right">${money(m.taxAmount)}</td></tr>
-      <tr><td style="padding:10px 0;border-top:2px solid #E5E7EB;margin-top:6px"><strong>Total</strong></td><td align="right" style="border-top:2px solid #E5E7EB;padding:10px 0"><strong style="color:${accent};font-size:17px">${money(m.totalAmount)} ${m.currency}</strong></td></tr>
-    </table>
+    <tr><td style="padding:22px 36px 0">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+        <td width="50%" style="vertical-align:top;padding-right:18px">
+          <p style="${label}">Customer</p>
+          ${contactBlock}
+        </td>
+        <td width="50%" style="vertical-align:top">
+          ${hasAddress ? `<p style="${label}">Ship to</p>${addressBlock}` : ''}
+        </td>
+      </tr></table>
+    </td></tr>
 
-    <p style="margin-top:26px;padding-top:14px;border-top:1px solid #E5E7EB;color:#6B7280;font-size:12px;text-align:center">
-      ${isAdmin ? 'Automated notification from your e-commerce system.' : 'If you have any questions about your order, please contact us.<br>Thank you for your business!'}
-    </p>
-  </div>
+    <tr><td style="padding:24px 36px 0">
+      <p style="${label}">Items (${m.items.length})</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <th align="left" style="padding:0 0 9px;border-bottom:1px solid ${hairline};font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:${faint}">Item</th>
+          <th align="right" style="padding:0 0 9px;border-bottom:1px solid ${hairline};font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:${faint}">Amount</th>
+        </tr>
+        ${itemRows}
+      </table>
+    </td></tr>
+
+    <tr><td style="padding:6px 36px 0">
+      <table role="presentation" align="right" width="250" cellpadding="0" cellspacing="0" style="width:auto">
+        ${totalsRow('Subtotal', money(m.subtotal))}
+        ${discountRow}
+        ${totalsRow('Shipping', money(m.shippingCost))}
+        ${totalsRow('Tax', money(m.taxAmount))}
+        <tr><td colspan="2" style="padding:9px 0 0"><div style="height:1px;background:#D0D5DD;line-height:1px;font-size:0">&nbsp;</div></td></tr>
+        <tr>
+          <td style="padding:10px 0 0;font-size:14px;font-weight:600;color:${ink}">Total</td>
+          <td align="right" style="padding:8px 0 0;font-size:19px;font-weight:700;color:${ink};white-space:nowrap">${money(m.totalAmount)}&nbsp;<span style="font-size:12px;font-weight:500;color:${faint}">${m.currency}</span></td>
+        </tr>
+      </table>
+    </td></tr>
+
+    <tr><td style="padding:30px 36px 30px">
+      <div style="height:1px;background:${hairline};line-height:1px;font-size:0">&nbsp;</div>
+      <p style="margin:16px 0 4px;font-size:12.5px;line-height:1.6;color:${muted}">
+        ${isAdmin
+          ? 'A new order was placed and payment has settled. Please process it from the admin dashboard.'
+          : `Questions about this order? Just reply to this email or visit <a href="https://www.customfiller.com" style="color:${accent};text-decoration:none">customfiller.com</a>.`}
+      </p>
+      <p style="margin:0;font-size:11.5px;color:${faint}">Aero Tech Labs · Fort Lauderdale, FL · Order #${escapeHtml(m.orderNumber)}</p>
+    </td></tr>
+  </table>
+
+</td></tr></table>
 </div>
-</body></html>`;
+</body>
+</html>`;
 }
+
 
 function renderText(m: EmailModel, isAdmin: boolean): string {
   const lines = [
