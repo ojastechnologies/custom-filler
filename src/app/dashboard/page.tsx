@@ -491,7 +491,7 @@ export default function DashboardPage() {
                           <li key={order.id} role="row" style={{ borderColor: 'var(--line)' }}>
                             <button
                               onClick={() => router.push('/dashboard/orders')}
-                              className="w-full sm:grid sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_84px_56px_104px] gap-4 items-center text-left px-5 py-2.5 transition-colors duration-150 hover:bg-[var(--surface)] focus-visible:outline-none focus-visible:bg-[var(--surface)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--ring)]"
+                              className="w-full sm:grid sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_84px_64px_104px] gap-4 items-center text-left px-5 py-2.5 transition-colors duration-150 hover:bg-[var(--surface)] focus-visible:outline-none focus-visible:bg-[var(--surface)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--ring)]"
                               aria-label={`Order ${order.order_number}, view all orders`}
                             >
                               <span role="cell" className="font-mono text-sm font-medium text-[var(--fg)] truncate">
@@ -503,7 +503,7 @@ export default function DashboardPage() {
                               <span role="cell" className="hidden sm:block text-sm tabular-nums font-semibold text-right text-[var(--fg)]">
                                 {formatMoney(order.total_amount)}
                               </span>
-                              <span role="cell" className="hidden lg:block text-[13px] tabular-nums text-right text-[var(--muted)] whitespace-nowrap">
+                              <span role="cell" className="hidden sm:block text-[13px] tabular-nums text-right text-[var(--muted)] whitespace-nowrap">
                                 {formatDate(order.created_at)}
                               </span>
                               <span role="cell" className="flex justify-start sm:justify-end">

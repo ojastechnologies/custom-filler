@@ -295,14 +295,14 @@ export default function OrdersPage() {
               <>
               <section aria-label="Orders" className="rounded-xl border overflow-hidden bg-[var(--raised)]" style={{ borderColor: 'var(--line)' }}>
                 {/* Column headers */}
-                <div className="hidden md:grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_auto_auto_auto_auto] gap-4 px-5 py-2.5 border-b" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
+                <div className="hidden md:grid grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_48px_84px_64px_104px_132px] gap-4 px-5 py-2.5 border-b" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
                   <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]">Order</span>
                   <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]">Customer</span>
                   <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Items</span>
                   <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Total</span>
                   <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Placed</span>
                   <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Payment</span>
-                  <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-right pr-5 text-[var(--muted)]">Status</span>
+                  <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Status</span>
                 </div>
 
                 <ul className="divide-y" style={{ borderColor: 'var(--line)' }}>
@@ -353,7 +353,6 @@ export default function OrdersPage() {
                             <span className="md:hidden text-[13px] tabular-nums text-[var(--muted)]">
                               {money(order.total_amount)} · {itemCount} item{itemCount === 1 ? '' : 's'} · {shortDate(order.created_at)}
                             </span>
-                            <span aria-hidden="true" className="hidden md:inline text-[var(--muted)]">›</span>
                           </span>
                         </button>
                       </li>
