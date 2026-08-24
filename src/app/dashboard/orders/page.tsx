@@ -744,6 +744,19 @@ export default function OrdersPage() {
                 const metaMismatch = typeof d.metadata_order_id === 'string' && d.metadata_order_id !== selected.id;
                 return (
                   <>
+                    <div className="mb-3 rounded-lg border divide-y" style={{ borderColor: 'var(--line)' }}>
+                      <p className="px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]">Stripe returns</p>
+                      {FIELDS.filter(([f]) => d[f]).map(([f, label]) => (
+                        <div key={f} className="px-3 py-1.5 flex gap-3">
+                          <span className="w-24 flex-shrink-0 text-[13px] text-[var(--muted)]">{label}</span>
+                          <span className="min-w-0 text-[13px] font-medium break-all text-[var(--fg)]">{d[f]}</span>
+                        </div>
+                      ))}
+                      {!d.customer_email && !d.customer_name && (
+                        <p className="px-3 py-2 text-[13px] text-[var(--muted)]">This session carries no customer details.</p>
+                      )}
+                    </div>
+
                     {metaMismatch && (
                       <p className="mb-3 rounded-md border px-3 py-2 text-xs" style={{ borderColor: '#fedf89', background: '#fffaeb', color: '#b54708' }}>
                         Note: this session's metadata points to order {String(d.metadata_order_id)} — applying will write these details onto #{selected.order_number} instead.
