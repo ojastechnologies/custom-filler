@@ -272,6 +272,9 @@ function renderHtml(m: EmailModel, isAdmin: boolean): string {
   const title = isAdmin ? '🔔 New Order Received!' : '✓ Order Confirmation';
   const banner = isAdmin ? `<div style="background:#FEE2E2;border:2px solid #FECACA;border-radius:8px;padding:12px 15px;margin-bottom:20px;color:#991B1B;font-weight:600">⚡ ACTION REQUIRED: Please process this order promptly.</div>` : '';
 
+  // Suppress the shipping block when reconciliation produced no usable address.
+  const hasAddress = Boolean(m.shipping.line1?.trim() || m.shipping.city?.trim() || m.shipping.state?.trim() || m.shipping.postalCode?.trim());
+
   const itemRows = m.items.map(it => `
     <tr>
       <td style="padding:10px;border-bottom:1px solid #E5E7EB">
@@ -280,6 +283,10 @@ function renderHtml(m: EmailModel, isAdmin: boolean): string {
       </td>
       <td style="padding:10px;border-bottom:1px solid #E5E7EB;text-align:right;font-weight:600">${money(it.total)}</td>
     </tr>`).join('');
+
+  const itemsTable = m.items.length === 0
+    ? `<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E5E7EB;border-radius:8px"><tr><td style="padding:10px;color:#6B7280;font-size:13px">No line items recorded.</td></tr></table>`
+    : `<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E5E7EB;border-collapse:separate;border-spacing:0;border-radius:8px;overflow:hidden">${itemRows}</table>`;
 
   const addressHtml = [
     m.shipping.line1,
@@ -309,12 +316,12 @@ function renderHtml(m: EmailModel, isAdmin: boolean): string {
     <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:${accent};margin:18px 0 8px">Customer</h3>
     <p style="margin:0">${escapeHtml(m.customerName)}<br>${escapeHtml(m.customerEmail)}${m.customerPhone ? `<br>${escapeHtml(m.customerPhone)}` : ''}</p>
 
-    ${addressHtml ? `
+    ${hasAddress ? `
     <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:${accent};margin:18px 0 8px">Shipping Address</h3>
     <p style="margin:0">${addressHtml}</p>` : ''}
 
     <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:${accent};margin:18px 0 8px">Order Items (${m.items.length})</h3>
-    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E5E7EB;border-radius:8px;border-collapse:separate;border-radius:8px;overflow:hidden">${itemRows}</table>
+    ${itemsTable}
 
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;font-size:14px">
       <tr><td style="padding:4px 0;color:#6B7280">Subtotal</td><td align="right">${money(m.subtotal)}</td></tr>
