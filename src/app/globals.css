@@ -151,3 +151,14 @@ html {
 .animate-stagger-3 { animation-delay: 0.3s; }
 .animate-stagger-4 { animation-delay: 0.4s; }
 .animate-stagger-5 { animation-delay: 0.5s; }
+
+/* Dashboard toast entrance: fast ease-out rise, no bounce */
+@keyframes dsh-toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+.dsh-toast-in { animation: dsh-toast-in 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .dsh-toast-in { animation: none; }
+}
