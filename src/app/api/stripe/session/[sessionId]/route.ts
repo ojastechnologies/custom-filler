@@ -86,33 +86,46 @@ export async function GET(
         });
 
         // 🔥 CRITICAL CHECK: Only update if customer info is missing or incomplete
-        const needsUpdate = 
-          !currentOrder?.customer_name || 
+        const isPaid = paymentInfo.payment_status === 'paid';
+        const needsUpdate =
+          !currentOrder?.customer_name ||
           currentOrder?.customer_email === 'pending@stripe.com' ||
           !currentOrder?.stripe_session_id;
 
         if (needsUpdate) {
           console.log('📝 Customer information missing - updating order with Stripe data');
-          
-          // Build update object using existing individual address fields
+
+          // The cart hits this route BEFORE redirecting to Stripe just to link
+          // the session id. On such unpaid sessions, customer_details are empty
+          // — writing them would blank the order AND flipping status here made
+          // notifications fire before reconciliation. Until payment settles,
+          // link identifiers only; leave customer fields and status alone.
           const baseUpdateData: Record<string, unknown> = {
-            customer_email: customerInfo.email,
-            customer_name: customerInfo.name || null,
-            customer_phone: customerInfo.phone || null,
             stripe_session_id: sessionId,
-            stripe_payment_intent_id: paymentInfo.payment_intent_id,
-            status: 'processing',
             updated_at: new Date().toISOString()
           };
 
-          // Add shipping address fields if available
-          if (customerInfo.address) {
-            baseUpdateData.shipping_line1 = customerInfo.address.line1 || null;
-            baseUpdateData.shipping_line2 = customerInfo.address.line2 || null;
-            baseUpdateData.shipping_city = customerInfo.address.city || null;
-            baseUpdateData.shipping_state = customerInfo.address.state || null;
-            baseUpdateData.shipping_postal_code = customerInfo.address.postal_code || null;
-            baseUpdateData.shipping_country = customerInfo.address.country || null;
+          if (paymentInfo.payment_intent_id) {
+            baseUpdateData.stripe_payment_intent_id = paymentInfo.payment_intent_id;
+          }
+
+          if (isPaid) {
+            baseUpdateData.customer_email = customerInfo.email;
+            baseUpdateData.customer_name = customerInfo.name || null;
+            baseUpdateData.customer_phone = customerInfo.phone || null;
+            baseUpdateData.status = 'processing';
+
+            // Add shipping address fields if available
+            if (customerInfo.address) {
+              baseUpdateData.shipping_line1 = customerInfo.address.line1 || null;
+              baseUpdateData.shipping_line2 = customerInfo.address.line2 || null;
+              baseUpdateData.shipping_city = customerInfo.address.city || null;
+              baseUpdateData.shipping_state = customerInfo.address.state || null;
+              baseUpdateData.shipping_postal_code = customerInfo.address.postal_code || null;
+              baseUpdateData.shipping_country = customerInfo.address.country || null;
+            }
+          } else {
+            console.log('⏳ Session not paid yet - linking session id only, deferring customer data');
           }
 
           console.log('📤 Updating order with:', baseUpdateData);

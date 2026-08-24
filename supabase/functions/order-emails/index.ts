@@ -473,6 +473,20 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return new Response(JSON.stringify({ skipped: `order older than ${MAX_ORDER_AGE_DAYS} days` }));
     }
 
+    // Readiness gate: some writers flip status to 'processing' before
+    // reconciliation fills customer fields (e.g. the cart links its Stripe
+    // session pre-payment). Sending then would email an admin alert with no
+    // contact info. Skip WITHOUT claiming — later triggers and the cron
+    // sweeper re-invoke once real reconciliation lands.
+    const reconciled = Boolean(order.customer_email) && order.customer_email !== PLACEHOLDER_EMAIL;
+    if (!reconciled) {
+      console.log(`📧 order-emails: order ${orderId} not yet reconciled (no real customer email); skipping`);
+      return new Response(
+        JSON.stringify({ orderId, source: payload.source, skipped: 'awaiting-reconciliation' }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+
     const model = buildModel(order);
 
     const connStr = Deno.env.get('AZURE_COMMUNICATION_CONNECTION_STRING');
