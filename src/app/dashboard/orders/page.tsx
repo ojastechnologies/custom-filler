@@ -649,22 +649,31 @@ export default function OrdersPage() {
 
               {/* Panel footer: status control */}
               <div className="flex-shrink-0 px-6 py-4 border-t bg-[var(--surface)]" style={{ borderColor: 'var(--line)' }}>
-                <label htmlFor="order-status" className="block text-[13px] font-semibold uppercase tracking-wide mb-1.5 text-[var(--muted)]">
-                  Order status
-                </label>
-                <div className="flex gap-2">
-                  <select
-                    id="order-status"
-                    value={draftStatus}
-                    onChange={(e) => setDraftStatus(e.target.value)}
-                    className="h-10 flex-1 min-w-0 rounded-md border px-3 text-sm capitalize bg-[var(--raised)] text-[var(--fg)] border-[var(--line)] focus:outline-none focus-visible:border-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-                  >
-                    {(['pending', 'processing', 'shipped', 'delivered', 'cancelled'] as const).map(st => (
-                      <option key={st} value={st}>{st}</option>
-                    ))}
-                  </select>
+                <p className="text-[13px] font-semibold uppercase tracking-wide mb-2 text-[var(--muted)]">Order status</p>
+                <div className="flex flex-wrap gap-2">
+                  {(['pending', 'processing', 'shipped', 'delivered', 'cancelled'] as const).map(st => {
+                    const active = draftStatus === st;
+                    return (
+                      <button
+                        key={st}
+                        type="button"
+                        onClick={() => setDraftStatus(st)}
+                        aria-pressed={active}
+                        className={`h-9 rounded-full px-3.5 text-[13px] font-semibold capitalize transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] ${
+                          active
+                            ? STATUS_PILL[st]
+                            : 'border text-[var(--muted)] hover:text-[var(--fg)] hover:bg-[var(--surface)]'
+                        }`}
+                        style={active ? undefined : { borderColor: 'var(--line)' }}
+                      >
+                        {st}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="flex justify-end mt-3">
                   <Button variant="primary" onClick={saveStatus} disabled={!dirty || isUpdating} className="h-10 px-5">
-                    {isUpdating ? 'Saving…' : 'Update'}
+                    {isUpdating ? 'Saving…' : 'Update status'}
                   </Button>
                 </div>
               </div>
