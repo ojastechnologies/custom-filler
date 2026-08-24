@@ -11,7 +11,7 @@ import { fetchOrders, updateOrderStatus, Order, OrderItem } from '@/services/ord
 type Toast = { message: string; tone: 'success' | 'error' } | null;
 type OrderWithExtras = Order & { discount_amount?: number | null; deal_code?: string | null };
 
-const STATUS_FILTERS = ['all', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'] as const;
+const STATUS_FILTERS = ['all', 'processing', 'shipped', 'delivered', 'cancelled', 'pending'] as const;
 type StatusFilter = typeof STATUS_FILTERS[number];
 
 const STATUS_PILL: Record<string, string> = {
@@ -81,7 +81,6 @@ export default function OrdersPage() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [page, setPage] = useState(1);
-  const [view, setView] = useState<'live' | 'pending'>('live');
 
   const [selected, setSelected] = useState<Order | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -145,9 +144,8 @@ export default function OrdersPage() {
   }, [panelOpen]);
 
   const filtered = useMemo(() => {
-    const pool = view === 'pending'
-      ? orders.filter(o => o.status === 'pending')
-      : orders.filter(o => o.status !== 'pending');
+    if (filter === 'pending') return orders.filter(o => o.status === 'pending');
+    const pool = orders.filter(o => o.status !== 'pending');
     if (filter === 'all') return pool;
     return pool.filter(o => o.status === filter);
   }, [orders, filter]);
@@ -282,25 +280,12 @@ export default function OrdersPage() {
                 <p className="text-[12px] font-bold uppercase tracking-[0.16em]" style={{ color: 'var(--accent)' }}>
                   Admin portal
                 </p>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-[var(--fg)]">Orders</h1>
-                <p className="text-sm mt-1 text-[var(--muted)]">
-                  {view === 'live'
-                    ? 'Paid orders, from processing through delivered.'
-                    : 'Unpaid checkout sessions, usually abandoned carts. If a customer says they paid, open the order and use Sync from Stripe.'}
-                </p>
-                </div>
-                <button
-                  onClick={() => { setView(v => (v === 'live' ? 'pending' : 'live')); setFilter('all'); setPage(1); }}
-                  className="flex-shrink-0 mt-1.5 text-sm font-semibold hover:underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded-sm"
-                  style={{ color: 'var(--accent)' }}
-                >
-                  {view === 'live'
-                    ? `See pending orders (${orders.filter(o => o.status === 'pending').length})`
-                    : 'Back to paid orders'}
-                </button>
-              </div>
+              <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-[var(--fg)]">Orders</h1>
+              <p className="text-sm mt-1 text-[var(--muted)]">
+                {filter === 'pending'
+                  ? 'Unpaid checkout sessions — usually abandoned carts. If a customer says they paid, open the order and use Sync from Stripe.'
+                  : 'Paid orders, from processing through delivered.'}
+              </p>
                 {!loadingOrders && (
                   <p className="text-sm mt-0.5 text-[var(--muted)]">
                     {orders.length} total{counts.pending > 0 && (
