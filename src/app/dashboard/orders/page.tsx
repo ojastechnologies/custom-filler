@@ -270,6 +270,7 @@ export default function OrdersPage() {
                   <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Items</span>
                   <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Total</span>
                   <span className="hidden lg:block text-[11.5px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Placed</span>
+                  <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Payment</span>
                   <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-right pr-5 text-[var(--muted)]">Status</span>
                 </div>
 
@@ -281,7 +282,7 @@ export default function OrdersPage() {
                       <li key={order.id} role="row" style={{ borderColor: 'var(--line)' }}>
                         <button
                           onClick={() => openPanel(order)}
-                          className="w-full md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_auto_auto_auto_auto] gap-4 items-center text-left px-5 py-3 transition-colors duration-150 hover:bg-[var(--surface)] focus-visible:outline-none focus-visible:bg-[var(--surface)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--ring)]"
+                          className="w-full md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_48px_84px_64px_104px_132px] gap-4 items-center text-left px-5 py-3 transition-colors duration-150 hover:bg-[var(--surface)] focus-visible:outline-none focus-visible:bg-[var(--surface)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--ring)]"
                           aria-haspopup="dialog"
                           aria-label={`Open order ${order.order_number}`}
                         >
@@ -293,6 +294,9 @@ export default function OrdersPage() {
                               {order.customer_name || '—'}
                             </span>
                             <span className="block text-[13px] truncate text-[var(--muted)]">{order.customer_email}</span>
+                            {order.customer_phone && (
+                              <span className="block text-[13px] tabular-nums truncate text-[var(--muted)]">{order.customer_phone}</span>
+                            )}
                           </span>
                           <span role="cell" className="hidden md:block text-sm tabular-nums text-right text-[var(--muted)]">
                             {itemCount}
@@ -302,6 +306,16 @@ export default function OrdersPage() {
                           </span>
                           <span role="cell" className="hidden lg:block text-[13px] tabular-nums whitespace-nowrap lg:text-right text-[var(--muted)]">
                             {shortDate(order.created_at)}
+                          </span>
+                          <span role="cell" className="hidden md:flex items-center justify-end">
+                            {(() => {
+                              const pay = (o.payment_status ?? (o.status === 'pending' ? 'unpaid' : 'paid')) as string;
+                              return pay === 'paid' ? (
+                                <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">Paid</span>
+                              ) : (
+                                <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold capitalize whitespace-nowrap text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">{pay}</span>
+                              );
+                            })()}
                           </span>
                           <span role="cell" className="flex items-center justify-start md:justify-end gap-2 mt-1.5 md:mt-0">
                             <StatusPill status={order.status} />
