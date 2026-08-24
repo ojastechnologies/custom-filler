@@ -74,6 +74,7 @@ async function reconcileOrderFromSession(session: Stripe.Checkout.Session): Prom
     ...(phone ? { customer_phone: phone } : {}),
     stripe_session_id: session.id,
     ...(paymentIntentId ? { stripe_payment_intent_id: paymentIntentId } : {}),
+    payment_status: (session.payment_status as string) || 'paid',
     status: 'processing',
     updated_at: new Date().toISOString(),
   };

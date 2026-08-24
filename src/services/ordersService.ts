@@ -35,6 +35,9 @@ export interface Order {
   tax_amount: number;
   total_amount: number;
   currency: string;
+
+  /** What Stripe last reported for this order's checkout session. */
+  payment_status?: string | null;
   
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   created_at: string;
@@ -59,6 +62,9 @@ export interface CreateOrderData {
   tax_amount: number;
   total_amount: number;
   currency: string;
+
+  /** What Stripe last reported for this order's checkout session. */
+  payment_status?: string | null;
   deal_id?: string;
   deal_code?: string;
   discount_amount?: number;

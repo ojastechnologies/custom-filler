@@ -445,16 +445,28 @@ export default function OrdersPage() {
                   </div>
                 </section>
 
-                {/* Payment references */}
-                {(so.stripe_session_id || so.stripe_payment_intent_id) && (
-                  <section>
-                    <h3 className="text-[12px] font-bold uppercase tracking-[0.14em] mb-2 text-[var(--muted)]">Payment</h3>
-                    <div className="space-y-1 text-[13px] font-mono break-all text-[var(--muted)]">
+                {/* Payment */}
+                <section>
+                  <h3 className="text-[12px] font-bold uppercase tracking-[0.14em] mb-2 text-[var(--muted)]">Payment</h3>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-[var(--muted)]">Status</span>
+                    {(so.payment_status ?? (so.status === 'pending' ? 'unpaid' : 'paid')) === 'paid' ? (
+                      <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
+                        Paid
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold capitalize text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                        {so.payment_status ?? (so.status === 'pending' ? 'unpaid' : 'paid')}
+                      </span>
+                    )}
+                  </div>
+                  {(so.stripe_session_id || so.stripe_payment_intent_id) && (
+                    <div className="mt-2 space-y-1 text-[13px] font-mono break-all text-[var(--muted)]">
                       {so.stripe_payment_intent_id && <p>pi: {so.stripe_payment_intent_id}</p>}
                       {so.stripe_session_id && <p>cs: {so.stripe_session_id}</p>}
                     </div>
-                  </section>
-                )}
+                  )}
+                </section>
               </div>
 
               {/* Panel footer: status control */}
