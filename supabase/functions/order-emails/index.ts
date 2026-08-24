@@ -235,9 +235,13 @@ interface EmailModel {
 function buildModel(order: OrderRow): EmailModel {
   const items = (order.order_items ?? []).map(it => {
     const quantity = it.quantity ?? 1;
-    let price = Number(it.unit_price) || 0;
     const total = Number(it.total_price) || 0;
-    if ((price === 0 || !price) && total > 0 && quantity > 0) price = total / quantity;
+    // The site stores unit_price as the PRE-DISCOUNT list price while
+    // total_price is the actually-charged line total (product deals applied).
+    // Derive the displayed unit price from the line total so every row is
+    // self-consistent ("Qty 2 × $54.00 = $108.00"), falling back to the stored
+    // unit price when there is no usable total.
+    const price = total > 0 && quantity > 0 ? total / quantity : Number(it.unit_price) || 0;
     return { name: (it.product_name || '').trim() || 'Laser Cryogen', quantity: quantity || 1, price, total };
   });
 
