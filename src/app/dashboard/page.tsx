@@ -391,7 +391,7 @@ export default function DashboardPage() {
   const initial = (user.email || '?').charAt(0).toUpperCase();
 
   const inputClasses = "w-full h-10 px-3 rounded-md border text-sm bg-[var(--raised)] text-[var(--fg)] border-[var(--line)] placeholder:text-[var(--muted)] focus:outline-none focus-visible:border-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[var(--ring)] transition-[color,border-color,box-shadow] duration-150";
-  const groupLabelClasses = "text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--muted)]";
+  const groupLabelClasses = "text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--muted)]";
 
   return (
     <>
@@ -411,10 +411,10 @@ export default function DashboardPage() {
                   {initial}
                 </div>
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.16em]" style={{ color: 'var(--accent)' }}>
+                  <p className="text-[12px] font-bold uppercase tracking-[0.16em]" style={{ color: 'var(--accent)' }}>
                     Admin portal
                   </p>
-                  <h1 className="text-[26px] leading-tight font-semibold tracking-tight text-[var(--fg)]">Dashboard</h1>
+                  <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-[var(--fg)]">Dashboard</h1>
                 </div>
               </div>
 
@@ -441,7 +441,7 @@ export default function DashboardPage() {
                   <div className="flex items-baseline gap-3">
                     <h2 className="text-sm font-semibold text-[var(--fg)]">Recent orders</h2>
                     {!loadingOrders && orders.length > 0 && (
-                      <p className="text-xs text-[var(--muted)]">
+                      <p className="text-[13px] text-[var(--muted)]">
                         {orders.length} total{pendingOrders > 0 && (
                           <> · <span className="font-semibold" style={{ color: 'var(--accent)' }}>{pendingOrders} awaiting payment</span></>
                         )}
@@ -450,7 +450,7 @@ export default function DashboardPage() {
                   </div>
                   <button
                     onClick={() => router.push('/dashboard/orders')}
-                    className="text-[13px] font-medium hover:underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded"
+                    className="text-sm font-medium hover:underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded"
                     style={{ color: 'var(--accent)' }}
                   >
                     All orders →
@@ -467,7 +467,7 @@ export default function DashboardPage() {
                   <div className="px-5 pb-5">
                     <div className="rounded-lg border border-dashed px-4 py-6 text-center" style={{ borderColor: 'var(--line)' }}>
                       <p className="text-sm font-medium text-[var(--fg)]">No orders yet</p>
-                      <p className="text-xs mt-1 text-[var(--muted)]">New orders appear here the moment they are placed.</p>
+                      <p className="text-[13px] mt-1 text-[var(--muted)]">New orders appear here the moment they are placed.</p>
                     </div>
                   </div>
                 ) : (
@@ -478,7 +478,7 @@ export default function DashboardPage() {
                       className={`hidden sm:grid gap-4 px-5 pb-2 ${'grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto_auto_auto]'}`}
                     >
                       {['Order', 'Customer', 'Total', 'Placed', 'Status'].map(h => (
-                        <span key={h} role="columnheader" className={`${h === 'Total' || h === 'Placed' ? 'text-right' : ''} ${h === 'Status' ? 'text-center pr-6' : ''} text-[10.5px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]`}>
+                        <span key={h} role="columnheader" className={`${h === 'Total' || h === 'Placed' ? 'text-right' : ''} ${h === 'Status' ? 'text-center pr-6' : ''} text-[11.5px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]`}>
                           {h}
                         </span>
                       ))}
@@ -494,21 +494,21 @@ export default function DashboardPage() {
                               className="w-full sm:grid sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto_auto_auto] gap-4 items-center text-left px-5 py-2.5 transition-colors duration-150 hover:bg-[var(--surface)] focus-visible:outline-none focus-visible:bg-[var(--surface)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--ring)]"
                               aria-label={`Order ${order.order_number}, view all orders`}
                             >
-                              <span role="cell" className="font-mono text-[13px] font-medium text-[var(--fg)] truncate">
+                              <span role="cell" className="font-mono text-sm font-medium text-[var(--fg)] truncate">
                                 #{order.order_number}
                               </span>
-                              <span role="cell" className="hidden sm:block text-[13px] truncate text-[var(--muted)]">
+                              <span role="cell" className="hidden sm:block text-sm truncate text-[var(--muted)]">
                                 {order.customer_name || order.customer_email || '—'}
                               </span>
-                              <span role="cell" className="hidden sm:block text-[13px] tabular-nums font-semibold text-right text-[var(--fg)]">
+                              <span role="cell" className="hidden sm:block text-sm tabular-nums font-semibold text-right text-[var(--fg)]">
                                 {formatMoney(order.total_amount)}
                               </span>
-                              <span role="cell" className="hidden lg:block text-xs tabular-nums text-right text-[var(--muted)] whitespace-nowrap">
+                              <span role="cell" className="hidden lg:block text-[13px] tabular-nums text-right text-[var(--muted)] whitespace-nowrap">
                                 {formatDate(order.created_at)}
                               </span>
                               <span role="cell" className="flex justify-start sm:justify-end">
                                 <span
-                                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-semibold ${
                                     isPending
                                       ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
                                       : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'
@@ -519,8 +519,8 @@ export default function DashboardPage() {
                               </span>
                               {/* Compact meta for mobile */}
                               <span role="cell" className="sm:hidden w-full flex items-center justify-between mt-1 -mb-0.5">
-                                <span className="text-xs tabular-nums font-semibold text-[var(--fg)]">{formatMoney(order.total_amount)}</span>
-                                <span className="text-xs text-[var(--muted)]">{formatDate(order.created_at)}</span>
+                                <span className="text-[13px] tabular-nums font-semibold text-[var(--fg)]">{formatMoney(order.total_amount)}</span>
+                                <span className="text-[13px] text-[var(--muted)]">{formatDate(order.created_at)}</span>
                               </span>
                             </button>
                           </li>
@@ -554,7 +554,7 @@ export default function DashboardPage() {
                       >
                         {tab === 'products' ? 'Products' : 'Deals & Promotions'}
                         <span
-                          className={`ml-2 inline-flex items-center justify-center min-w-[20px] h-[18px] px-1.5 rounded-full text-[11px] font-semibold tabular-nums transition-colors duration-150 ${
+                          className={`ml-2 inline-flex items-center justify-center min-w-[20px] h-[18px] px-1.5 rounded-full text-[12px] font-semibold tabular-nums transition-colors duration-150 ${
                             isActive ? '' : 'text-[var(--muted)]'
                           }`}
                           style={isActive ? { background: 'var(--accent-tint)', color: 'var(--accent)' } : undefined}
@@ -591,7 +591,7 @@ export default function DashboardPage() {
                 {isAdmin && showForm && (
                   <section aria-label="Product form" className="mb-10 rounded-xl border bg-[var(--raised)] overflow-hidden" style={{ borderColor: 'var(--line)' }}>
                     <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'var(--line)' }}>
-                      <h2 className="text-[15px] font-semibold text-[var(--fg)]">
+                      <h2 className="text-base font-semibold text-[var(--fg)]">
                         {editingProduct ? 'Edit product' : 'New product'}
                       </h2>
                       <button
@@ -616,7 +616,7 @@ export default function DashboardPage() {
                         <legend className={groupLabelClasses}>Details</legend>
                         <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4 mt-2.5">
                           <div>
-                            <label htmlFor="name" className="block text-[13px] font-medium mb-1.5 text-[var(--fg)]">
+                            <label htmlFor="name" className="block text-sm font-medium mb-1.5 text-[var(--fg)]">
                               Name <span style={{ color: 'var(--accent)' }}>*</span>
                             </label>
                             <input
@@ -631,7 +631,7 @@ export default function DashboardPage() {
                             />
                           </div>
                           <div>
-                            <label htmlFor="unit_price" className="block text-[13px] font-medium mb-1.5 text-[var(--fg)]">
+                            <label htmlFor="unit_price" className="block text-sm font-medium mb-1.5 text-[var(--fg)]">
                               Price <span style={{ color: 'var(--accent)' }}>*</span>
                             </label>
                             <div className="relative">
@@ -653,7 +653,7 @@ export default function DashboardPage() {
                         </div>
 
                         <div className="mt-4">
-                          <label htmlFor="description" className="block text-[13px] font-medium mb-1.5 text-[var(--fg)]">
+                          <label htmlFor="description" className="block text-sm font-medium mb-1.5 text-[var(--fg)]">
                             Description
                           </label>
                           <textarea
@@ -672,7 +672,7 @@ export default function DashboardPage() {
                         <legend className={groupLabelClasses}>Classification</legend>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2.5">
                           <div>
-                            <label htmlFor="clientpathurl" className="block text-[13px] font-medium mb-1.5 text-[var(--fg)]">
+                            <label htmlFor="clientpathurl" className="block text-sm font-medium mb-1.5 text-[var(--fg)]">
                               Service category
                             </label>
                             <select
@@ -692,7 +692,7 @@ export default function DashboardPage() {
                           </div>
 
                           <div>
-                            <label htmlFor="deal_id" className="block text-[13px] font-medium mb-1.5 text-[var(--fg)]">
+                            <label htmlFor="deal_id" className="block text-sm font-medium mb-1.5 text-[var(--fg)]">
                               Associated deal
                             </label>
                             <select
@@ -714,7 +714,7 @@ export default function DashboardPage() {
                             {formData.deal_id && (() => {
                               const selectedDeal = deals.find(d => d.id === formData.deal_id);
                               return selectedDeal ? (
-                                <p className="mt-1.5 text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>
+                                <p className="mt-1.5 text-[13px] leading-relaxed" style={{ color: 'var(--muted)' }}>
                                   {selectedDeal.code}: {selectedDeal.description}
                                 </p>
                               ) : null;
@@ -731,7 +731,7 @@ export default function DashboardPage() {
                             currentImage={formData.image || ''}
                             onImageSelected={handleImageSelected}
                           />
-                          <p className="mt-2 text-xs text-[var(--muted)]">
+                          <p className="mt-2 text-[13px] text-[var(--muted)]">
                             Recommended size: 800×800px, max 2MB.
                           </p>
                         </div>
@@ -756,7 +756,7 @@ export default function DashboardPage() {
                     <h2 className="text-sm font-semibold text-[var(--fg)]">
                       All products
                       {!loadingProducts && (
-                        <span className="ml-2 text-xs font-normal tabular-nums" style={{ color: 'var(--muted)' }}>
+                        <span className="ml-2 text-[13px] font-normal tabular-nums" style={{ color: 'var(--muted)' }}>
                           {products.length}
                         </span>
                       )}
@@ -811,13 +811,13 @@ export default function DashboardPage() {
                           <div className="flex flex-col flex-1 p-4">
                             <div className="flex-1">
                               <h3 className="text-sm font-semibold leading-snug mb-1 line-clamp-2 text-[var(--fg)]">{product.title}</h3>
-                              <p className="text-[15px] font-bold tabular-nums mb-2.5 text-[var(--fg)]">
+                              <p className="text-base font-bold tabular-nums mb-2.5 text-[var(--fg)]">
                                 ${product.price.toFixed(2)}
                               </p>
 
                               {product.deal && (
                                 <span
-                                  className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold mb-2.5"
+                                  className="inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-semibold mb-2.5"
                                   style={{ background: 'var(--accent-tint)', color: 'var(--accent)' }}
                                 >
                                   {product.deal.code} · {product.deal.discount_type === 'percentage'
@@ -827,7 +827,7 @@ export default function DashboardPage() {
                               )}
 
                               {product.description && (
-                                <p className="text-[13px] leading-relaxed line-clamp-2 text-[var(--muted)]">
+                                <p className="text-sm leading-relaxed line-clamp-2 text-[var(--muted)]">
                                   {product.description}
                                 </p>
                               )}
@@ -836,14 +836,14 @@ export default function DashboardPage() {
                             <div className="flex-shrink-0 pt-3.5 mt-auto flex gap-2 border-t" style={{ borderColor: 'var(--line)', marginTop: 'auto' }}>
                               <button
                                 onClick={() => handleEdit(product)}
-                                className="flex-1 py-1.5 rounded-md border text-[13px] font-medium transition-colors duration-150 hover:bg-[var(--accent-tint)] hover:border-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                                className="flex-1 py-1.5 rounded-md border text-sm font-medium transition-colors duration-150 hover:bg-[var(--accent-tint)] hover:border-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
                                 style={{ borderColor: 'var(--line)', color: 'var(--fg)' }}
                               >
                                 Edit
                               </button>
                               <button
                                 onClick={() => handleDelete(product)}
-                                className="flex-1 py-1.5 rounded-md border text-[13px] font-medium text-red-700 dark:text-red-300 transition-colors duration-150 hover:bg-red-50 dark:hover:bg-red-900/25 hover:border-red-300 dark:hover:border-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                                className="flex-1 py-1.5 rounded-md border text-sm font-medium text-red-700 dark:text-red-300 transition-colors duration-150 hover:bg-red-50 dark:hover:bg-red-900/25 hover:border-red-300 dark:hover:border-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
                                 style={{ borderColor: 'var(--line)' }}
                               >
                                 Delete
