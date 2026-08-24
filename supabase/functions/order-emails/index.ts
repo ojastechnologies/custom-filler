@@ -284,9 +284,11 @@ function renderHtml(m: EmailModel, isAdmin: boolean): string {
       <td style="padding:10px;border-bottom:1px solid #E5E7EB;text-align:right;font-weight:600">${money(it.total)}</td>
     </tr>`).join('');
 
+  const th = 'padding:8px 10px;border-bottom:2px solid #E5E7EB;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#6B7280';
   const itemsTable = m.items.length === 0
     ? `<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E5E7EB;border-radius:8px"><tr><td style="padding:10px;color:#6B7280;font-size:13px">No line items recorded.</td></tr></table>`
-    : `<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E5E7EB;border-collapse:separate;border-spacing:0;border-radius:8px;overflow:hidden">${itemRows}</table>`;
+    : `<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E5E7EB;border-collapse:separate;border-spacing:0;border-radius:8px;overflow:hidden">
+    <tr><th align="left" style="${th}">Item</th><th align="right" style="${th}">Amount</th></tr>${itemRows}</table>`;
 
   const addressHtml = [
     m.shipping.line1,
