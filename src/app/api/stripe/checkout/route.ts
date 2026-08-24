@@ -64,14 +64,21 @@ export async function POST(request: NextRequest) {
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map((item: CheckoutItem) => {
       // Calculate price in cents (Stripe uses cents)
       const unitAmount = Math.round(item.price * 100);
-      
+
+      // Stripe requires ABSOLUTE image URLs and hard-fails the whole session
+      // otherwise ("Not a valid URL"). Relative paths (e.g. local thumbnails)
+      // are dropped rather than breaking checkout.
+      const imageUrl = item.image && /^https?:\/\//i.test(item.image.trim()) ? item.image.trim() : undefined;
+
       return {
         price_data: {
           currency: 'usd',
           product_data: {
             name: item.name,
-            description: item.description || '',
-            images: item.image ? [item.image] : [],
+            // Empty strings are rejected by the Stripe API ("attempt to unset
+            // a parameter"); omit the field entirely instead.
+            ...(item.description && item.description.trim() ? { description: item.description.trim() } : {}),
+            images: imageUrl ? [imageUrl] : [],
             metadata: {
               product_id: item.id,
               original_price: item.originalPrice?.toString() || item.price.toString(),
