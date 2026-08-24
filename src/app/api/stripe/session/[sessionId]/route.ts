@@ -114,6 +114,7 @@ export async function GET(
             baseUpdateData.customer_name = customerInfo.name || null;
             baseUpdateData.customer_phone = customerInfo.phone || null;
             baseUpdateData.status = 'processing';
+            baseUpdateData.payment_status = (paymentInfo.payment_status as string) || 'paid';
 
             // Add shipping address fields if available
             if (customerInfo.address) {

@@ -31,6 +31,16 @@ function shortDate(iso: string | null | undefined) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+function datePart(iso: string | null | undefined) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function timePart(iso: string | null | undefined) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
 function fullDate(iso: string | null | undefined) {
   if (!iso) return '';
   return new Date(iso).toLocaleString('en-US', {
@@ -46,6 +56,22 @@ function StatusPill({ status }: { status: string }) {
   );
 }
 
+function pageWindow(current: number, total: number): (number | '…')[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const set = new Set<number>(
+    [1, total, current - 1, current, current + 1].filter(n => n >= 1 && n <= total),
+  );
+  const sorted = [...set].sort((a, b) => a - b);
+  const out: (number | '…')[] = [];
+  let prev = 0;
+  for (const n of sorted) {
+    if (prev && n - prev > 1) out.push('…');
+    out.push(n);
+    prev = n;
+  }
+  return out;
+}
+
 export default function OrdersPage() {
   const { user, loading, isAdmin } = useAuth();
   const router = useRouter();
@@ -54,6 +80,7 @@ export default function OrdersPage() {
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<StatusFilter>('all');
+  const [page, setPage] = useState(1);
 
   const [selected, setSelected] = useState<Order | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -164,6 +191,19 @@ export default function OrdersPage() {
     }
   };
 
+  // Pagination
+  const PAGE_SIZE = 10;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const rangeStart = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const rangeEnd = Math.min(filtered.length, safePage * PAGE_SIZE);
+
+  const goTo = (n: number) => {
+    setPage(Math.min(Math.max(1, n), totalPages));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   if (loading) return null;
 
   return (
@@ -208,7 +248,7 @@ export default function OrdersPage() {
                   return (
                     <button
                       key={s}
-                      onClick={() => setFilter(s)}
+                      onClick={() => { setFilter(s); setPage(1); }}
                       aria-pressed={isActive}
                       className={`h-8 rounded-full border px-3 text-sm font-medium capitalize transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] ${
                         isActive ? 'border-transparent' : 'hover:border-[var(--accent)]'
@@ -262,26 +302,28 @@ export default function OrdersPage() {
                 </p>
               </div>
             ) : !error && (
+              <>
               <section aria-label="Orders" className="rounded-xl border overflow-hidden bg-[var(--raised)]" style={{ borderColor: 'var(--line)' }}>
                 {/* Column headers */}
-                <div className="hidden md:grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_auto_auto_auto_auto] gap-4 px-5 py-2.5 border-b" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
+                <div className="hidden md:grid grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_44px_84px_72px_100px_124px] gap-4 px-5 py-2.5 border-b" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
                   <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]">Order</span>
                   <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]">Customer</span>
                   <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Items</span>
                   <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Total</span>
-                  <span className="hidden lg:block text-[11.5px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Placed</span>
-                  <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-right pr-5 text-[var(--muted)]">Status</span>
+                  <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Placed</span>
+                  <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Payment</span>
+                  <span className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-right text-[var(--muted)]">Status</span>
                 </div>
 
                 <ul className="divide-y" style={{ borderColor: 'var(--line)' }}>
-                  {filtered.map((order) => {
+                  {paged.map((order) => {
                     const o = order as OrderWithExtras;
                     const itemCount = order.order_items?.reduce((n, it) => n + it.quantity, 0) ?? 0;
                     return (
                       <li key={order.id} role="row" style={{ borderColor: 'var(--line)' }}>
                         <button
                           onClick={() => openPanel(order)}
-                          className="w-full md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_auto_auto_auto_auto] gap-4 items-center text-left px-5 py-3 transition-colors duration-150 hover:bg-[var(--surface)] focus-visible:outline-none focus-visible:bg-[var(--surface)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--ring)]"
+                          className="w-full md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_44px_84px_72px_100px_124px] gap-4 items-center text-left px-5 py-3 transition-colors duration-150 hover:bg-[var(--surface)] focus-visible:outline-none focus-visible:bg-[var(--surface)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--ring)]"
                           aria-haspopup="dialog"
                           aria-label={`Open order ${order.order_number}`}
                         >
@@ -293,6 +335,9 @@ export default function OrdersPage() {
                               {order.customer_name || '—'}
                             </span>
                             <span className="block text-[13px] truncate text-[var(--muted)]">{order.customer_email}</span>
+                            {order.customer_phone && (
+                              <span className="block text-[13px] tabular-nums truncate text-[var(--muted)]">{order.customer_phone}</span>
+                            )}
                           </span>
                           <span role="cell" className="hidden md:block text-sm tabular-nums text-right text-[var(--muted)]">
                             {itemCount}
@@ -300,15 +345,25 @@ export default function OrdersPage() {
                           <span role="cell" className="hidden md:block text-sm tabular-nums font-semibold text-right text-[var(--fg)]">
                             {money(order.total_amount)}
                           </span>
-                          <span role="cell" className="hidden lg:block text-[13px] tabular-nums whitespace-nowrap lg:text-right text-[var(--muted)]">
-                            {shortDate(order.created_at)}
+                          <span role="cell" className="flex flex-col items-end leading-tight text-[13px] tabular-nums text-right text-[var(--muted)]">
+                            <span>{datePart(order.created_at)}</span>
+                            <span>{timePart(order.created_at)}</span>
+                          </span>
+                          <span role="cell" className="hidden md:flex items-center justify-end">
+                            {(() => {
+                              const pay = (o.payment_status ?? (o.status === 'pending' ? 'unpaid' : 'paid')) as string;
+                              return pay === 'paid' ? (
+                                <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">Paid</span>
+                              ) : (
+                                <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold capitalize whitespace-nowrap text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">{pay}</span>
+                              );
+                            })()}
                           </span>
                           <span role="cell" className="flex items-center justify-start md:justify-end gap-2 mt-1.5 md:mt-0">
                             <StatusPill status={order.status} />
                             <span className="md:hidden text-[13px] tabular-nums text-[var(--muted)]">
                               {money(order.total_amount)} · {itemCount} item{itemCount === 1 ? '' : 's'} · {shortDate(order.created_at)}
                             </span>
-                            <span aria-hidden="true" className="hidden md:inline text-[var(--muted)]">›</span>
                           </span>
                         </button>
                       </li>
@@ -316,6 +371,57 @@ export default function OrdersPage() {
                   })}
                 </ul>
               </section>
+
+              {/* Pagination */}
+              {filtered.length > 0 && (
+                <nav aria-label="Pagination" className="flex flex-wrap items-center justify-between gap-3 mt-4">
+                  <p className="text-[13px] tabular-nums text-[var(--muted)]">
+                    Showing {rangeStart}–{rangeEnd} of {filtered.length}
+                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => goTo(safePage - 1)}
+                      disabled={safePage <= 1}
+                      aria-label="Previous page"
+                      className="h-8 rounded-md border px-2.5 text-sm font-medium disabled:opacity-40 transition-colors hover:bg-[var(--surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                      style={{ borderColor: 'var(--line)', color: 'var(--fg)' }}
+                    >
+                      ‹ Prev
+                    </button>
+                    {pageWindow(safePage, totalPages).map((pn, i) =>
+                      pn === '…' ? (
+                        <span key={`gap-${i}`} className="px-1 text-[var(--muted)]">…</span>
+                      ) : (
+                        <button
+                          key={pn}
+                          onClick={() => goTo(pn)}
+                          aria-current={pn === safePage ? 'page' : undefined}
+                          className={`h-8 min-w-8 rounded-md border px-2 text-sm font-medium tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] ${
+                            pn === safePage ? 'border-transparent' : 'hover:bg-[var(--surface)]'
+                          }`}
+                          style={{
+                            background: pn === safePage ? 'var(--accent-tint)' : 'transparent',
+                            borderColor: pn === safePage ? 'transparent' : 'var(--line)',
+                            color: pn === safePage ? 'var(--accent)' : 'var(--fg)',
+                          }}
+                        >
+                          {pn}
+                        </button>
+                      ),
+                    )}
+                    <button
+                      onClick={() => goTo(safePage + 1)}
+                      disabled={safePage >= totalPages}
+                      aria-label="Next page"
+                      className="h-8 rounded-md border px-2.5 text-sm font-medium disabled:opacity-40 transition-colors hover:bg-[var(--surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                      style={{ borderColor: 'var(--line)', color: 'var(--fg)' }}
+                    >
+                      Next ›
+                    </button>
+                  </div>
+                </nav>
+              )}
+              </>
             )}
           </div>
         </div>
@@ -445,16 +551,28 @@ export default function OrdersPage() {
                   </div>
                 </section>
 
-                {/* Payment references */}
-                {(so.stripe_session_id || so.stripe_payment_intent_id) && (
-                  <section>
-                    <h3 className="text-[12px] font-bold uppercase tracking-[0.14em] mb-2 text-[var(--muted)]">Payment</h3>
-                    <div className="space-y-1 text-[13px] font-mono break-all text-[var(--muted)]">
+                {/* Payment */}
+                <section>
+                  <h3 className="text-[12px] font-bold uppercase tracking-[0.14em] mb-2 text-[var(--muted)]">Payment</h3>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-[var(--muted)]">Status</span>
+                    {(so.payment_status ?? (so.status === 'pending' ? 'unpaid' : 'paid')) === 'paid' ? (
+                      <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
+                        Paid
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold capitalize text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                        {so.payment_status ?? (so.status === 'pending' ? 'unpaid' : 'paid')}
+                      </span>
+                    )}
+                  </div>
+                  {(so.stripe_session_id || so.stripe_payment_intent_id) && (
+                    <div className="mt-2 space-y-1 text-[13px] font-mono break-all text-[var(--muted)]">
                       {so.stripe_payment_intent_id && <p>pi: {so.stripe_payment_intent_id}</p>}
                       {so.stripe_session_id && <p>cs: {so.stripe_session_id}</p>}
                     </div>
-                  </section>
-                )}
+                  )}
+                </section>
               </div>
 
               {/* Panel footer: status control */}
