@@ -663,7 +663,7 @@ export default function OrdersPage() {
                       <option key={st} value={st}>{st}</option>
                     ))}
                   </select>
-                  <Button variant="primary" onClick={saveStatus} disabled={!dirty || isUpdating}>
+                  <Button variant="primary" onClick={saveStatus} disabled={!dirty || isUpdating} className="h-10 px-5">
                     {isUpdating ? 'Saving…' : 'Update'}
                   </Button>
                 </div>
