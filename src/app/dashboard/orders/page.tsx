@@ -86,6 +86,9 @@ export default function OrdersPage() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [draftStatus, setDraftStatus] = useState('');
+  const [recoverState, setRecoverState] = useState<'idle' | 'fetching' | 'ready' | 'applying'>('idle');
+  const [recoverData, setRecoverData] = useState<Record<string, unknown> | null>(null);
+  const [recoverError, setRecoverError] = useState<string | null>(null);
   const [toast, setToast] = useState<Toast>(null);
 
   // Toast auto-dismiss
@@ -165,6 +168,9 @@ export default function OrdersPage() {
   // Keep the draft in sync with whichever order is open
   useEffect(() => {
     setDraftStatus(selected?.status ?? '');
+    setRecoverState('idle');
+    setRecoverData(null);
+    setRecoverError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected?.id, selected?.status]);
 
@@ -188,6 +194,51 @@ export default function OrdersPage() {
       });
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  // ---- Step 1: fetch details from Stripe (no writes) ----
+  const recoverFetch = async () => {
+    if (!selected) return;
+    setRecoverState('fetching');
+    setRecoverError(null);
+    try {
+      const res = await fetch('/api/stripe/reconcile-manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: selected.id, mode: 'fetch' }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to fetch from Stripe');
+      setRecoverData(json.details);
+      setRecoverState('ready');
+    } catch (err: unknown) {
+      setRecoverError(err instanceof Error ? err.message : 'Failed to fetch from Stripe');
+      setRecoverState('idle');
+    }
+  };
+
+  // ---- Step 2: apply after admin review ----
+  const recoverApply = async () => {
+    if (!selected) return;
+    setRecoverState('applying');
+    try {
+      const res = await fetch('/api/stripe/reconcile-manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: selected.id, mode: 'apply' }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to apply Stripe details');
+      const updated: Order = json.order;
+      setOrders(prev => prev.map(o => (o.id === updated.id ? updated : o)));
+      setSelected(updated);
+      setToast({ message: `#${updated.order_number} recovered from Stripe`, tone: 'success' });
+      setRecoverState('idle');
+      setRecoverData(null);
+    } catch (err: unknown) {
+      setRecoverError(err instanceof Error ? err.message : 'Failed to apply');
+      setRecoverState('ready');
     }
   };
 
@@ -574,6 +625,114 @@ export default function OrdersPage() {
                   )}
                 </section>
               </div>
+
+              {/* Recover from Stripe */}
+              {selected.stripe_session_id && (
+                <section>
+                  <h3 className="text-[12px] font-bold uppercase tracking-[0.14em] mb-2 text-[var(--muted)]">Recover from Stripe</h3>
+
+                  {recoverState === 'idle' && !recoverData && (
+                    <>
+                      <p className="text-[13px] leading-relaxed text-[var(--muted)]">
+                        {(!selected.customer_email || selected.customer_email === 'pending@stripe.com')
+                          ? 'This order is missing customer details. Fetch them from its checkout session to review before saving.'
+                          : 'Fetch the checkout-session details from Stripe to compare against this order.'}
+                      </p>
+                      <div className="mt-2.5">
+                        <Button variant="outline" onClick={recoverFetch} className="w-full">
+                          Fetch details from Stripe
+                        </Button>
+                      </div>
+                    </>
+                  )}
+
+                  {recoverState === 'fetching' && (
+                    <p className="text-[13px] text-[var(--muted)]" aria-busy="true">Fetching from Stripe…</p>
+                  )}
+
+                  {recoverError && (
+                    <p role="alert" className="text-[13px]" style={{ color: '#b42318' }}>{recoverError}</p>
+                  )}
+
+                  {recoverState === 'ready' && recoverData && (() => {
+                    const d = recoverData as Record<string, string | null>;
+                    const cur = selected as unknown as Record<string, unknown>;
+                    const FIELDS: [string, string][] = [
+                      ['customer_email', 'Email'], ['customer_name', 'Name'], ['customer_phone', 'Phone'],
+                      ['shipping_line1', 'Address 1'], ['shipping_line2', 'Address 2'],
+                      ['shipping_city', 'City'], ['shipping_state', 'State'],
+                      ['shipping_postal_code', 'Postal code'], ['shipping_country', 'Country'],
+                    ];
+                    const changes = FIELDS.filter(([f]) => (d[f] ?? null) !== (cur[f] ?? null));
+                    const metaMismatch = typeof d.metadata_order_id === 'string' && d.metadata_order_id !== selected.id;
+                    return (
+                      <>
+                        {metaMismatch && (
+                          <p className="mb-3 rounded-md border px-3 py-2 text-xs" style={{ borderColor: '#fedf89', background: '#fffaeb', color: '#b54708' }}>
+                            Note: this session's metadata points to order {String(d.metadata_order_id)} — applying will write these details onto #{selected.order_number} instead.
+                          </p>
+                        )}
+
+                        <div className="rounded-lg border divide-y" style={{ borderColor: 'var(--line)' }}>
+                          {changes.length === 0 && (
+                            <p className="px-3 py-2.5 text-[13px] text-[var(--muted)]">
+                              Order already matches Stripe — nothing to apply.
+                            </p>
+                          )}
+                          {changes.map(([f, label]) => (
+                            <div key={f} className="px-3 py-2">
+                              <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--muted)]">{label}</p>
+                              <p className="text-[13px] mt-0.5">
+                                <span className="line-through opacity-50">{(cur[f] as string) || '—'}</span>
+                                {' → '}
+                                <span className="font-medium text-[var(--fg)]">{d[f] || '—'}</span>
+                              </p>
+                            </div>
+                          ))}
+                          <div className="px-3 py-2 flex items-center justify-between gap-2">
+                            <span className="text-[11px] font-bold uppercase tracking-wide text-[var(--muted)]">Payment</span>
+                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize ${
+                              d.payment_status === 'paid'
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'
+                                : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
+                            }`}>
+                              {String(d.payment_status ?? 'unknown')}
+                              {(cur.payment_status ?? null) !== (d.payment_status ?? null) && (
+                                <span className="ml-1 opacity-60">(was {String(cur.payment_status ?? 'unset')})</span>
+                              )}
+                            </span>
+                          </div>
+                          <div className="px-3 py-2 flex items-center justify-between text-[13px]">
+                            <span className="text-[var(--muted)]">Session amount</span>
+                            <span className="tabular-nums font-medium text-[var(--fg)]">
+                              {d.amount_total != null ? `$${Number(d.amount_total).toFixed(2)} ${String(d.currency ?? '').toUpperCase()}` : '—'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2 mt-3">
+                          <Button variant="outline" onClick={() => { setRecoverState('idle'); setRecoverData(null); }}>
+                            Discard
+                          </Button>
+                          <Button
+                            variant="primary"
+                            onClick={recoverApply}
+                            disabled={changes.length === 0}
+                            className="flex-1"
+                          >
+                            {changes.length === 0
+                              ? 'Nothing to apply'
+                              : `Apply ${changes.length} field${changes.length === 1 ? '' : 's'}`}
+                          </Button>
+                        </div>
+                        <p className="mt-2 text-xs leading-relaxed text-[var(--muted)]">
+                          Applying writes the values above and triggers the usual notification emails for recovered orders.
+                        </p>
+                      </>
+                    );
+                  })()}
+                </section>
+              )}
 
               {/* Panel footer: status control */}
               <div className="flex-shrink-0 px-5 py-4 border-t bg-[var(--surface)]" style={{ borderColor: 'var(--line)' }}>
