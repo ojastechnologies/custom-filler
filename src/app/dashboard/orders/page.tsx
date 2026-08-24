@@ -89,6 +89,7 @@ export default function OrdersPage() {
   const [recoverState, setRecoverState] = useState<'idle' | 'fetching' | 'ready' | 'applying'>('idle');
   const [recoverData, setRecoverData] = useState<Record<string, unknown> | null>(null);
   const [recoverError, setRecoverError] = useState<string | null>(null);
+  const [syncOpen, setSyncOpen] = useState(false);
   const [toast, setToast] = useState<Toast>(null);
 
   // Toast auto-dismiss
@@ -171,6 +172,7 @@ export default function OrdersPage() {
     setRecoverState('idle');
     setRecoverData(null);
     setRecoverError(null);
+    setSyncOpen(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected?.id, selected?.status]);
 
@@ -218,6 +220,11 @@ export default function OrdersPage() {
     }
   };
 
+  const openSync = () => {
+    setSyncOpen(true);
+    if (recoverState === 'idle' && !recoverData) recoverFetch();
+  };
+
   // ---- Step 2: apply after admin review ----
   const recoverApply = async () => {
     if (!selected) return;
@@ -236,6 +243,7 @@ export default function OrdersPage() {
       setToast({ message: `#${updated.order_number} recovered from Stripe`, tone: 'success' });
       setRecoverState('idle');
       setRecoverData(null);
+      setSyncOpen(false);
     } catch (err: unknown) {
       setRecoverError(err instanceof Error ? err.message : 'Failed to apply');
       setRecoverState('ready');
@@ -513,6 +521,15 @@ export default function OrdersPage() {
                   <p className="text-[13px] mt-0.5 text-[var(--muted)]">{fullDate(so.created_at)}</p>
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0">
+                  {so.stripe_session_id && (
+                    <button
+                      onClick={openSync}
+                      className="text-[13px] font-semibold hover:underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded-sm"
+                      style={{ color: 'var(--accent)' }}
+                    >
+                      Sync from Stripe
+                    </button>
+                  )}
                   <StatusPill status={so.status} />
                   <button
                     onClick={closePanel}
@@ -626,113 +643,7 @@ export default function OrdersPage() {
                 </section>
               </div>
 
-              {/* Recover from Stripe */}
-              {selected.stripe_session_id && (
-                <section>
-                  <h3 className="text-[12px] font-bold uppercase tracking-[0.14em] mb-2 text-[var(--muted)]">Recover from Stripe</h3>
 
-                  {recoverState === 'idle' && !recoverData && (
-                    <>
-                      <p className="text-[13px] leading-relaxed text-[var(--muted)]">
-                        {(!selected.customer_email || selected.customer_email === 'pending@stripe.com')
-                          ? 'This order is missing customer details. Fetch them from its checkout session to review before saving.'
-                          : 'Fetch the checkout-session details from Stripe to compare against this order.'}
-                      </p>
-                      <div className="mt-2.5">
-                        <Button variant="outline" onClick={recoverFetch} className="w-full">
-                          Fetch details from Stripe
-                        </Button>
-                      </div>
-                    </>
-                  )}
-
-                  {recoverState === 'fetching' && (
-                    <p className="text-[13px] text-[var(--muted)]" aria-busy="true">Fetching from Stripe…</p>
-                  )}
-
-                  {recoverError && (
-                    <p role="alert" className="text-[13px]" style={{ color: '#b42318' }}>{recoverError}</p>
-                  )}
-
-                  {recoverState === 'ready' && recoverData && (() => {
-                    const d = recoverData as Record<string, string | null>;
-                    const cur = selected as unknown as Record<string, unknown>;
-                    const FIELDS: [string, string][] = [
-                      ['customer_email', 'Email'], ['customer_name', 'Name'], ['customer_phone', 'Phone'],
-                      ['shipping_line1', 'Address 1'], ['shipping_line2', 'Address 2'],
-                      ['shipping_city', 'City'], ['shipping_state', 'State'],
-                      ['shipping_postal_code', 'Postal code'], ['shipping_country', 'Country'],
-                    ];
-                    const changes = FIELDS.filter(([f]) => (d[f] ?? null) !== (cur[f] ?? null));
-                    const metaMismatch = typeof d.metadata_order_id === 'string' && d.metadata_order_id !== selected.id;
-                    return (
-                      <>
-                        {metaMismatch && (
-                          <p className="mb-3 rounded-md border px-3 py-2 text-xs" style={{ borderColor: '#fedf89', background: '#fffaeb', color: '#b54708' }}>
-                            Note: this session's metadata points to order {String(d.metadata_order_id)} — applying will write these details onto #{selected.order_number} instead.
-                          </p>
-                        )}
-
-                        <div className="rounded-lg border divide-y" style={{ borderColor: 'var(--line)' }}>
-                          {changes.length === 0 && (
-                            <p className="px-3 py-2.5 text-[13px] text-[var(--muted)]">
-                              Order already matches Stripe — nothing to apply.
-                            </p>
-                          )}
-                          {changes.map(([f, label]) => (
-                            <div key={f} className="px-3 py-2">
-                              <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--muted)]">{label}</p>
-                              <p className="text-[13px] mt-0.5">
-                                <span className="line-through opacity-50">{(cur[f] as string) || '—'}</span>
-                                {' → '}
-                                <span className="font-medium text-[var(--fg)]">{d[f] || '—'}</span>
-                              </p>
-                            </div>
-                          ))}
-                          <div className="px-3 py-2 flex items-center justify-between gap-2">
-                            <span className="text-[11px] font-bold uppercase tracking-wide text-[var(--muted)]">Payment</span>
-                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize ${
-                              d.payment_status === 'paid'
-                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'
-                                : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
-                            }`}>
-                              {String(d.payment_status ?? 'unknown')}
-                              {(cur.payment_status ?? null) !== (d.payment_status ?? null) && (
-                                <span className="ml-1 opacity-60">(was {String(cur.payment_status ?? 'unset')})</span>
-                              )}
-                            </span>
-                          </div>
-                          <div className="px-3 py-2 flex items-center justify-between text-[13px]">
-                            <span className="text-[var(--muted)]">Session amount</span>
-                            <span className="tabular-nums font-medium text-[var(--fg)]">
-                              {d.amount_total != null ? `$${Number(d.amount_total).toFixed(2)} ${String(d.currency ?? '').toUpperCase()}` : '—'}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2 mt-3">
-                          <Button variant="outline" onClick={() => { setRecoverState('idle'); setRecoverData(null); }}>
-                            Discard
-                          </Button>
-                          <Button
-                            variant="primary"
-                            onClick={recoverApply}
-                            disabled={changes.length === 0}
-                            className="flex-1"
-                          >
-                            {changes.length === 0
-                              ? 'Nothing to apply'
-                              : `Apply ${changes.length} field${changes.length === 1 ? '' : 's'}`}
-                          </Button>
-                        </div>
-                        <p className="mt-2 text-xs leading-relaxed text-[var(--muted)]">
-                          Applying writes the values above and triggers the usual notification emails for recovered orders.
-                        </p>
-                      </>
-                    );
-                  })()}
-                </section>
-              )}
 
               {/* Panel footer: status control */}
               <div className="flex-shrink-0 px-6 py-4 border-t bg-[var(--surface)]" style={{ borderColor: 'var(--line)' }}>
@@ -759,6 +670,148 @@ export default function OrdersPage() {
           );
         })()}
       </aside>
+
+      {/* ---- Sync-from-Stripe panel (layers over the order panel) ---- */}
+      {selected && (
+      <>
+      <div
+        aria-hidden={!syncOpen}
+        onClick={() => setSyncOpen(false)}
+        className={`fixed inset-0 z-[54] transition-opacity duration-200 ${
+          syncOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        style={{ background: 'rgba(15,23,42,0.35)' }}
+      />
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label="Sync from Stripe"
+        className={`fixed top-0 right-0 z-[55] h-full w-full sm:w-[520px] flex flex-col border-l shadow-[-12px_0_32px_rgba(15,23,42,0.18)] bg-[var(--raised)] transition-transform duration-200 ${
+          syncOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+        style={{ borderColor: 'var(--line)', transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
+      >
+        <div className="flex items-center justify-between gap-3 px-6 py-4 border-b flex-shrink-0" style={{ borderColor: 'var(--line)' }}>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-[var(--fg)]">Sync from Stripe</p>
+            <p className="font-mono text-xs mt-0.5 truncate text-[var(--muted)]">{selected?.stripe_session_id}</p>
+          </div>
+          <button
+            onClick={() => setSyncOpen(false)}
+            aria-label="Close sync panel"
+            className="h-8 w-8 -mr-1.5 rounded-md flex items-center justify-center text-lg leading-none text-[var(--muted)] transition-colors duration-150 hover:bg-[var(--surface)] hover:text-[var(--fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-6">
+              <h3 className="text-[12px] font-bold uppercase tracking-[0.14em] mb-2 text-[var(--muted)]">Recover from Stripe</h3>
+
+              {recoverState === 'idle' && !recoverData && (
+                <>
+                  <p className="text-[13px] leading-relaxed text-[var(--muted)]">
+                    {(!selected.customer_email || selected.customer_email === 'pending@stripe.com')
+                      ? 'This order is missing customer details. Fetch them from its checkout session to review before saving.'
+                      : 'Fetch the checkout-session details from Stripe to compare against this order.'}
+                  </p>
+                  <div className="mt-2.5">
+                    <Button variant="outline" onClick={recoverFetch} className="w-full">
+                      Fetch details from Stripe
+                    </Button>
+                  </div>
+                </>
+              )}
+
+              {recoverState === 'fetching' && (
+                <p className="text-[13px] text-[var(--muted)]" aria-busy="true">Fetching from Stripe…</p>
+              )}
+
+              {recoverError && (
+                <p role="alert" className="text-[13px]" style={{ color: '#b42318' }}>{recoverError}</p>
+              )}
+
+              {recoverState === 'ready' && recoverData && (() => {
+                const d = recoverData as Record<string, string | null>;
+                const cur = selected as unknown as Record<string, unknown>;
+                const FIELDS: [string, string][] = [
+                  ['customer_email', 'Email'], ['customer_name', 'Name'], ['customer_phone', 'Phone'],
+                  ['shipping_line1', 'Address 1'], ['shipping_line2', 'Address 2'],
+                  ['shipping_city', 'City'], ['shipping_state', 'State'],
+                  ['shipping_postal_code', 'Postal code'], ['shipping_country', 'Country'],
+                ];
+                const changes = FIELDS.filter(([f]) => (d[f] ?? null) !== (cur[f] ?? null));
+                const metaMismatch = typeof d.metadata_order_id === 'string' && d.metadata_order_id !== selected.id;
+                return (
+                  <>
+                    {metaMismatch && (
+                      <p className="mb-3 rounded-md border px-3 py-2 text-xs" style={{ borderColor: '#fedf89', background: '#fffaeb', color: '#b54708' }}>
+                        Note: this session's metadata points to order {String(d.metadata_order_id)} — applying will write these details onto #{selected.order_number} instead.
+                      </p>
+                    )}
+
+                    <div className="rounded-lg border divide-y" style={{ borderColor: 'var(--line)' }}>
+                      {changes.length === 0 && (
+                        <p className="px-3 py-2.5 text-[13px] text-[var(--muted)]">
+                          Order already matches Stripe — nothing to apply.
+                        </p>
+                      )}
+                      {changes.map(([f, label]) => (
+                        <div key={f} className="px-3 py-2">
+                          <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--muted)]">{label}</p>
+                          <p className="text-[13px] mt-0.5">
+                            <span className="line-through opacity-50">{(cur[f] as string) || '—'}</span>
+                            {' → '}
+                            <span className="font-medium text-[var(--fg)]">{d[f] || '—'}</span>
+                          </p>
+                        </div>
+                      ))}
+                      <div className="px-3 py-2 flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-bold uppercase tracking-wide text-[var(--muted)]">Payment</span>
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize ${
+                          d.payment_status === 'paid'
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'
+                            : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
+                        }`}>
+                          {String(d.payment_status ?? 'unknown')}
+                          {(cur.payment_status ?? null) !== (d.payment_status ?? null) && (
+                            <span className="ml-1 opacity-60">(was {String(cur.payment_status ?? 'unset')})</span>
+                          )}
+                        </span>
+                      </div>
+                      <div className="px-3 py-2 flex items-center justify-between text-[13px]">
+                        <span className="text-[var(--muted)]">Session amount</span>
+                        <span className="tabular-nums font-medium text-[var(--fg)]">
+                          {d.amount_total != null ? `$${Number(d.amount_total).toFixed(2)} ${String(d.currency ?? '').toUpperCase()}` : '—'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 mt-3">
+                      <Button variant="outline" onClick={() => { setRecoverState('idle'); setRecoverData(null); }}>
+                        Discard
+                      </Button>
+                      <Button
+                        variant="primary"
+                        onClick={recoverApply}
+                        disabled={changes.length === 0}
+                        className="flex-1"
+                      >
+                        {changes.length === 0
+                          ? 'Nothing to apply'
+                          : `Apply ${changes.length} field${changes.length === 1 ? '' : 's'}`}
+                      </Button>
+                    </div>
+                    <p className="mt-2 text-xs leading-relaxed text-[var(--muted)]">
+                      Applying writes the values above and triggers the usual notification emails for recovered orders.
+                    </p>
+                  </>
+                );
+              })()}
+        </div>
+      </aside>
+      </>
+      )}
 
       {/* Toast */}
       {toast && (
