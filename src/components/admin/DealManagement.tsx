@@ -4,13 +4,42 @@ import React, { useState, useEffect } from 'react';
 import { Deal, fetchDeals, createDeal, updateDeal, deleteDeal } from '@/services/dealService';
 import Button from '@/components/ui/Button';
 
-export default function DealManagement() {
+type Toast = { message: string; tone: 'success' | 'error' } | null;
+
+export interface DealStats {
+  active: number;
+  usage: number;
+  limitReached: number;
+  expired: number;
+}
+
+// Semantic pill palette, consistent with STATUS_PILL on /dashboard/orders:
+// emerald = active/success, amber = warning/attention, neutral tokens = expired/inactive.
+const PILL_BASE = 'inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap';
+const PILL_ACTIVE = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200';
+const PILL_WARN = 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200';
+const PILL_NEUTRAL = 'bg-[var(--surface)] text-[var(--muted)]';
+const TYPE_PILL: Record<Deal['discount_type'], string> = {
+  percentage: 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200',
+  fixed_amount: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-200',
+};
+
+const inputClass =
+  'w-full rounded-lg border px-3.5 py-2.5 text-sm text-[var(--fg)] bg-[var(--raised)] placeholder:text-[var(--muted)] placeholder:opacity-60 transition-colors focus-visible:outline-none focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[var(--ring)]';
+const labelClass = 'block text-[13px] font-medium text-[var(--muted)] mb-1.5';
+const TH_CLASS =
+  'px-5 py-2.5 text-[11.5px] font-bold uppercase tracking-[0.12em] text-[var(--muted)] whitespace-nowrap';
+
+const isExpired = (deal: Deal) => Boolean(deal.expires_at && new Date(deal.expires_at) < new Date());
+
+export default function DealManagement({ onStatsChange }: { onStatsChange?: (stats: DealStats) => void }) {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toast, setToast] = useState<Toast>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -27,7 +56,27 @@ export default function DealManagement() {
 
   useEffect(() => {
     loadDeals();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Toast auto-dismiss
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3500);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  // Report live totals up to the host page (only once loading has settled)
+  useEffect(() => {
+    if (loading) return;
+    onStatsChange?.({
+      active: deals.filter(d => d.is_active && !isExpired(d)).length,
+      usage: deals.reduce((n, d) => n + d.usage_count, 0),
+      limitReached: deals.filter(d => d.usage_limit && d.usage_count >= d.usage_limit).length,
+      expired: deals.filter(d => isExpired(d)).length,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deals, loading]);
 
   const loadDeals = async () => {
     try {
@@ -62,7 +111,7 @@ export default function DealManagement() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    
+
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
       setFormData(prev => ({ ...prev, [name]: checked }));
@@ -73,7 +122,7 @@ export default function DealManagement() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.code.trim() || !formData.description.trim() || !formData.discount_value) {
       setError('Please fill in all required fields');
       return;
@@ -108,15 +157,20 @@ export default function DealManagement() {
       if (editingDeal) {
         const updatedDeal = await updateDeal(editingDeal.id, dealData);
         setDeals(prev => prev.map(deal => deal.id === editingDeal.id ? updatedDeal : deal));
+        setToast({ message: `${updatedDeal.code} updated`, tone: 'success' });
       } else {
         const newDeal = await createDeal(dealData);
         setDeals(prev => [newDeal, ...prev]);
+        setToast({ message: `${newDeal.code} created`, tone: 'success' });
       }
 
       resetForm();
     } catch (err) {
       console.error('Error saving deal:', err);
-      setError(err instanceof Error ? err.message : 'Failed to save deal');
+      setToast({
+        message: err instanceof Error ? err.message : 'Failed to save deal',
+        tone: 'error',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -139,15 +193,19 @@ export default function DealManagement() {
     setError(null);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this deal?')) return;
+  const handleDelete = async (deal: Deal) => {
+    if (!window.confirm(`Are you sure you want to delete ${deal.code}?`)) return;
 
     try {
-      await deleteDeal(id);
-      setDeals(prev => prev.filter(deal => deal.id !== id));
+      await deleteDeal(deal.id);
+      setDeals(prev => prev.filter(d => d.id !== deal.id));
+      setToast({ message: `${deal.code} deleted`, tone: 'success' });
     } catch (err) {
       console.error('Error deleting deal:', err);
-      setError(err instanceof Error ? err.message : 'Failed to delete deal');
+      setToast({
+        message: err instanceof Error ? err.message : 'Failed to delete deal',
+        tone: 'error',
+      });
     }
   };
 
@@ -156,16 +214,6 @@ export default function DealManagement() {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
-    });
-  };
-
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
     });
   };
 
@@ -182,106 +230,89 @@ export default function DealManagement() {
     return Math.min((deal.usage_count / deal.usage_limit) * 100, 100);
   };
 
+  const activeCount = deals.filter(d => d.is_active && !isExpired(d)).length;
+  const expiredCount = deals.filter(d => isExpired(d)).length;
+
   if (loading) {
     return (
-      <div className="p-8">
-        <div className="flex justify-center items-center h-32">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+      <section
+        aria-label="Deals"
+        className="rounded-xl border overflow-hidden bg-[var(--raised)]"
+        style={{ borderColor: 'var(--line)' }}
+      >
+        <div className="p-5 space-y-2" aria-busy="true">
+          {[0, 1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="h-12 rounded-lg animate-pulse" style={{ background: 'var(--surface)' }} />
+          ))}
         </div>
-      </div>
+      </section>
     );
   }
 
   return (
-    <div className="w-full">
-      {/* Enhanced Header with Actions */}
-      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 p-6 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Deal Management</h2>
-          </div>
-          <div className="hidden lg:flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
-            <span className="flex items-center">
-              <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-              {deals.filter(d => d.is_active).length} Active
-            </span>
-            <span className="flex items-center">
-              <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-              {deals.filter(d => !d.is_active).length} Inactive
-            </span>
-            <span className="flex items-center">
-              <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
-              {deals.filter(d => d.expires_at && new Date(d.expires_at) < new Date()).length} Expired
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center space-x-3">
-          <Button
-            variant="outline"
-            onClick={loadDeals}
-            className="flex items-center space-x-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            <span>Refresh</span>
-          </Button>
-          <Button
-            variant="primary"
-            onClick={() => setShowForm(!showForm)}
-            className="flex items-center space-x-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={showForm ? "M6 18L18 6M6 6l12 12" : "M12 6v6m0 0v6m0-6h6m-6 0H6"} />
-            </svg>
-            <span>{showForm ? 'Cancel' : 'Add New Deal'}</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Error Display */}
-      {error && (
-        <div className="mx-6 mt-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 px-4 py-3 rounded-lg">
-          <div className="flex items-start">
-            <svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
-            <div className="flex-1">
-              <p className="font-medium">Error</p>
-              <p className="text-sm mt-1">{error}</p>
-            </div>
-            <button 
-              onClick={() => setError(null)} 
-              className="ml-4 text-red-400 hover:text-red-600 dark:text-red-300 dark:hover:text-red-100"
-            >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+    <>
+      <section
+        aria-label="Deals"
+        className="rounded-xl border overflow-hidden bg-[var(--raised)]"
+        style={{ borderColor: 'var(--line)' }}
+      >
+        {/* Toolbar */}
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 px-5 py-4 border-b" style={{ borderColor: 'var(--line)' }}>
+          <p className="text-sm text-[var(--muted)]">
+            <span className="font-semibold tabular-nums text-[var(--fg)]">{deals.length}</span> deals
+            {' '}·{' '}
+            <span className="font-semibold tabular-nums text-[var(--fg)]">{activeCount}</span> active
+            {' '}·{' '}
+            <span className="font-semibold tabular-nums text-[var(--fg)]">{expiredCount}</span> expired
+          </p>
+          <div className="flex items-center gap-2.5">
+            <Button variant="outline" size="sm" onClick={loadDeals} className="gap-1.5">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-            </button>
+              <span>Refresh</span>
+            </Button>
+            <Button variant="primary" size="sm" onClick={() => setShowForm(!showForm)} className="gap-1.5">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={showForm ? 'M6 18L18 6M6 6l12 12' : 'M12 6v6m0 0v6m0-6h6m-6 0H6'} />
+              </svg>
+              <span>{showForm ? 'Close' : 'New deal'}</span>
+            </Button>
           </div>
         </div>
-      )}
 
-      {/* Enhanced Deal Form */}
-      {showForm && (
-        <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-          <div className="p-6">
-            <div className="flex items-center space-x-2 mb-6">
-              <svg className="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {editingDeal ? 'Edit Deal' : 'Create New Deal'}
-              </h3>
+        {/* Error banner */}
+        {error && (
+          <div role="alert" className="mx-5 mt-5 rounded-lg border px-4 py-3" style={{ borderColor: '#f2c4c4', background: 'rgba(180,35,24,0.05)' }}>
+            <div className="flex items-start gap-2.5">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold" style={{ color: '#b42318' }}>Error</p>
+                <p className="text-sm mt-0.5 text-[var(--muted)]">{error}</p>
+              </div>
+              <button
+                onClick={() => setError(null)}
+                aria-label="Dismiss error"
+                className="text-sm underline underline-offset-4 text-[var(--muted)] hover:text-[var(--fg)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded-sm flex-shrink-0"
+              >
+                Dismiss
+              </button>
             </div>
-            
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          </div>
+        )}
+
+        {/* Deal form */}
+        {showForm && (
+          <div className="border-b px-5 py-6 bg-[var(--surface)]" style={{ borderColor: 'var(--line)' }}>
+            <h2 className="text-base font-semibold mb-5 text-[var(--fg)]">
+              {editingDeal ? `Edit ${editingDeal.code}` : 'New deal'}
+            </h2>
+
+            <form onSubmit={handleSubmit} className="space-y-5" aria-label={editingDeal ? 'Edit deal' : 'Create deal'}>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                 {/* Deal Code */}
                 <div>
-                  <label htmlFor="code" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Deal Code *
+                  <label htmlFor="code" className={labelClass}>
+                    Deal code *
                   </label>
                   <input
                     type="text"
@@ -290,33 +321,35 @@ export default function DealManagement() {
                     value={formData.code}
                     onChange={handleInputChange}
                     placeholder="e.g., WELCOME10"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                    className={`${inputClass} font-mono uppercase`}
+                    style={{ borderColor: 'var(--line)' }}
                     required
                   />
                 </div>
 
                 {/* Discount Type */}
                 <div>
-                  <label htmlFor="discount_type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Discount Type *
+                  <label htmlFor="discount_type" className={labelClass}>
+                    Discount type *
                   </label>
                   <select
                     id="discount_type"
                     name="discount_type"
                     value={formData.discount_type}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                    className={inputClass}
+                    style={{ borderColor: 'var(--line)' }}
                     required
                   >
                     <option value="percentage">Percentage (%)</option>
-                    <option value="fixed_amount">Fixed Amount ($)</option>
+                    <option value="fixed_amount">Fixed amount ($)</option>
                   </select>
                 </div>
               </div>
 
               {/* Description */}
               <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="description" className={labelClass}>
                   Description *
                 </label>
                 <textarea
@@ -326,16 +359,17 @@ export default function DealManagement() {
                   onChange={handleInputChange}
                   rows={3}
                   placeholder="e.g., 10% off your first order"
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                  className={inputClass}
+                  style={{ borderColor: 'var(--line)', resize: 'vertical' }}
                   required
                 />
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
                 {/* Discount Value */}
                 <div>
-                  <label htmlFor="discount_value" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Discount Value * {formData.discount_type === 'percentage' ? '(%)' : '($)'}
+                  <label htmlFor="discount_value" className={labelClass}>
+                    Discount value * {formData.discount_type === 'percentage' ? '(%)' : '($)'}
                   </label>
                   <input
                     type="number"
@@ -347,15 +381,16 @@ export default function DealManagement() {
                     step={formData.discount_type === 'percentage' ? '1' : '0.01'}
                     max={formData.discount_type === 'percentage' ? '100' : undefined}
                     placeholder={formData.discount_type === 'percentage' ? '10' : '20.00'}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                    className={inputClass}
+                    style={{ borderColor: 'var(--line)' }}
                     required
                   />
                 </div>
 
                 {/* Minimum Order Amount */}
                 <div>
-                  <label htmlFor="minimum_order_amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Min Order Amount ($)
+                  <label htmlFor="minimum_order_amount" className={labelClass}>
+                    Min order ($)
                   </label>
                   <input
                     type="number"
@@ -366,14 +401,15 @@ export default function DealManagement() {
                     min="0"
                     step="0.01"
                     placeholder="50.00"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                    className={inputClass}
+                    style={{ borderColor: 'var(--line)' }}
                   />
                 </div>
 
                 {/* Maximum Discount Amount */}
                 <div>
-                  <label htmlFor="maximum_discount_amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Max Discount ($)
+                  <label htmlFor="maximum_discount_amount" className={labelClass}>
+                    Max discount ($)
                   </label>
                   <input
                     type="number"
@@ -384,14 +420,15 @@ export default function DealManagement() {
                     min="0"
                     step="0.01"
                     placeholder="100.00"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                    className={inputClass}
+                    style={{ borderColor: 'var(--line)' }}
                   />
                 </div>
 
                 {/* Usage Limit */}
                 <div>
-                  <label htmlFor="usage_limit" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Usage Limit
+                  <label htmlFor="usage_limit" className={labelClass}>
+                    Usage limit
                   </label>
                   <input
                     type="number"
@@ -401,15 +438,16 @@ export default function DealManagement() {
                     onChange={handleInputChange}
                     min="1"
                     placeholder="100"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                    className={inputClass}
+                    style={{ borderColor: 'var(--line)' }}
                   />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Leave empty for unlimited</p>
+                  <p className="text-xs mt-1.5 text-[var(--muted)]">Leave empty for unlimited</p>
                 </div>
 
                 {/* Expiration Date */}
                 <div>
-                  <label htmlFor="expires_at" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Expiration Date
+                  <label htmlFor="expires_at" className={labelClass}>
+                    Expiration date
                   </label>
                   <input
                     type="date"
@@ -418,248 +456,187 @@ export default function DealManagement() {
                     value={formData.expires_at}
                     onChange={handleInputChange}
                     min={new Date().toISOString().split('T')[0]}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                    className={`${inputClass} [color-scheme:light] dark:[color-scheme:dark]`}
+                    style={{ borderColor: 'var(--line)' }}
                   />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Leave empty for no expiration</p>
+                  <p className="text-xs mt-1.5 text-[var(--muted)]">Leave empty for no expiration</p>
                 </div>
               </div>
 
               {/* Active Status */}
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center gap-2.5">
                 <input
                   type="checkbox"
                   id="is_active"
                   name="is_active"
                   checked={formData.is_active}
                   onChange={handleInputChange}
-                  className="h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                  className="h-4 w-4 rounded border-[var(--line)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                  style={{ accentColor: 'var(--accent)' }}
                 />
-                <label htmlFor="is_active" className="text-sm font-medium text-gray-900 dark:text-white">
+                <label htmlFor="is_active" className="text-sm text-[var(--fg)]">
                   Deal is active and available for use
                 </label>
               </div>
 
               {/* Form Actions */}
-              <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-600">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={resetForm}
-                  className="px-6 py-3"
-                >
+              <div className="flex justify-end gap-3 pt-5 border-t" style={{ borderColor: 'var(--line)' }}>
+                <Button type="button" variant="outline" onClick={resetForm}>
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  disabled={isSubmitting}
-                  className="px-6 py-3"
-                >
-                  {isSubmitting ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
-                      <span>Saving...</span>
-                    </div>
-                  ) : (
-                    editingDeal ? 'Update Deal' : 'Create Deal'
-                  )}
+                <Button type="submit" variant="primary" disabled={isSubmitting}>
+                  {isSubmitting ? 'Saving…' : editingDeal ? 'Update deal' : 'Create deal'}
                 </Button>
               </div>
             </form>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Enhanced Deals Table */}
-      <div className="bg-white dark:bg-gray-800">
+        {/* Deals table / empty state */}
         {deals.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
-              <svg className="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-              </svg>
+          <div className="mx-5 my-8 text-center py-14 rounded-xl border border-dashed" style={{ borderColor: 'var(--line)' }}>
+            <p className="font-medium text-[var(--fg)]">No deals yet</p>
+            <p className="text-sm mt-1 text-[var(--muted)]">
+              Create your first promotional code to run a discount.
+            </p>
+            <div className="mt-4">
+              <Button variant="primary" size="sm" onClick={() => setShowForm(true)}>
+                New deal
+              </Button>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No deals found</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">Get started by creating your first promotional deal</p>
-            <Button
-              variant="primary"
-              onClick={() => setShowForm(true)}
-              className="inline-flex items-center space-x-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              <span>Create Your First Deal</span>
-            </Button>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-700">
+            <table className="min-w-full">
+              <thead style={{ background: 'var(--surface)' }}>
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Deal Code
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Description
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Discount
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Min Order
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Max Discount
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Usage
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Expires
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Created
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Updated
-                  </th>
-                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <th scope="col" className={`${TH_CLASS} text-left`}>Code</th>
+                  <th scope="col" className={`${TH_CLASS} text-left`}>Description</th>
+                  <th scope="col" className={`${TH_CLASS} text-left`}>Type</th>
+                  <th scope="col" className={`${TH_CLASS} text-right`}>Discount</th>
+                  <th scope="col" className={`${TH_CLASS} text-left`}>Limits</th>
+                  <th scope="col" className={`${TH_CLASS} text-left`}>Usage</th>
+                  <th scope="col" className={`${TH_CLASS} text-left`}>Status</th>
+                  <th scope="col" className={`${TH_CLASS} text-left`}>Dates</th>
+                  <th scope="col" className={`${TH_CLASS} text-right`}>Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody>
                 {deals.map((deal) => {
-                  const isExpired = deal.expires_at && new Date(deal.expires_at) < new Date();
+                  const expired = isExpired(deal);
                   const usagePercentage = getUsagePercentage(deal);
-                  
+
                   return (
-                    <tr key={deal.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="text-sm font-bold text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
-                            {deal.code}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900 dark:text-white max-w-xs">
-                          <p className="truncate" title={deal.description}>{deal.description}</p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                          deal.discount_type === 'percentage' 
-                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' 
-                            : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                        }`}>
-                          {deal.discount_type === 'percentage' ? 'Percentage' : 'Fixed Amount'}
+                    <tr
+                      key={deal.id}
+                      className="border-t transition-colors hover:bg-[var(--surface)]"
+                      style={{ borderColor: 'var(--line)' }}
+                    >
+                      <td className="px-5 py-3 whitespace-nowrap">
+                        <span className="inline-flex items-center rounded-full px-2 py-0.5 font-mono text-[13px] font-semibold text-[var(--fg)] bg-[var(--surface)] border border-[var(--line)]">
+                          {deal.code}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-bold text-gray-900 dark:text-white">
+                      <td className="px-5 py-3">
+                        <div className="max-w-[280px]">
+                          <p className="text-sm truncate text-[var(--fg)]" title={deal.description}>
+                            {deal.description}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3 whitespace-nowrap">
+                        <span className={`${PILL_BASE} ${TYPE_PILL[deal.discount_type]}`}>
+                          {deal.discount_type === 'percentage' ? 'Percentage' : 'Fixed amount'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 whitespace-nowrap text-right">
+                        <span className="text-sm font-semibold tabular-nums text-[var(--fg)]">
                           {getDiscountDisplay(deal)}
-                        </div>
+                        </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {deal.minimum_order_amount ? `$${deal.minimum_order_amount.toFixed(2)}` : '—'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {deal.maximum_discount_amount ? `$${deal.maximum_discount_amount.toFixed(2)}` : '—'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center space-x-2">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {deal.usage_count} / {deal.usage_limit || '∞'}
+                      <td className="px-5 py-3 whitespace-nowrap">
+                        {deal.minimum_order_amount || deal.maximum_discount_amount ? (
+                          <div className="space-y-0.5 text-[13px] text-[var(--muted)]">
+                            {deal.minimum_order_amount && (
+                              <div>
+                                Min <span className="tabular-nums text-[var(--fg)]">${deal.minimum_order_amount.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {deal.maximum_discount_amount && (
+                              <div>
+                                Max <span className="tabular-nums text-[var(--fg)]">${deal.maximum_discount_amount.toFixed(2)}</span>
+                              </div>
+                            )}
                           </div>
+                        ) : (
+                          <span className="text-sm text-[var(--muted)]">—</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm tabular-nums text-[var(--fg)]">
+                            {deal.usage_count} / {deal.usage_limit || '∞'}
+                          </span>
                           {deal.usage_limit && (
-                            <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                              <div 
-                                className={`h-2 rounded-full transition-all duration-300 ${
-                                  usagePercentage >= 90 ? 'bg-red-500' : 
-                                  usagePercentage >= 70 ? 'bg-yellow-500' : 'bg-green-500'
-                                }`}
-                                style={{ width: `${usagePercentage}%` }}
-                              ></div>
+                            <div className="w-16 h-1.5 rounded-full overflow-hidden bg-[var(--surface)] border border-[var(--line)]" aria-hidden="true">
+                              <div
+                                className="h-full rounded-full"
+                                style={{
+                                  width: `${usagePercentage}%`,
+                                  background: usagePercentage >= 90 ? '#b42318' : usagePercentage >= 70 ? '#d97706' : '#059669',
+                                }}
+                              />
                             </div>
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex flex-col space-y-1">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            deal.is_active && !isExpired
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
-                              : isExpired
-                              ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                              : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
-                          }`}>
-                            {isExpired ? 'Expired' : deal.is_active ? 'Active' : 'Inactive'}
+                      <td className="px-5 py-3 whitespace-nowrap">
+                        <div className="flex flex-col items-start gap-1">
+                          <span className={`${PILL_BASE} ${expired ? PILL_NEUTRAL : deal.is_active ? PILL_ACTIVE : PILL_NEUTRAL}`}>
+                            {expired ? 'Expired' : deal.is_active ? 'Active' : 'Inactive'}
                           </span>
                           {deal.usage_limit && deal.usage_count >= deal.usage_limit && (
-                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300">
-                              Limit Reached
-                            </span>
+                            <span className={`${PILL_BASE} ${PILL_WARN}`}>Limit reached</span>
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
+                      <td className="px-5 py-3 whitespace-nowrap">
+                        <div className="flex flex-col leading-tight">
                           {deal.expires_at ? (
-                            <div className="flex flex-col">
-                              <span className={isExpired ? 'text-red-600 dark:text-red-400 font-medium' : ''}>
-                                {formatDate(deal.expires_at)}
-                              </span>
-                              {isExpired && (
-                                <span className="text-xs text-red-500 dark:text-red-400">
-                                  Expired
-                                </span>
-                              )}
-                            </div>
+                            <span
+                              className={`text-[13px] tabular-nums ${expired ? 'font-semibold' : 'text-[var(--fg)]'}`}
+                              style={expired ? { color: '#b42318' } : undefined}
+                            >
+                              Expires {formatDate(deal.expires_at)}
+                            </span>
                           ) : (
-                            <span className="text-gray-500 dark:text-gray-400">Never</span>
+                            <span className="text-[13px] text-[var(--muted)]">Never expires</span>
                           )}
+                          <span className="text-xs tabular-nums text-[var(--muted)]">
+                            Created {formatDate(deal.created_at)} · Updated {formatDate(deal.updated_at)}
+                          </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {formatDateTime(deal.created_at)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {formatDateTime(deal.updated_at)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <div className="flex items-center justify-end space-x-2">
+                      <td className="px-5 py-3 whitespace-nowrap text-right">
+                        <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => handleEdit(deal)}
-                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/30 rounded-md transition-colors"
-                            title="Edit Deal"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[13px] font-medium transition-colors duration-150 hover:bg-[var(--accent-tint)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                            style={{ color: 'var(--accent)' }}
+                            title="Edit deal"
                           >
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                             Edit
                           </button>
                           <button
-                            onClick={() => handleDelete(deal.id)}
-                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-md transition-colors"
-                            title="Delete Deal"
+                            onClick={() => handleDelete(deal)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[13px] font-medium transition-colors duration-150 hover:bg-red-50 dark:hover:bg-red-900/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                            style={{ color: '#b42318' }}
+                            title="Delete deal"
                           >
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                             Delete
@@ -673,45 +650,27 @@ export default function DealManagement() {
             </table>
           </div>
         )}
-      </div>
+      </section>
 
-      {/* Enhanced Footer with Summary */}
-      {deals.length > 0 && (
-        <div className="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-2 lg:space-y-0">
-            <div className="flex items-center space-x-6 text-sm text-gray-600 dark:text-gray-400">
-              <span className="flex items-center">
-                <span className="font-medium text-gray-900 dark:text-white mr-1">{deals.length}</span>
-                Total Deals
-              </span>
-              <span className="flex items-center">
-                <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                <span className="font-medium text-gray-900 dark:text-white mr-1">
-                  {deals.filter(d => d.is_active && (!d.expires_at || new Date(d.expires_at) > new Date())).length}
-                </span>
-                Active
-              </span>
-              <span className="flex items-center">
-                <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-                <span className="font-medium text-gray-900 dark:text-white mr-1">
-                  {deals.filter(d => d.expires_at && new Date(d.expires_at) < new Date()).length}
-                </span>
-                Expired
-              </span>
-              <span className="flex items-center">
-                <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
-                <span className="font-medium text-gray-900 dark:text-white mr-1">
-                  {deals.filter(d => d.usage_limit && d.usage_count >= d.usage_limit).length}
-                </span>
-                Limit Reached
-              </span>
-            </div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              Last updated: {new Date().toLocaleString()}
-            </div>
-          </div>
+      {/* Toast */}
+      {toast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="dsh-toast-in fixed bottom-6 right-6 z-[60] flex items-center gap-2.5 rounded-lg border px-4 py-3 text-sm font-medium shadow-[0_8px_24px_rgba(23,28,38,0.14)] bg-[var(--raised)]"
+          style={{
+            borderColor: toast.tone === 'success' ? 'var(--line)' : '#f2c4c4',
+            color: toast.tone === 'success' ? 'var(--fg)' : '#b42318',
+          }}
+        >
+          <span
+            aria-hidden="true"
+            className="h-2 w-2 rounded-full flex-shrink-0"
+            style={{ background: toast.tone === 'success' ? 'var(--accent)' : '#b42318' }}
+          />
+          {toast.message}
         </div>
       )}
-    </div>
+    </>
   );
 }
