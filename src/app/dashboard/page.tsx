@@ -365,7 +365,7 @@ export default function DashboardPage() {
     return (
       <>
         <Header />
-        <main className="pt-20 pb-16 min-h-screen" style={{ background: 'var(--bg)' }}>
+        <main className="pt-8 pb-16 min-h-screen" style={{ background: 'var(--bg)' }}>
           <div className="container mx-auto px-4">
             <div className="max-w-[1080px] mx-auto py-10 space-y-5" aria-busy="true">
               <div className="h-10 w-56 rounded-md animate-pulse" style={{ background: 'var(--surface)' }} />
@@ -395,7 +395,7 @@ export default function DashboardPage() {
   return (
     <>
       <Header />
-      <main className="pt-20 pb-20 min-h-screen" style={{ background: 'var(--bg)' }}>
+      <main className="pt-8 pb-20 min-h-screen" style={{ background: 'var(--bg)' }}>
         <div className="container mx-auto px-4">
           <div className="max-w-[1080px] mx-auto">
 
