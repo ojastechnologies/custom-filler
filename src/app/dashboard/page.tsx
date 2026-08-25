@@ -357,7 +357,7 @@ export default function DashboardPage() {
   };
 
   const pendingOrders = orders.filter(o => o.status === 'pending').length;
-  const recentOrders = [...orders]
+  const recentOrders = [...orders].filter(o => o.status !== 'pending')
     .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
     .slice(0, 5);
 
