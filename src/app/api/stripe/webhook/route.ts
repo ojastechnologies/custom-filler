@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerStripe } from '@/lib/stripe';
 import { headers } from 'next/headers';
-import { supabase } from '@/lib/supabaseClient';
+import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin';
 import type Stripe from 'stripe';
 
 const PLACEHOLDER_EMAIL = 'pending@stripe.com';

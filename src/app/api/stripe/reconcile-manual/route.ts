@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerStripe } from '@/lib/stripe';
-import { supabase } from '@/lib/supabaseClient';
+import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin';
 
 /**
  * Manual 2-step order recovery from a Stripe checkout session.
