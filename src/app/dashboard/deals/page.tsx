@@ -21,7 +21,7 @@ export default function DealsPage() {
     return (
       <>
         <Header />
-        <main className="pt-20 pb-16 bg-gray-50 dark:bg-gray-900 min-h-screen">
+        <main className="pt-8 pb-16 bg-gray-50 dark:bg-gray-900 min-h-screen">
           <div className="w-full px-6 flex justify-center items-center min-h-[50vh]">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
           </div>
@@ -38,7 +38,7 @@ export default function DealsPage() {
   return (
     <>
       <Header />
-      <main className="pt-20 pb-16 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <main className="pt-8 pb-16 bg-gray-50 dark:bg-gray-900 min-h-screen">
         {/* Full Width Header Section */}
         <div className="w-full bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
           <div className="w-full px-6 py-8">
